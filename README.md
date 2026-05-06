@@ -16,8 +16,8 @@ Nueva version de la agenda academica para estudiantes de FACEN.
 ## Instalacion en Apps Script
 
 1. Crear o abrir el proyecto de Apps Script.
-2. Subir `Code.gs`, `index.html` y `appsscript.json`.
-3. El archivo `Code.gs` ya apunta al spreadsheet `1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc`.
+2. Subir los archivos de `apps-script/`: `Code.gs`, `index.html` y `appsscript.json`.
+3. El archivo `apps-script/Code.gs` ya apunta al spreadsheet `1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc`.
 4. Ejecutar `setupFacenAppV3()` una vez desde el editor.
 5. Publicar como Web App.
 
@@ -28,6 +28,9 @@ El despliegue puede ser anonimo porque la aplicacion maneja sesiones por token p
 - Spreadsheet: `https://docs.google.com/spreadsheets/d/1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc/edit`
 - Apps Script: `https://script.google.com/d/1mXbo3LGQwW6S3wKtAcCyMHPBDHkm0KFRXaRpBbAcdNAM-8hr5z9FfLZT/edit`
 - Web app deployment: `AKfycbzudNRV-hvyTKHCcnVsqfKKJmzj_hgpbzGZU09w1sB0ahu61XlKyhzUOiNmFzA51sm31A`
+- GitHub Pages: `https://guidoal3jandro.github.io/Facen-APP/`
+
+La raiz del repositorio contiene una pagina estatica de redireccion para GitHub Pages. La aplicacion real vive en Apps Script porque usa `google.script.run` para comunicarse con el backend.
 
 ## Comandos utiles
 
