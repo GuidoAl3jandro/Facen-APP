@@ -200,7 +200,7 @@ function obtenerDatosVista(token, vista) {
     var session = requireSession_(token);
     var perfil = getOrCreatePerfil_(session.id_usuario);
     vista = String(vista || '');
-    if (vista === 'catalogo') return { success: true, catalogo: obtenerCatalogo_(true) };
+    if (vista === 'catalogo') return { success: true, catalogo: obtenerCatalogo_(false) };
     if (vista === 'apuntes') return { success: true, apuntes: obtenerMisApuntes_(perfil.id_estudiante) };
     if (vista === 'eventos') return { success: true, eventos: obtenerMisEventos_(perfil.id_estudiante) };
     if (vista === 'lecturas') return { success: true, lecturas: obtenerMisLecturas_(perfil.id_estudiante) };
@@ -222,7 +222,7 @@ function obtenerCompaneros(token) {
 
 function obtenerCatalogo(token) {
   requireSession_(token);
-  return { success: true, catalogo: obtenerCatalogo_(true) };
+  return { success: true, catalogo: obtenerCatalogo_(false) };
 }
 
 function obtenerCatalogo_(useCache) {
@@ -233,6 +233,7 @@ function obtenerCatalogo_(useCache) {
       if (cached) return JSON.parse(cached);
     } catch (e) {}
   }
+  ensureCatalogSeeded_();
   var aulas = indexBy_(getRows_(CONFIG.SHEETS.AULAS), 'id_aula');
   var horarios = getRows_(CONFIG.SHEETS.HORARIOS);
   var secciones = getRows_(CONFIG.SHEETS.SECCIONES).filter(function(s) { return s.activo != 0; });
@@ -253,6 +254,15 @@ function obtenerCatalogo_(useCache) {
     CacheService.getScriptCache().put(cacheKey, JSON.stringify(asignaturas), 600);
   } catch (e) {}
   return asignaturas;
+}
+
+function ensureCatalogSeeded_() {
+  if (getRows_(CONFIG.SHEETS.ASIGNATURAS).length && getRows_(CONFIG.SHEETS.SECCIONES).length) return;
+  seedCatalog_();
+  clearRows_(CONFIG.SHEETS.AULAS);
+  clearRows_(CONFIG.SHEETS.ASIGNATURAS);
+  clearRows_(CONFIG.SHEETS.SECCIONES);
+  clearRows_(CONFIG.SHEETS.HORARIOS);
 }
 
 function guardarPerfil(token, datos) {
