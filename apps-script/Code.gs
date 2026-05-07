@@ -64,7 +64,7 @@ function setupFacenAppV3() {
 
 function registrarEstudiante(datos) {
   try {
-    datos = datos || {};
+    datos = normalizePayload_(datos);
     var username = cleanUsername_(datos.username);
     if (!username || !datos.password || !datos.nombres || !datos.apellidos) {
       return fail_('Completa usuario, contrasena, nombres y apellidos.');
@@ -698,6 +698,15 @@ function indexBy_(rows, key) {
 
 function cleanUsername_(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+function normalizePayload_(value) {
+  if (!value) return {};
+  if (typeof value === 'string') {
+    try { return JSON.parse(value); }
+    catch (e) { return {}; }
+  }
+  return value;
 }
 
 function trim_(value) {

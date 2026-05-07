@@ -672,7 +672,11 @@
     }
     function formData(form) {
       var obj = {};
-      Array.prototype.forEach.call(new FormData(form).entries(), function(pair) { obj[pair[0]] = pair[1]; });
+      Array.prototype.forEach.call(form.elements, function(el) {
+        if (!el.name || el.disabled) return;
+        if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
+        obj[el.name] = el.type === 'checkbox' ? !!el.checked : el.value;
+      });
       return obj;
     }
     function fmt(v) { return v === '' || v === null || v === undefined || isNaN(v) ? '-' : Number(v).toFixed(2); }
