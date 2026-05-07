@@ -394,6 +394,14 @@
     };
 
     document.addEventListener('DOMContentLoaded', function() {
+      window.onerror = function(message, source, lineno, colno, error) {
+        showFatal('Error de pantalla: ' + (message || (error && error.message) || 'desconocido'));
+        return false;
+      };
+      window.onunhandledrejection = function(event) {
+        var reason = event && event.reason;
+        showFatal('Error asincrono: ' + ((reason && reason.message) || reason || 'desconocido'));
+      };
       buildNav();
       if (!State.token) return showAuth();
       server('verificarSesion', [State.token], function(res) {
@@ -410,18 +418,31 @@
     function server(fn, args, ok, fail) {
       var runner = google.script.run
         .withSuccessHandler(function(res) {
-          if (res && res.success === false) {
-            toast(res.message || 'No se pudo completar', 'error');
-            if (fail) fail(res);
-            return;
+          try {
+            if (res && res.success === false) {
+              toast(res.message || 'No se pudo completar', 'error');
+              if (fail) fail(res);
+              return;
+            }
+            if (ok) ok(res || {});
+          } catch (e) {
+            showFatal('Error procesando respuesta de ' + fn + ': ' + e.message);
           }
-          if (ok) ok(res);
         })
         .withFailureHandler(function(err) {
           toast((err && err.message) || 'Error de conexion', 'error');
           if (fail) fail(err);
         });
       runner[fn].apply(runner, args || []);
+    }
+
+    function showFatal(message) {
+      var el = document.getElementById('content');
+      if (el) {
+        el.innerHTML = '<div class="empty">' + esc(message) + '<br><br><button class="btn btn-outline btn-small" onclick="loadApp()">Reintentar</button> <button class="btn btn-danger btn-small" onclick="logout()">Cerrar sesion</button></div>';
+      } else {
+        toast(message, 'error');
+      }
     }
 
     function setAuthMode(mode) {
@@ -462,6 +483,7 @@
         State.user = res.user;
         document.getElementById('user-name').textContent = res.user.nombre || res.user.username;
         document.getElementById('top-user').textContent = res.user.nombre || res.user.username;
+        if (res.warning) toast(res.warning, 'error');
         render();
         scheduleLocalAlerts();
       }, function() {

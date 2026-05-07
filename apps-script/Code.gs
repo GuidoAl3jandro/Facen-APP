@@ -179,46 +179,36 @@ function verificarSesion(token) {
 }
 
 function obtenerBootstrap(token) {
-  var session = requireSession_(token);
-  var perfil = getPerfilByUser_(session.id_usuario);
-  var inscripciones = obtenerMisInscripciones_(perfil.id_estudiante);
-  var notas = obtenerMisNotas_(perfil.id_estudiante, inscripciones);
-  var agenda = obtenerMiAgenda_(perfil.id_estudiante);
-  var preferencias = obtenerPreferencias_(perfil.id_estudiante);
-  return {
-    success: true,
-    user: publicUserFromPerfil_(session.id_usuario, session.rol, '', perfil),
-    perfil: perfil,
-    catalogo: [],
-    catalogoLoaded: false,
-    inscripciones: inscripciones,
-    notas: notas,
-    apuntes: [],
-    apuntesLoaded: false,
-    eventos: [],
-    eventosLoaded: false,
-    lecturas: [],
-    lecturasLoaded: false,
-    grupos: [],
-    gruposLoaded: false,
-    agenda: agenda,
-    preferencias: preferencias,
-    companeros: [],
-    companerosLoaded: false,
-    resumen: resumen_(perfil.id_estudiante, inscripciones, notas, [], [], [], [], agenda)
-  };
+  try {
+    var session = requireSession_(token);
+    var perfil = getOrCreatePerfil_(session.id_usuario);
+    var inscripciones = safeCall_(function() { return obtenerMisInscripciones_(perfil.id_estudiante); }, []);
+    var notas = safeCall_(function() { return obtenerMisNotas_(perfil.id_estudiante, inscripciones); }, []);
+    var agenda = safeCall_(function() { return obtenerMiAgenda_(perfil.id_estudiante); }, []);
+    var preferencias = safeCall_(function() { return obtenerPreferencias_(perfil.id_estudiante); }, obtenerPreferenciasDefault_());
+    return bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, '');
+  } catch (e) {
+    return {
+      success: false,
+      message: 'No se pudo cargar el inicio: ' + e.message
+    };
+  }
 }
 
 function obtenerDatosVista(token, vista) {
-  var session = requireSession_(token);
-  var perfil = getPerfilByUser_(session.id_usuario);
-  vista = String(vista || '');
-  if (vista === 'catalogo') return { success: true, catalogo: obtenerCatalogo_(true) };
-  if (vista === 'apuntes') return { success: true, apuntes: obtenerMisApuntes_(perfil.id_estudiante) };
-  if (vista === 'eventos') return { success: true, eventos: obtenerMisEventos_(perfil.id_estudiante) };
-  if (vista === 'lecturas') return { success: true, lecturas: obtenerMisLecturas_(perfil.id_estudiante) };
-  if (vista === 'grupos') return { success: true, grupos: obtenerMisGrupos_(perfil.id_estudiante) };
-  return { success: true };
+  try {
+    var session = requireSession_(token);
+    var perfil = getOrCreatePerfil_(session.id_usuario);
+    vista = String(vista || '');
+    if (vista === 'catalogo') return { success: true, catalogo: obtenerCatalogo_(true) };
+    if (vista === 'apuntes') return { success: true, apuntes: obtenerMisApuntes_(perfil.id_estudiante) };
+    if (vista === 'eventos') return { success: true, eventos: obtenerMisEventos_(perfil.id_estudiante) };
+    if (vista === 'lecturas') return { success: true, lecturas: obtenerMisLecturas_(perfil.id_estudiante) };
+    if (vista === 'grupos') return { success: true, grupos: obtenerMisGrupos_(perfil.id_estudiante) };
+    return { success: true };
+  } catch (e) {
+    return fail_('No se pudo cargar esta vista: ' + e.message);
+  }
 }
 
 function obtenerCompaneros(token) {
@@ -696,6 +686,10 @@ function obtenerMiAgenda_(idEstudiante) {
 function obtenerPreferencias_(idEstudiante) {
   var pref = getRows_(CONFIG.SHEETS.PREFERENCIAS).find(function(p) { return p.id_estudiante == idEstudiante; });
   if (pref) return pref;
+  return obtenerPreferenciasDefault_();
+}
+
+function obtenerPreferenciasDefault_() {
   return {
     alertas_clases: 1,
     alertas_examenes: 1,
@@ -707,6 +701,40 @@ function obtenerPreferencias_(idEstudiante) {
     minutos_entregas: 120,
     instalacion_pwa: 0
   };
+}
+
+function bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, warning) {
+  return {
+    success: true,
+    warning: warning || '',
+    user: publicUserFromPerfil_(session.id_usuario, session.rol, '', perfil),
+    perfil: perfil,
+    catalogo: [],
+    catalogoLoaded: false,
+    inscripciones: inscripciones || [],
+    notas: notas || [],
+    apuntes: [],
+    apuntesLoaded: false,
+    eventos: [],
+    eventosLoaded: false,
+    lecturas: [],
+    lecturasLoaded: false,
+    grupos: [],
+    gruposLoaded: false,
+    agenda: agenda || [],
+    preferencias: preferencias || obtenerPreferenciasDefault_(),
+    companeros: [],
+    companerosLoaded: false,
+    resumen: resumen_(perfil.id_estudiante, inscripciones || [], notas || [], [], [], [], [], agenda || [])
+  };
+}
+
+function safeCall_(fn, fallback) {
+  try {
+    return fn();
+  } catch (e) {
+    return fallback;
+  }
 }
 
 function obtenerMisCompaneros_(idEstudiante, inscripciones) {
@@ -862,6 +890,28 @@ function publicUserFromPerfil_(idUsuario, rol, username, perfil) {
 
 function getPerfilByUser_(idUsuario) {
   return getRows_(CONFIG.SHEETS.ESTUDIANTES).find(function(e) { return e.id_usuario == idUsuario; }) || null;
+}
+
+function getOrCreatePerfil_(idUsuario) {
+  var perfil = getPerfilByUser_(idUsuario);
+  if (perfil) return perfil;
+  var username = getUsername_(idUsuario);
+  var nuevo = {
+    id_estudiante: nextId_(CONFIG.SHEETS.ESTUDIANTES),
+    id_usuario: idUsuario,
+    nombres: username || 'Estudiante',
+    apellidos: '',
+    cedula: '',
+    email: '',
+    telefono: '',
+    comparte_contacto: 0,
+    carrera: '',
+    semestre: '',
+    turno: '',
+    observaciones: ''
+  };
+  appendObject_(CONFIG.SHEETS.ESTUDIANTES, nuevo);
+  return nuevo;
 }
 
 function getUsername_(idUsuario) {
