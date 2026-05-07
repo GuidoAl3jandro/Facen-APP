@@ -116,7 +116,16 @@ function iniciarSesion(username, password) {
     var usuarios = getRows_(CONFIG.SHEETS.USUARIOS);
     var user = usuarios.find(function(u) { return cleanUsername_(u.username) === username; });
     if (!user || user.activo == 0) return fail_('Usuario no encontrado o inactivo.');
-    if (hashPassword_(password, user.salt) !== user.password_hash) return fail_('Contrasena incorrecta.');
+    var currentHash = hashPassword_(password, user.salt);
+    var legacyHash = legacyHashPassword_(password, user.salt);
+    if (currentHash !== user.password_hash && legacyHash !== user.password_hash) {
+      return fail_('Contrasena incorrecta.');
+    }
+    if (legacyHash === user.password_hash) {
+      updateRowById_(CONFIG.SHEETS.USUARIOS, 'id_usuario', user.id_usuario, {
+        password_hash: currentHash
+      });
+    }
 
     var token = Utilities.getUuid() + '-' + Utilities.getUuid();
     var expires = new Date(Date.now() + CONFIG.SESSION_HOURS * 60 * 60 * 1000);
@@ -633,6 +642,10 @@ function hashPassword_(password, salt) {
     value = digestHex_(value + ':' + salt + ':' + i);
   }
   return value;
+}
+
+function legacyHashPassword_(password, salt) {
+  return digestHex_(String(password) + String(salt || ''));
 }
 
 function tokenHash_(token) {
