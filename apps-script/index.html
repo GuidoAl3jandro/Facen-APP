@@ -632,6 +632,7 @@
 
     function renderMaterias() {
       if (!State.data.catalogoLoaded) return head('Materias', 'Selecciona las asignaturas y secciones que estas cursando.') + '<div class="empty">Cargando catalogo de asignaturas...</div>';
+      State.data.catalogo = State.data.catalogo || [];
       var q = '';
       var elegidas = {};
       (State.data.inscripciones || []).forEach(function(i) { elegidas[String(i.id_asignatura)] = true; });

@@ -182,11 +182,15 @@ function obtenerBootstrap(token) {
   try {
     var session = requireSession_(token);
     var perfil = getOrCreatePerfil_(session.id_usuario);
+    var catalogo = safeCall_(function() { return obtenerCatalogo_(false); }, defaultCatalogo_());
     var inscripciones = safeCall_(function() { return obtenerMisInscripciones_(perfil.id_estudiante); }, []);
     var notas = safeCall_(function() { return obtenerMisNotas_(perfil.id_estudiante, inscripciones); }, []);
     var agenda = safeCall_(function() { return obtenerMiAgenda_(perfil.id_estudiante); }, []);
     var preferencias = safeCall_(function() { return obtenerPreferencias_(perfil.id_estudiante); }, obtenerPreferenciasDefault_());
-    return bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, '');
+    var response = bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, '');
+    response.catalogo = catalogo;
+    response.catalogoLoaded = true;
+    return response;
   } catch (e) {
     return {
       success: false,
