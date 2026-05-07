@@ -250,6 +250,7 @@ function obtenerCatalogo_(useCache) {
     a.secciones = seccionesByAsig[a.id_asignatura] || [];
     return a;
   });
+  if (!asignaturas.length) asignaturas = defaultCatalogo_();
   try {
     CacheService.getScriptCache().put(cacheKey, JSON.stringify(asignaturas), 600);
   } catch (e) {}
@@ -263,6 +264,55 @@ function ensureCatalogSeeded_() {
   clearRows_(CONFIG.SHEETS.ASIGNATURAS);
   clearRows_(CONFIG.SHEETS.SECCIONES);
   clearRows_(CONFIG.SHEETS.HORARIOS);
+}
+
+function defaultCatalogo_() {
+  var aulas = {
+    1: { nombre_aula: 'Aula 101', edificio: 'Bloque A' },
+    2: { nombre_aula: 'Laboratorio Bio 2', edificio: 'Bloque B' },
+    3: { nombre_aula: 'Aula Magna', edificio: 'Central' },
+    4: { nombre_aula: 'Laboratorio Computacion', edificio: 'Bloque C' }
+  };
+  var horarios = [
+    [1, 1, 'Lunes', '07:30', '09:00', 1], [2, 1, 'Miercoles', '07:30', '09:00', 1],
+    [3, 2, 'Martes', '18:00', '19:30', 3], [4, 2, 'Jueves', '18:00', '19:30', 3],
+    [5, 3, 'Lunes', '09:15', '10:45', 3], [6, 3, 'Viernes', '09:15', '10:45', 3],
+    [7, 4, 'Martes', '10:00', '12:00', 2], [8, 5, 'Miercoles', '13:00', '15:00', 3],
+    [9, 6, 'Jueves', '15:00', '17:00', 4]
+  ];
+  var secciones = [
+    [1, 1, 'A', 45], [2, 1, 'B', 45], [3, 2, 'A', 40], [4, 3, 'A', 28], [5, 4, 'A', 40], [6, 5, 'A', 32]
+  ].map(function(s) {
+    return {
+      id_seccion: s[0],
+      id_asignatura: s[1],
+      codigo_seccion: s[2],
+      cupo: s[3],
+      activo: 1,
+      horarios: horarios.filter(function(h) { return h[1] === s[0]; }).map(function(h) {
+        var aula = aulas[h[5]] || {};
+        return { dia: h[2], hora_ini: h[3], hora_fin: h[4], aula: aula.nombre_aula || 'Sin aula', edificio: aula.edificio || '' };
+      })
+    };
+  });
+  return [
+    [1, 'MAT101', 'Calculo I', 'Licenciatura en Ciencias Mencion Matematica', 1, 6],
+    [2, 'FIS101', 'Fisica General I', 'Licenciatura en Ciencias Mencion Fisica', 1, 5],
+    [3, 'BIO120', 'Biologia Celular', 'Licenciatura en Biotecnologia', 2, 5],
+    [4, 'QUI110', 'Quimica General', 'Licenciatura en Ciencias Mencion Quimica', 1, 5],
+    [5, 'INF140', 'Programacion I', 'Licenciatura en Tecnologia de Produccion', 1, 4]
+  ].map(function(a) {
+    return {
+      id_asignatura: a[0],
+      codigo: a[1],
+      nombre_asignatura: a[2],
+      carrera: a[3],
+      semestre: a[4],
+      creditos: a[5],
+      activo: 1,
+      secciones: secciones.filter(function(s) { return s.id_asignatura === a[0]; })
+    };
+  });
 }
 
 function guardarPerfil(token, datos) {
@@ -900,7 +950,16 @@ function publicUserFromPerfil_(idUsuario, rol, username, perfil) {
 }
 
 function getPerfilByUser_(idUsuario) {
-  return getRows_(CONFIG.SHEETS.ESTUDIANTES).find(function(e) { return e.id_usuario == idUsuario; }) || null;
+  var perfiles = getRows_(CONFIG.SHEETS.ESTUDIANTES).filter(function(e) { return e.id_usuario == idUsuario; });
+  if (!perfiles.length) return null;
+  perfiles.sort(function(a, b) { return perfilScore_(b) - perfilScore_(a); });
+  return perfiles[0];
+}
+
+function perfilScore_(perfil) {
+  return ['nombres', 'apellidos', 'cedula', 'email', 'telefono', 'carrera', 'semestre', 'turno', 'observaciones'].reduce(function(score, key) {
+    return score + (trim_(perfil[key]) ? 1 : 0);
+  }, 0);
 }
 
 function getOrCreatePerfil_(idUsuario) {
