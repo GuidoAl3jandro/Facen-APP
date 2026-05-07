@@ -52,6 +52,7 @@ var SCHEMA = {
 
 var ROW_CACHE_ = {};
 var SHEET_CACHE_ = {};
+var HEADER_CACHE_ = {};
 
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('index')
@@ -189,7 +190,6 @@ function obtenerBootstrap(token) {
   var grupos = obtenerMisGrupos_(perfil.id_estudiante);
   var agenda = obtenerMiAgenda_(perfil.id_estudiante);
   var preferencias = obtenerPreferencias_(perfil.id_estudiante);
-  var companeros = obtenerMisCompaneros_(perfil.id_estudiante, inscripciones);
   return {
     success: true,
     user: publicUser_(session.id_usuario, session.rol),
@@ -203,8 +203,18 @@ function obtenerBootstrap(token) {
     grupos: grupos,
     agenda: agenda,
     preferencias: preferencias,
-    companeros: companeros,
+    companeros: [],
+    companerosLoaded: false,
     resumen: resumen_(perfil.id_estudiante, inscripciones, notas, apuntes, eventos, lecturas, grupos, agenda)
+  };
+}
+
+function obtenerCompaneros(token) {
+  var session = requireSession_(token);
+  var perfil = getPerfilByUser_(session.id_usuario);
+  return {
+    success: true,
+    companeros: obtenerMisCompaneros_(perfil.id_estudiante)
   };
 }
 
@@ -845,7 +855,10 @@ function getSheet_(name) {
     styleHeader_(sheet, SCHEMA[name].length);
   }
   if (!sheet) throw new Error('Falta la hoja ' + name + '. Ejecuta setupFacenAppV4().');
-  if (SCHEMA[name] && sheet.getLastRow() > 0) ensureHeaders_(sheet, SCHEMA[name]);
+  if (SCHEMA[name] && sheet.getLastRow() > 0 && !HEADER_CACHE_[name]) {
+    ensureHeaders_(sheet, SCHEMA[name]);
+    HEADER_CACHE_[name] = true;
+  }
   SHEET_CACHE_[name] = sheet;
   return sheet;
 }

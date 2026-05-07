@@ -459,6 +459,8 @@
         document.getElementById('top-user').textContent = res.user.nombre || res.user.username;
         render();
         scheduleLocalAlerts();
+      }, function() {
+        document.getElementById('content').innerHTML = '<div class="empty">No se pudieron cargar tus datos. Reintenta en unos segundos o vuelve a iniciar sesion.</div>';
       });
     }
 
@@ -637,6 +639,11 @@
     }
 
     function renderCompaneros() {
+      if (!State.data.companerosLoaded) {
+        setTimeout(loadCompaneros, 0);
+        return head('Companeros', 'Encuentra estudiantes de tus asignaturas y arma grupos de estudio con consentimiento de contacto.') +
+          '<div class="empty">Cargando companeros de tus asignaturas...</div>';
+      }
       var rows = (State.data.companeros || []).map(function(c) {
         var materias = (c.coincidencias || []).map(function(x) { return x.nombre_asignatura + (x.codigo_seccion ? ' - Seccion ' + x.codigo_seccion : ''); }).join(', ');
         var contacto = c.comparte_contacto ? ['Movil: ' + c.telefono, c.email].filter(Boolean).join(' - ') : 'No comparte contacto';
@@ -646,6 +653,22 @@
       }).join('') || '<div class="empty">Cuando selecciones asignaturas, aca veras companeros que cursan contigo. El movil solo aparece si cada estudiante lo autoriza.</div>';
       return head('Companeros', 'Encuentra estudiantes de tus asignaturas y arma grupos de estudio con consentimiento de contacto.') +
         '<div class="card card-pad"><div class="list">' + rows + '</div></div>';
+    }
+
+    function loadCompaneros() {
+      if (!State.data || State.data.loadingCompaneros || State.data.companerosLoaded) return;
+      State.data.loadingCompaneros = true;
+      server('obtenerCompaneros', [State.token], function(res) {
+        State.data.companeros = res.companeros || [];
+        State.data.companerosLoaded = true;
+        State.data.loadingCompaneros = false;
+        if (State.view === 'companeros') render();
+      }, function() {
+        State.data.loadingCompaneros = false;
+        State.data.companerosLoaded = true;
+        State.data.companeros = [];
+        if (State.view === 'companeros') render();
+      });
     }
 
     function renderRecordatorios() {
