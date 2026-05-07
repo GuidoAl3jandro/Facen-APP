@@ -182,7 +182,7 @@ function obtenerBootstrap(token) {
   try {
     var session = requireSession_(token);
     var perfil = getOrCreatePerfil_(session.id_usuario);
-    var catalogo = safeCall_(function() { return obtenerCatalogo_(false); }, defaultCatalogo_());
+    var catalogo = safeCall_(function() { return obtenerCatalogoParaPerfil_(perfil, false); }, defaultCatalogo_());
     var inscripciones = safeCall_(function() { return obtenerMisInscripciones_(perfil.id_estudiante); }, []);
     var notas = safeCall_(function() { return obtenerMisNotas_(perfil.id_estudiante, inscripciones); }, []);
     var agenda = safeCall_(function() { return obtenerMiAgenda_(perfil.id_estudiante); }, []);
@@ -204,7 +204,7 @@ function obtenerDatosVista(token, vista) {
     var session = requireSession_(token);
     var perfil = getOrCreatePerfil_(session.id_usuario);
     vista = String(vista || '');
-    if (vista === 'catalogo') return { success: true, catalogo: obtenerCatalogo_(false) };
+    if (vista === 'catalogo') return { success: true, catalogo: obtenerCatalogoParaPerfil_(perfil, false) };
     if (vista === 'apuntes') return { success: true, apuntes: obtenerMisApuntes_(perfil.id_estudiante) };
     if (vista === 'eventos') return { success: true, eventos: obtenerMisEventos_(perfil.id_estudiante) };
     if (vista === 'lecturas') return { success: true, lecturas: obtenerMisLecturas_(perfil.id_estudiante) };
@@ -225,8 +225,9 @@ function obtenerCompaneros(token) {
 }
 
 function obtenerCatalogo(token) {
-  requireSession_(token);
-  return { success: true, catalogo: obtenerCatalogo_(false) };
+  var session = requireSession_(token);
+  var perfil = getOrCreatePerfil_(session.id_usuario);
+  return { success: true, catalogo: obtenerCatalogoParaPerfil_(perfil, false) };
 }
 
 function obtenerCatalogo_(useCache) {
@@ -266,6 +267,14 @@ function obtenerCatalogo_(useCache) {
     CacheService.getScriptCache().put(cacheKey, JSON.stringify(asignaturas), 600);
   } catch (e) {}
   return asignaturas;
+}
+
+function obtenerCatalogoParaPerfil_(perfil, useCache) {
+  var catalogo = obtenerCatalogo_(useCache);
+  var carrera = normalize_(perfil && perfil.carrera);
+  if (!carrera) return catalogo;
+  var filtrado = catalogo.filter(function(a) { return normalize_(a.carrera) === carrera; });
+  return filtrado.length ? filtrado : catalogo;
 }
 
 function ensureCatalogSeeded_() {
@@ -351,7 +360,7 @@ function inscribirSeccion(token, idSeccion) {
   return withLock_(function() {
     var secciones = indexBy_(getRows_(CONFIG.SHEETS.SECCIONES), 'id_seccion');
     var existentes = getRows_(CONFIG.SHEETS.INSCRIPCIONES).filter(function(i) {
-      return i.id_estudiante == perfil.id_estudiante && i.activo != 0;
+      return i.id_estudiante == perfil.id_estudiante && isActive_(i.activo);
     });
     if (existentes.some(function(i) { return i.id_seccion == idSeccion; })) return fail_('Ya estas inscripto en esa seccion.');
     if (existentes.some(function(i) {
@@ -381,7 +390,15 @@ function inscribirSeccion(token, idSeccion) {
       fecha_modificacion: now_()
     });
     log_(session.id_usuario, 'INSCRIPCION', String(idSeccion));
-    return { success: true, message: 'Asignatura agregada.' };
+    var inscripciones = obtenerMisInscripciones_(perfil.id_estudiante);
+    return {
+      success: true,
+      message: 'Asignatura agregada.',
+      inscripciones: inscripciones,
+      notas: obtenerMisNotas_(perfil.id_estudiante, inscripciones),
+      catalogo: obtenerCatalogoParaPerfil_(perfil, false),
+      catalogoLoaded: true
+    };
   });
 }
 
@@ -679,7 +696,7 @@ function obtenerMisInscripciones_(idEstudiante) {
   var aulas = indexBy_(getRows_(CONFIG.SHEETS.AULAS), 'id_aula');
   var horarios = getRows_(CONFIG.SHEETS.HORARIOS);
   return getRows_(CONFIG.SHEETS.INSCRIPCIONES).filter(function(i) {
-    return i.id_estudiante == idEstudiante && i.activo != 0;
+    return i.id_estudiante == idEstudiante && isActive_(i.activo);
   }).map(function(i) {
     var sec = secciones[i.id_seccion] || {};
     var asig = asignaturas[sec.id_asignatura] || {};

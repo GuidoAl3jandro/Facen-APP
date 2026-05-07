@@ -830,9 +830,13 @@
 
     function inscribir(evt, id) {
       var btn = busyButton(evt, 'Agregando...');
-      server('inscribirSeccion', [State.token, id], function() {
+      server('inscribirSeccion', [State.token, id], function(res) {
+        if (res.inscripciones) State.data.inscripciones = res.inscripciones;
+        if (res.notas) State.data.notas = res.notas;
+        if (res.catalogo) State.data.catalogo = res.catalogo;
+        if (res.catalogoLoaded !== undefined) State.data.catalogoLoaded = res.catalogoLoaded;
         toast('Materia agregada', 'ok');
-        loadApp();
+        render();
       }, function() { releaseButton(btn); });
     }
     function quitarMateria(id) { if (confirm('Quitar esta asignatura?')) server('quitarInscripcion', [State.token, id], function() { toast('Materia quitada', 'ok'); loadApp(); }); }
