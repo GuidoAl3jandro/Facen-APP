@@ -31,6 +31,7 @@
     }
     button, input, select, textarea { font: inherit; }
     button { cursor: pointer; }
+    button:disabled { cursor: wait; opacity: .62; }
     .hidden { display: none !important; }
     .auth-page {
       min-height: 100vh;
@@ -50,16 +51,22 @@
     .auth-art {
       position: relative;
       overflow: hidden;
-      background:
-        linear-gradient(rgba(15, 78, 82, .72), rgba(20, 33, 46, .54)),
-        url("https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1800&q=80");
-      background-size: cover;
-      background-position: center;
+      background: #123646;
       display: flex;
       align-items: end;
       padding: 56px;
       color: #fff;
     }
+    .auth-art:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(22,108,112,.9), rgba(17,45,61,.7)),
+        radial-gradient(circle at 20% 20%, rgba(214,159,48,.42), transparent 30%),
+        radial-gradient(circle at 80% 70%, rgba(255,255,255,.18), transparent 28%);
+    }
+    .auth-art > div { position: relative; }
     .auth-art h1 { font-size: clamp(38px, 6vw, 74px); line-height: .95; margin: 0 0 14px; letter-spacing: 0; }
     .auth-art p { max-width: 620px; font-size: 19px; line-height: 1.55; margin: 0; color: rgba(255,255,255,.88); }
     .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
@@ -185,6 +192,7 @@
     }
     .badge-ok { background: #e7f4ee; color: var(--ok); }
     .badge-warn { background: #fff4db; color: #8b6414; }
+    .badge-danger { background: #fdeaea; color: var(--danger); }
     .toolbar {
       display: flex;
       gap: 10px;
@@ -198,6 +206,21 @@
     .schedule th, .schedule td { border-bottom: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
     .schedule th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
     .note-row { grid-template-columns: 1.4fr repeat(5, .55fr) .8fr auto; display: grid; gap: 10px; align-items: center; }
+    .planner {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 14px;
+    }
+    .compact-list { display: grid; gap: 8px; }
+    .compact {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .compact:last-child { border-bottom: 0; }
     .empty {
       padding: 30px;
       text-align: center;
@@ -265,13 +288,14 @@
         left: 0;
         right: 0;
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         background: #fff;
         border-top: 1px solid var(--line);
         z-index: 6;
       }
       .mobile-nav button { border: 0; background: #fff; padding: 9px 4px; font-size: 12px; color: var(--muted); }
       .mobile-nav button.active { color: var(--primary); font-weight: 900; }
+      .planner { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -356,8 +380,11 @@
         ['dashboard', 'Inicio'],
         ['materias', 'Materias'],
         ['horario', 'Horario'],
+        ['agenda', 'Agenda'],
         ['notas', 'Notas'],
         ['apuntes', 'Apuntes'],
+        ['lecturas', 'Lecturas'],
+        ['grupos', 'Grupos'],
         ['recordatorios', 'Recordatorios'],
         ['perfil', 'Perfil']
       ]
@@ -460,14 +487,17 @@
       document.querySelectorAll('[data-view]').forEach(function(btn) {
         btn.classList.toggle('active', btn.getAttribute('data-view') === State.view);
       });
-      var titles = { dashboard: 'Inicio', materias: 'Materias', horario: 'Horario', notas: 'Notas', apuntes: 'Apuntes', recordatorios: 'Recordatorios', perfil: 'Perfil' };
+      var titles = { dashboard: 'Inicio', materias: 'Materias', horario: 'Horario', agenda: 'Agenda', notas: 'Notas', apuntes: 'Apuntes', lecturas: 'Lecturas', grupos: 'Grupos', recordatorios: 'Recordatorios', perfil: 'Perfil' };
       document.getElementById('view-title').textContent = titles[State.view] || 'FACEN App';
       var views = {
         dashboard: renderDashboard,
         materias: renderMaterias,
         horario: renderHorario,
+        agenda: renderAgenda,
         notas: renderNotas,
         apuntes: renderApuntes,
+        lecturas: renderLecturas,
+        grupos: renderGrupos,
         recordatorios: renderRecordatorios,
         perfil: renderPerfil
       };
@@ -482,21 +512,35 @@
       var eventos = upcomingEvents().slice(0, 4).map(function(e) {
         return item(e.titulo, [e.fecha_iso, e.hora, e.nombre_asignatura].filter(Boolean).join(' - '), badge(e.tipo || 'recordatorio'));
       }).join('') || '<div class="empty">Sin recordatorios proximos.</div>';
+      var lecturas = (State.data.lecturas || []).filter(function(l) { return String(l.estado || '').toLowerCase() !== 'completada'; }).slice(0, 4).map(function(l) {
+        return compact(l.titulo, [l.nombre_asignatura, l.fecha_objetivo_iso, l.prioridad].filter(Boolean).join(' - '), priorityBadge(l.prioridad));
+      }).join('') || '<div class="empty">Sin lecturas pendientes.</div>';
+      var grupos = (State.data.grupos || []).slice(0, 4).map(function(g) {
+        return compact(g.nombre, [g.nombre_asignatura, g.proxima_fecha_iso, g.proxima_hora].filter(Boolean).join(' - '), badge(g.estado || 'Activo'));
+      }).join('') || '<div class="empty">Todavia no cargaste grupos.</div>';
+      var agenda = (State.data.agenda || []).slice(0, 4).map(function(a) {
+        return compact(a.titulo, [a.tipo, a.dia || a.fecha_iso, a.hora_ini, a.sala].filter(Boolean).join(' - '), badge(a.alerta_activa ? 'Alerta' : 'Sin alerta'));
+      }).join('') || '<div class="empty">Agrega clases, examenes o reuniones a tu agenda.</div>';
       return head('Inicio', 'Resumen rapido de tu semestre.') +
         '<div class="grid grid-4">' +
           metric('Asignaturas', r.totalAsignaturas || 0) +
           metric('Promedio', fmt(r.promedio || 0)) +
-          metric('Aprobadas', r.aprobadas || 0) +
-          metric('Apuntes', (State.data.apuntes || []).length) +
+          metric('Lecturas', r.lecturasPendientes || 0) +
+          metric('Agenda', r.agendaActiva || 0) +
         '</div>' +
-        '<div class="grid grid-2" style="margin-top:14px;">' +
+        '<div class="planner" style="margin-top:14px;">' +
           '<section class="card card-pad"><h3>Clases de hoy</h3><div class="list">' + clases + '</div></section>' +
           '<section class="card card-pad"><h3>Proximos recordatorios</h3><div class="list">' + eventos + '</div></section>' +
+          '<section class="card card-pad"><h3>Agenda editable</h3><div class="compact-list">' + agenda + '</div></section>' +
+          '<section class="card card-pad"><h3>Lecturas prioritarias</h3><div class="compact-list">' + lecturas + '</div></section>' +
+          '<section class="card card-pad"><h3>Grupos de estudio</h3><div class="compact-list">' + grupos + '</div></section>' +
         '</div>';
     }
 
     function renderMaterias() {
       var q = '';
+      var elegidas = {};
+      (State.data.inscripciones || []).forEach(function(i) { elegidas[String(i.id_asignatura)] = true; });
       var actuales = (State.data.inscripciones || []).map(function(i) {
         var horarios = i.horarios.map(function(h) { return h.dia + ' ' + h.hora_ini + '-' + h.hora_fin + ' - ' + h.aula; }).join('\n');
         return item(i.nombre_asignatura + ' - ' + i.codigo_seccion, horarios || 'Sin horario', '<button class="btn btn-danger btn-small" onclick="quitarMateria(' + i.id_inscripcion + ')">Quitar</button>');
@@ -504,7 +548,9 @@
       var catalogo = State.data.catalogo.map(function(a) {
         var secs = (a.secciones || []).map(function(s) {
           var hs = s.horarios.map(function(h) { return h.dia + ' ' + h.hora_ini + '-' + h.hora_fin + ' - ' + h.aula; }).join(', ');
-          return '<button class="btn btn-outline btn-small" onclick="inscribir(' + s.id_seccion + ')">Seccion ' + esc(s.codigo_seccion) + '</button><div class="sub">' + esc(hs || 'Sin horario') + '</div>';
+          var disabled = elegidas[String(a.id_asignatura)] ? ' disabled' : '';
+          var text = elegidas[String(a.id_asignatura)] ? 'Ya seleccionada' : 'Elegir seccion ' + esc(s.codigo_seccion);
+          return '<button class="btn btn-outline btn-small" onclick="inscribir(event,' + s.id_seccion + ')"' + disabled + '>' + text + '</button><div class="sub">' + esc(hs || 'Sin horario') + '</div>';
         }).join('<div style="height:8px"></div>');
         return '<article class="card card-pad subject" data-search="' + esc((a.codigo + ' ' + a.nombre_asignatura + ' ' + a.carrera).toLowerCase()) + '">' +
           '<div class="title">' + esc(a.codigo) + ' - ' + esc(a.nombre_asignatura) + '</div>' +
@@ -522,12 +568,28 @@
       State.data.inscripciones.forEach(function(i) {
         i.horarios.forEach(function(h) { rows.push({ materia: i.nombre_asignatura, seccion: i.codigo_seccion, h: h }); });
       });
+      (State.data.agenda || []).filter(function(a) { return String(a.tipo || '').toLowerCase() === 'clase'; }).forEach(function(a) {
+        rows.push({ materia: a.titulo, seccion: 'personal', h: { dia: a.dia || a.fecha_iso, hora_ini: a.hora_ini, hora_fin: a.hora_fin, aula: a.sala || 'Sin sala', edificio: a.edificio || '', mapa_url: a.mapa_url } });
+      });
       rows.sort(function(a, b) { return dayOrder(a.h.dia) - dayOrder(b.h.dia) || String(a.h.hora_ini).localeCompare(String(b.h.hora_ini)); });
       var body = rows.map(function(r) {
-        return '<tr><td>' + esc(r.h.dia) + '</td><td>' + esc(r.h.hora_ini) + ' - ' + esc(r.h.hora_fin) + '</td><td><strong>' + esc(r.materia) + '</strong><div class="sub">Seccion ' + esc(r.seccion) + '</div></td><td>' + esc(r.h.aula) + '<div class="sub">' + esc(r.h.edificio || '') + '</div></td></tr>';
+        var map = r.h.mapa_url ? '<div class="sub"><a href="' + escAttr(r.h.mapa_url) + '" target="_blank">Ver mapa</a></div>' : '';
+        return '<tr><td>' + esc(r.h.dia) + '</td><td>' + esc(r.h.hora_ini) + ' - ' + esc(r.h.hora_fin) + '</td><td><strong>' + esc(r.materia) + '</strong><div class="sub">Seccion ' + esc(r.seccion) + '</div></td><td>' + esc(r.h.aula) + '<div class="sub">' + esc(r.h.edificio || '') + '</div>' + map + '</td></tr>';
       }).join('');
-      return head('Horario', 'Vista ordenada de clases y aulas asignadas.') +
+      return head('Horario', 'Vista ordenada de clases y aulas asignadas.', '<button class="btn btn-primary" onclick="openAgenda(null, \'clase\')">Agregar clase</button>') +
         '<div class="card card-pad schedule">' + (body ? '<table><thead><tr><th>Dia</th><th>Hora</th><th>Asignatura</th><th>Aula</th></tr></thead><tbody>' + body + '</tbody></table>' : '<div class="empty">Agrega materias para ver tu horario.</div>') + '</div>';
+    }
+
+    function renderAgenda() {
+      var rows = (State.data.agenda || []).map(function(a) {
+        var place = [a.sala, a.edificio].filter(Boolean).join(', ');
+        var map = a.mapa_url ? ' - mapa cargado' : '';
+        var sub = [a.tipo, a.nombre_asignatura, a.dia || a.fecha_iso, a.hora_ini + (a.hora_fin ? '-' + a.hora_fin : ''), place].filter(Boolean).join(' - ') + map;
+        return item(a.titulo, sub, '<button class="btn btn-outline btn-small" onclick="openAgenda(' + a.id_agenda + ')">Editar</button><button class="btn btn-danger btn-small" onclick="deleteAgenda(' + a.id_agenda + ')">Eliminar</button>');
+      }).join('') || '<div class="empty">Tu agenda esta vacia. Carga clases, examenes, reuniones o entregas.</div>';
+      return head('Agenda', 'Clases, examenes, entregas y reuniones con sala, edificio, mapa y alertas.', '<button class="btn btn-primary" onclick="openAgenda()">Nueva entrada</button>') +
+        '<section class="card card-pad"><h3>Alertas</h3>' + renderPrefsForm() + '</section>' +
+        '<div style="height:14px"></div><div class="card card-pad"><div class="list">' + rows + '</div></div>';
     }
 
     function renderNotas() {
@@ -550,6 +612,25 @@
         '<div class="card card-pad"><div class="list">' + rows + '</div></div>';
     }
 
+    function renderLecturas() {
+      var rows = (State.data.lecturas || []).map(function(l) {
+        var sub = [l.estado, l.prioridad, l.nombre_asignatura, l.fecha_objetivo_iso, l.fuente].filter(Boolean).join(' - ');
+        var actions = '<button class="btn btn-outline btn-small" onclick="openLectura(' + l.id_lectura + ')">Editar</button><button class="btn btn-danger btn-small" onclick="deleteLectura(' + l.id_lectura + ')">Eliminar</button>';
+        return item(l.titulo, sub, priorityBadge(l.prioridad) + actions);
+      }).join('') || '<div class="empty">Carga lecturas, guias, capitulos o enlaces para no perder el hilo.</div>';
+      return head('Lecturas', 'Planifica que leer, prioriza y marca el avance por asignatura.', '<button class="btn btn-primary" onclick="openLectura()">Nueva lectura</button>') +
+        '<div class="card card-pad"><div class="list reading-list">' + rows + '</div></div>';
+    }
+
+    function renderGrupos() {
+      var rows = (State.data.grupos || []).map(function(g) {
+        var sub = [g.nombre_asignatura, g.integrantes, g.canal, g.lugar, g.proxima_fecha_iso, g.proxima_hora, g.objetivo].filter(Boolean).join(' - ');
+        return item(g.nombre, sub, '<button class="btn btn-outline btn-small" onclick="openGrupo(' + g.id_grupo + ')">Editar</button><button class="btn btn-danger btn-small" onclick="deleteGrupo(' + g.id_grupo + ')">Eliminar</button>');
+      }).join('') || '<div class="empty">Crea grupos para coordinar repasos, laboratorios, examenes y entregas.</div>';
+      return head('Grupos', 'Organiza equipos de estudio con fecha, canal, lugar y objetivo de la proxima reunion.', '<button class="btn btn-primary" onclick="openGrupo()">Nuevo grupo</button>') +
+        '<div class="card card-pad"><div class="list">' + rows + '</div></div>';
+    }
+
     function renderRecordatorios() {
       var rows = State.data.eventos.map(function(e) {
         return item(e.titulo, [e.fecha_iso, e.hora, e.nombre_asignatura, e.descripcion].filter(Boolean).join(' - '), '<button class="btn btn-outline btn-small" onclick="openEvento(' + e.id_evento + ')">Editar</button><button class="btn btn-danger btn-small" onclick="deleteEvento(' + e.id_evento + ')">Eliminar</button>');
@@ -569,15 +650,57 @@
         '<button class="btn btn-primary">Guardar perfil</button></form>';
     }
 
+    function renderPrefsForm() {
+      var p = State.data.preferencias || {};
+      return '<form class="form" onsubmit="savePreferencias(event)">' +
+        '<div class="grid grid-4">' +
+        prefToggle('alertas_clases', 'Clases', p.alertas_clases, 'minutos_clases', p.minutos_clases || 15) +
+        prefToggle('alertas_examenes', 'Examenes', p.alertas_examenes, 'minutos_examenes', p.minutos_examenes || 60) +
+        prefToggle('alertas_reuniones', 'Reuniones', p.alertas_reuniones, 'minutos_reuniones', p.minutos_reuniones || 20) +
+        prefToggle('alertas_entregas', 'Entregas', p.alertas_entregas, 'minutos_entregas', p.minutos_entregas || 120) +
+        '</div><button class="btn btn-primary">Guardar alertas</button></form>';
+    }
+
+    function prefToggle(name, label, active, minutesName, minutes) {
+      return '<div class="field"><label><input type="checkbox" name="' + name + '"' + (String(active) !== '0' ? ' checked' : '') + '> ' + label + '</label><input class="input" type="number" min="0" name="' + minutesName + '" value="' + escAttr(minutes) + '" placeholder="Minutos antes"></div>';
+    }
+
     function head(title, desc, action) {
       return '<div class="page-head"><div><h2>' + title + '</h2><p>' + desc + '</p></div><div>' + (action || '') + '</div></div>';
     }
     function metric(label, value) { return '<div class="card card-pad metric"><span>' + label + '</span><strong>' + value + '</strong></div>'; }
     function item(title, sub, action) { return '<div class="item"><div class="item-main"><div class="title">' + esc(title) + '</div><div class="sub">' + esc(sub).replace(/\n/g, '<br>') + '</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;">' + (action || '') + '</div></div>'; }
+    function compact(title, sub, action) { return '<div class="compact"><div><div class="title">' + esc(title) + '</div><div class="sub">' + esc(sub) + '</div></div><div>' + (action || '') + '</div></div>'; }
     function badge(text) { return '<span class="badge">' + esc(text) + '</span>'; }
+    function priorityBadge(text) {
+      var t = text || 'Media';
+      var cls = String(t).toLowerCase() === 'alta' ? ' badge-danger' : (String(t).toLowerCase() === 'media' ? ' badge-warn' : '');
+      return '<span class="badge' + cls + '">' + esc(t) + '</span>';
+    }
 
-    function inscribir(id) { server('inscribirSeccion', [State.token, id], function() { toast('Materia agregada', 'ok'); loadApp(); }); }
-    function quitarMateria(id) { if (confirm('Quitar esta asignatura?')) server('quitarInscripcion', [State.token, id], function() { loadApp(); }); }
+    function busyButton(evt, text) {
+      var btn = evt && evt.currentTarget;
+      if (btn) {
+        btn.dataset.oldText = btn.textContent;
+        btn.textContent = text || 'Guardando...';
+        btn.disabled = true;
+      }
+      return btn;
+    }
+    function releaseButton(btn) {
+      if (!btn) return;
+      btn.textContent = btn.dataset.oldText || btn.textContent;
+      btn.disabled = false;
+    }
+
+    function inscribir(evt, id) {
+      var btn = busyButton(evt, 'Agregando...');
+      server('inscribirSeccion', [State.token, id], function() {
+        toast('Materia agregada', 'ok');
+        loadApp();
+      }, function() { releaseButton(btn); });
+    }
+    function quitarMateria(id) { if (confirm('Quitar esta asignatura?')) server('quitarInscripcion', [State.token, id], function() { toast('Materia quitada', 'ok'); loadApp(); }); }
 
     function openNota(idInscripcion) {
       var n = State.data.notas.find(function(x) { return x.id_inscripcion == idInscripcion; }) || {};
@@ -619,9 +742,66 @@
     function saveEvento() { server('guardarEvento', [State.token, formData(document.getElementById('evento-form'))], function() { closeModal(); loadApp(); }); }
     function deleteEvento(id) { if (confirm('Eliminar recordatorio?')) server('eliminarEvento', [State.token, id], function() { loadApp(); }); }
 
+    function openLectura(id) {
+      var l = id ? State.data.lecturas.find(function(x) { return x.id_lectura == id; }) : {};
+      l = l || {};
+      openModal(id ? 'Editar lectura' : 'Nueva lectura', '<form id="lectura-form" class="form">' +
+        '<input type="hidden" name="id_lectura" value="' + escAttr(l.id_lectura) + '">' +
+        '<div class="field"><label>Titulo</label><input class="input" name="titulo" value="' + escAttr(l.titulo) + '" required></div>' +
+        '<div class="grid grid-2"><div class="field"><label>Asignatura</label><select class="select" name="id_asignatura">' + subjectOptions(l.id_asignatura) + '</select></div><div class="field"><label>Fuente</label><input class="input" name="fuente" value="' + escAttr(l.fuente) + '" placeholder="Libro, guia, paper, link"></div></div>' +
+        '<div class="grid grid-3"><div class="field"><label>Estado</label><select class="select" name="estado">' + options(['Pendiente','En progreso','Completada'], l.estado || 'Pendiente') + '</select></div><div class="field"><label>Prioridad</label><select class="select" name="prioridad">' + options(['Alta','Media','Baja'], l.prioridad || 'Media') + '</select></div><div class="field"><label>Fecha objetivo</label><input class="input" name="fecha_objetivo" type="date" value="' + escAttr(l.fecha_objetivo_iso) + '"></div></div>' +
+        '<div class="field"><label>URL</label><input class="input" name="url" value="' + escAttr(l.url) + '" placeholder="https://"></div>' +
+        '<div class="field"><label>Notas de lectura</label><textarea class="textarea" name="notas">' + esc(l.notas) + '</textarea></div></form>',
+        '<button class="btn btn-primary" onclick="saveLectura()">Guardar</button>');
+    }
+    function saveLectura() { server('guardarLectura', [State.token, formData(document.getElementById('lectura-form'))], function() { closeModal(); toast('Lectura guardada', 'ok'); loadApp(); }); }
+    function deleteLectura(id) { if (confirm('Eliminar lectura?')) server('eliminarLectura', [State.token, id], function() { toast('Lectura eliminada', 'ok'); loadApp(); }); }
+
+    function openGrupo(id) {
+      var g = id ? State.data.grupos.find(function(x) { return x.id_grupo == id; }) : {};
+      g = g || {};
+      openModal(id ? 'Editar grupo' : 'Nuevo grupo', '<form id="grupo-form" class="form">' +
+        '<input type="hidden" name="id_grupo" value="' + escAttr(g.id_grupo) + '">' +
+        '<div class="field"><label>Nombre</label><input class="input" name="nombre" value="' + escAttr(g.nombre) + '" required></div>' +
+        '<div class="grid grid-2"><div class="field"><label>Asignatura</label><select class="select" name="id_asignatura">' + subjectOptions(g.id_asignatura) + '</select></div><div class="field"><label>Estado</label><select class="select" name="estado">' + options(['Activo','Pausado','Cerrado'], g.estado || 'Activo') + '</select></div></div>' +
+        '<div class="field"><label>Integrantes</label><input class="input" name="integrantes" value="' + escAttr(g.integrantes) + '" placeholder="Nombres separados por coma"></div>' +
+        '<div class="grid grid-2"><div class="field"><label>Canal</label><input class="input" name="canal" value="' + escAttr(g.canal) + '" placeholder="WhatsApp, Meet, Classroom"></div><div class="field"><label>Lugar</label><input class="input" name="lugar" value="' + escAttr(g.lugar) + '"></div></div>' +
+        '<div class="grid grid-2"><div class="field"><label>Proxima fecha</label><input class="input" name="proxima_fecha" type="date" value="' + escAttr(g.proxima_fecha_iso) + '"></div><div class="field"><label>Hora</label><input class="input" name="proxima_hora" type="time" value="' + escAttr(g.proxima_hora) + '"></div></div>' +
+        '<div class="field"><label>Objetivo de la proxima reunion</label><textarea class="textarea" name="objetivo">' + esc(g.objetivo) + '</textarea></div></form>',
+        '<button class="btn btn-primary" onclick="saveGrupo()">Guardar</button>');
+    }
+    function saveGrupo() { server('guardarGrupo', [State.token, formData(document.getElementById('grupo-form'))], function() { closeModal(); toast('Grupo guardado', 'ok'); loadApp(); }); }
+    function deleteGrupo(id) { if (confirm('Eliminar grupo?')) server('eliminarGrupo', [State.token, id], function() { toast('Grupo eliminado', 'ok'); loadApp(); }); }
+
+    function openAgenda(id, tipo) {
+      var a = id ? State.data.agenda.find(function(x) { return x.id_agenda == id; }) : {};
+      a = a || { tipo: tipo || 'clase', alerta_activa: 1, minutos_antes: 15 };
+      openModal(id ? 'Editar agenda' : 'Nueva agenda', '<form id="agenda-form" class="form">' +
+        '<input type="hidden" name="id_agenda" value="' + escAttr(a.id_agenda) + '">' +
+        '<div class="grid grid-2"><div class="field"><label>Tipo</label><select class="select" name="tipo">' + options(['clase','examen','reunion','entrega'], a.tipo || 'clase') + '</select></div><div class="field"><label>Asignatura</label><select class="select" name="id_asignatura">' + subjectOptions(a.id_asignatura) + '</select></div></div>' +
+        '<div class="field"><label>Titulo</label><input class="input" name="titulo" value="' + escAttr(a.titulo) + '" required></div>' +
+        '<div class="grid grid-3"><div class="field"><label>Dia recurrente</label><select class="select" name="dia"><option value="">Usar fecha</option>' + options(['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'], a.dia) + '</select></div><div class="field"><label>Fecha puntual</label><input class="input" name="fecha" type="date" value="' + escAttr(a.fecha_iso) + '"></div><div class="field"><label>Alerta</label><select class="select" name="alerta_activa">' + options(['1','0'], String(a.alerta_activa == 0 ? 0 : 1)) + '</select></div></div>' +
+        '<div class="grid grid-3"><div class="field"><label>Inicio</label><input class="input" name="hora_ini" type="time" value="' + escAttr(a.hora_ini) + '"></div><div class="field"><label>Fin</label><input class="input" name="hora_fin" type="time" value="' + escAttr(a.hora_fin) + '"></div><div class="field"><label>Minutos antes</label><input class="input" name="minutos_antes" type="number" min="0" value="' + escAttr(a.minutos_antes || 15) + '"></div></div>' +
+        '<div class="grid grid-2"><div class="field"><label>Sala o aula</label><input class="input" name="sala" value="' + escAttr(a.sala) + '" placeholder="Aula 101, Lab Bio 2"></div><div class="field"><label>Edificio</label><input class="input" name="edificio" value="' + escAttr(a.edificio) + '" placeholder="Bloque A, Central"></div></div>' +
+        '<div class="field"><label>Mapa o ubicacion</label><input class="input" name="mapa_url" value="' + escAttr(a.mapa_url) + '" placeholder="Link de Google Maps o plano FACEN"></div>' +
+        '<div class="field"><label>Notas</label><textarea class="textarea" name="notas">' + esc(a.notas) + '</textarea></div></form>',
+        '<button class="btn btn-primary" onclick="saveAgenda()">Guardar</button>');
+    }
+    function saveAgenda() {
+      var data = formData(document.getElementById('agenda-form'));
+      data.alerta_activa = data.alerta_activa !== '0';
+      server('guardarAgenda', [State.token, data], function() { closeModal(); toast('Agenda guardada', 'ok'); loadApp(); });
+    }
+    function deleteAgenda(id) { if (confirm('Eliminar esta entrada?')) server('eliminarAgenda', [State.token, id], function() { toast('Entrada eliminada', 'ok'); loadApp(); }); }
+
     function savePerfil(e) {
       e.preventDefault();
       server('guardarPerfil', [State.token, formData(e.target)], function() { toast('Perfil guardado', 'ok'); loadApp(); });
+    }
+
+    function savePreferencias(e) {
+      e.preventDefault();
+      server('guardarPreferencias', [State.token, formData(e.target)], function() { toast('Alertas guardadas', 'ok'); loadApp(); });
     }
 
     function subjectOptions(selected) {

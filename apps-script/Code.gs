@@ -19,6 +19,10 @@ var CONFIG = {
     NOTAS: 'NOTAS',
     APUNTES: 'APUNTES',
     EVENTOS: 'EVENTOS_PERSONALES',
+    LECTURAS: 'LECTURAS',
+    GRUPOS: 'GRUPOS_ESTUDIO',
+    AGENDA: 'AGENDA_ACADEMICA',
+    PREFERENCIAS: 'PREFERENCIAS_ESTUDIANTE',
     LOGS: 'LOGS'
   },
   ROLES: {
@@ -39,8 +43,15 @@ var SCHEMA = {
   NOTAS: ['id_nota', 'id_inscripcion', 'parcial1', 'parcial2', 'trabajos', 'final', 'promedio', 'estado', 'observaciones', 'fecha_modificacion'],
   APUNTES: ['id_apunte', 'id_estudiante', 'id_asignatura', 'tipo', 'titulo', 'contenido', 'fecha_creacion', 'fecha_modificacion'],
   EVENTOS_PERSONALES: ['id_evento', 'id_estudiante', 'id_asignatura', 'titulo', 'descripcion', 'fecha', 'hora', 'tipo', 'completado'],
+  LECTURAS: ['id_lectura', 'id_estudiante', 'id_asignatura', 'titulo', 'fuente', 'url', 'estado', 'prioridad', 'fecha_objetivo', 'notas', 'fecha_creacion', 'fecha_modificacion'],
+  GRUPOS_ESTUDIO: ['id_grupo', 'id_estudiante', 'id_asignatura', 'nombre', 'integrantes', 'canal', 'lugar', 'proxima_fecha', 'proxima_hora', 'objetivo', 'estado', 'fecha_creacion', 'fecha_modificacion'],
+  AGENDA_ACADEMICA: ['id_agenda', 'id_estudiante', 'id_asignatura', 'tipo', 'titulo', 'dia', 'fecha', 'hora_ini', 'hora_fin', 'sala', 'edificio', 'mapa_url', 'notas', 'alerta_activa', 'minutos_antes', 'activo', 'fecha_creacion', 'fecha_modificacion'],
+  PREFERENCIAS_ESTUDIANTE: ['id_preferencia', 'id_estudiante', 'alertas_clases', 'alertas_examenes', 'alertas_reuniones', 'alertas_entregas', 'minutos_clases', 'minutos_examenes', 'minutos_reuniones', 'minutos_entregas', 'instalacion_pwa', 'fecha_modificacion'],
   LOGS: ['id_log', 'fecha', 'id_usuario', 'accion', 'detalle']
 };
+
+var ROW_CACHE_ = {};
+var SHEET_CACHE_ = {};
 
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('index')
@@ -60,6 +71,13 @@ function setupFacenAppV3() {
   });
   seedCatalog_();
   return { success: true, message: 'FACEN App v3 inicializada.' };
+}
+
+function setupFacenAppV4() {
+  var result = setupFacenAppV3();
+  clearCatalogCache_();
+  result.message = 'FACEN App v4 inicializada con lecturas, grupos y cache.';
+  return result;
 }
 
 function registrarEstudiante(datos) {
@@ -159,22 +177,45 @@ function verificarSesion(token) {
 function obtenerBootstrap(token) {
   var session = requireSession_(token);
   var perfil = getPerfilByUser_(session.id_usuario);
-  var catalogo = obtenerCatalogo(token);
+  var catalogo = obtenerCatalogo_(true);
+  var inscripciones = obtenerMisInscripciones_(perfil.id_estudiante);
+  var notas = obtenerMisNotas_(perfil.id_estudiante, inscripciones);
+  var apuntes = obtenerMisApuntes_(perfil.id_estudiante);
+  var eventos = obtenerMisEventos_(perfil.id_estudiante);
+  var lecturas = obtenerMisLecturas_(perfil.id_estudiante);
+  var grupos = obtenerMisGrupos_(perfil.id_estudiante);
+  var agenda = obtenerMiAgenda_(perfil.id_estudiante);
+  var preferencias = obtenerPreferencias_(perfil.id_estudiante);
   return {
     success: true,
     user: publicUser_(session.id_usuario, session.rol),
     perfil: perfil,
-    catalogo: catalogo.catalogo,
-    inscripciones: obtenerMisInscripciones_(perfil.id_estudiante),
-    notas: obtenerMisNotas_(perfil.id_estudiante),
-    apuntes: obtenerMisApuntes_(perfil.id_estudiante),
-    eventos: obtenerMisEventos_(perfil.id_estudiante),
-    resumen: resumen_(perfil.id_estudiante)
+    catalogo: catalogo,
+    inscripciones: inscripciones,
+    notas: notas,
+    apuntes: apuntes,
+    eventos: eventos,
+    lecturas: lecturas,
+    grupos: grupos,
+    agenda: agenda,
+    preferencias: preferencias,
+    resumen: resumen_(perfil.id_estudiante, inscripciones, notas, apuntes, eventos, lecturas, grupos, agenda)
   };
 }
 
 function obtenerCatalogo(token) {
   requireSession_(token);
+  return { success: true, catalogo: obtenerCatalogo_(true) };
+}
+
+function obtenerCatalogo_(useCache) {
+  var cacheKey = 'facen_v4_catalogo';
+  if (useCache !== false) {
+    try {
+      var cached = CacheService.getScriptCache().get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+  }
   var aulas = indexBy_(getRows_(CONFIG.SHEETS.AULAS), 'id_aula');
   var horarios = getRows_(CONFIG.SHEETS.HORARIOS);
   var secciones = getRows_(CONFIG.SHEETS.SECCIONES).filter(function(s) { return s.activo != 0; });
@@ -191,12 +232,16 @@ function obtenerCatalogo(token) {
     a.secciones = seccionesByAsig[a.id_asignatura] || [];
     return a;
   });
-  return { success: true, catalogo: asignaturas };
+  try {
+    CacheService.getScriptCache().put(cacheKey, JSON.stringify(asignaturas), 600);
+  } catch (e) {}
+  return asignaturas;
 }
 
 function guardarPerfil(token, datos) {
   var session = requireSession_(token);
   var perfil = getPerfilByUser_(session.id_usuario);
+  datos = normalizePayload_(datos);
   updateRowById_(CONFIG.SHEETS.ESTUDIANTES, 'id_estudiante', perfil.id_estudiante, {
     nombres: trim_(datos.nombres),
     apellidos: trim_(datos.apellidos),
@@ -266,6 +311,7 @@ function quitarInscripcion(token, idInscripcion) {
 function guardarNota(token, idInscripcion, datos) {
   var session = requireSession_(token);
   var perfil = getPerfilByUser_(session.id_usuario);
+  datos = normalizePayload_(datos);
   if (!getOwnedInscripcion_(perfil.id_estudiante, idInscripcion)) return fail_('No podes editar esta nota.');
   var nota = getRows_(CONFIG.SHEETS.NOTAS).find(function(n) { return n.id_inscripcion == idInscripcion; });
   if (!nota) return fail_('Nota no encontrada.');
@@ -287,7 +333,7 @@ function guardarNota(token, idInscripcion, datos) {
 function guardarApunte(token, datos) {
   var session = requireSession_(token);
   var perfil = getPerfilByUser_(session.id_usuario);
-  datos = datos || {};
+  datos = normalizePayload_(datos);
   if (!datos.titulo) return fail_('Agrega un titulo.');
   var idAsignatura = datos.id_asignatura ? Number(datos.id_asignatura) : '';
   if (idAsignatura && !estudianteCursaAsignatura_(perfil.id_estudiante, idAsignatura)) return fail_('Solo podes asociar apuntes a tus asignaturas.');
@@ -325,6 +371,7 @@ function eliminarApunte(token, idApunte) {
   var row = findRow_(CONFIG.SHEETS.APUNTES, function(a) { return a.id_apunte == idApunte && a.id_estudiante == perfil.id_estudiante; });
   if (row < 0) return fail_('Apunte no encontrado.');
   getSheet_(CONFIG.SHEETS.APUNTES).deleteRow(row);
+  clearRows_(CONFIG.SHEETS.APUNTES);
   log_(session.id_usuario, 'APUNTE_DELETE', String(idApunte));
   return { success: true };
 }
@@ -332,7 +379,7 @@ function eliminarApunte(token, idApunte) {
 function guardarEvento(token, datos) {
   var session = requireSession_(token);
   var perfil = getPerfilByUser_(session.id_usuario);
-  datos = datos || {};
+  datos = normalizePayload_(datos);
   if (!datos.titulo || !datos.fecha) return fail_('Agrega titulo y fecha.');
   var idAsignatura = datos.id_asignatura ? Number(datos.id_asignatura) : '';
   if (idAsignatura && !estudianteCursaAsignatura_(perfil.id_estudiante, idAsignatura)) return fail_('Evento fuera de tus asignaturas.');
@@ -371,8 +418,173 @@ function eliminarEvento(token, idEvento) {
   var row = findRow_(CONFIG.SHEETS.EVENTOS, function(e) { return e.id_evento == idEvento && e.id_estudiante == perfil.id_estudiante; });
   if (row < 0) return fail_('Evento no encontrado.');
   getSheet_(CONFIG.SHEETS.EVENTOS).deleteRow(row);
+  clearRows_(CONFIG.SHEETS.EVENTOS);
   log_(session.id_usuario, 'EVENTO_DELETE', String(idEvento));
   return { success: true };
+}
+
+function guardarLectura(token, datos) {
+  var session = requireSession_(token);
+  var perfil = getPerfilByUser_(session.id_usuario);
+  datos = normalizePayload_(datos);
+  if (!datos.titulo) return fail_('Agrega un titulo para la lectura.');
+  var idAsignatura = datos.id_asignatura ? Number(datos.id_asignatura) : '';
+  if (idAsignatura && !estudianteCursaAsignatura_(perfil.id_estudiante, idAsignatura)) return fail_('Solo podes asociar lecturas a tus asignaturas.');
+  var values = {
+    id_asignatura: idAsignatura,
+    titulo: trim_(datos.titulo),
+    fuente: trim_(datos.fuente),
+    url: trim_(datos.url),
+    estado: trim_(datos.estado || 'Pendiente'),
+    prioridad: trim_(datos.prioridad || 'Media'),
+    fecha_objetivo: datos.fecha_objetivo ? new Date(datos.fecha_objetivo) : '',
+    notas: trim_(datos.notas),
+    fecha_modificacion: now_()
+  };
+  if (datos.id_lectura) {
+    var row = findRow_(CONFIG.SHEETS.LECTURAS, function(l) { return l.id_lectura == datos.id_lectura && l.id_estudiante == perfil.id_estudiante; });
+    if (row < 0) return fail_('Lectura no encontrada.');
+    updateRowById_(CONFIG.SHEETS.LECTURAS, 'id_lectura', datos.id_lectura, values);
+  } else {
+    values.id_lectura = nextId_(CONFIG.SHEETS.LECTURAS);
+    values.id_estudiante = perfil.id_estudiante;
+    values.fecha_creacion = now_();
+    appendObject_(CONFIG.SHEETS.LECTURAS, values);
+  }
+  log_(session.id_usuario, 'LECTURA', values.titulo);
+  return { success: true, message: 'Lectura guardada.' };
+}
+
+function eliminarLectura(token, idLectura) {
+  var session = requireSession_(token);
+  var perfil = getPerfilByUser_(session.id_usuario);
+  var row = findRow_(CONFIG.SHEETS.LECTURAS, function(l) { return l.id_lectura == idLectura && l.id_estudiante == perfil.id_estudiante; });
+  if (row < 0) return fail_('Lectura no encontrada.');
+  getSheet_(CONFIG.SHEETS.LECTURAS).deleteRow(row);
+  clearRows_(CONFIG.SHEETS.LECTURAS);
+  log_(session.id_usuario, 'LECTURA_DELETE', String(idLectura));
+  return { success: true };
+}
+
+function guardarGrupo(token, datos) {
+  var session = requireSession_(token);
+  var perfil = getPerfilByUser_(session.id_usuario);
+  datos = normalizePayload_(datos);
+  if (!datos.nombre) return fail_('Agrega un nombre para el grupo.');
+  var idAsignatura = datos.id_asignatura ? Number(datos.id_asignatura) : '';
+  if (idAsignatura && !estudianteCursaAsignatura_(perfil.id_estudiante, idAsignatura)) return fail_('Solo podes asociar grupos a tus asignaturas.');
+  var values = {
+    id_asignatura: idAsignatura,
+    nombre: trim_(datos.nombre),
+    integrantes: trim_(datos.integrantes),
+    canal: trim_(datos.canal),
+    lugar: trim_(datos.lugar),
+    proxima_fecha: datos.proxima_fecha ? new Date(datos.proxima_fecha) : '',
+    proxima_hora: trim_(datos.proxima_hora),
+    objetivo: trim_(datos.objetivo),
+    estado: trim_(datos.estado || 'Activo'),
+    fecha_modificacion: now_()
+  };
+  if (datos.id_grupo) {
+    var row = findRow_(CONFIG.SHEETS.GRUPOS, function(g) { return g.id_grupo == datos.id_grupo && g.id_estudiante == perfil.id_estudiante; });
+    if (row < 0) return fail_('Grupo no encontrado.');
+    updateRowById_(CONFIG.SHEETS.GRUPOS, 'id_grupo', datos.id_grupo, values);
+  } else {
+    values.id_grupo = nextId_(CONFIG.SHEETS.GRUPOS);
+    values.id_estudiante = perfil.id_estudiante;
+    values.fecha_creacion = now_();
+    appendObject_(CONFIG.SHEETS.GRUPOS, values);
+  }
+  log_(session.id_usuario, 'GRUPO', values.nombre);
+  return { success: true, message: 'Grupo guardado.' };
+}
+
+function eliminarGrupo(token, idGrupo) {
+  var session = requireSession_(token);
+  var perfil = getPerfilByUser_(session.id_usuario);
+  var row = findRow_(CONFIG.SHEETS.GRUPOS, function(g) { return g.id_grupo == idGrupo && g.id_estudiante == perfil.id_estudiante; });
+  if (row < 0) return fail_('Grupo no encontrado.');
+  getSheet_(CONFIG.SHEETS.GRUPOS).deleteRow(row);
+  clearRows_(CONFIG.SHEETS.GRUPOS);
+  log_(session.id_usuario, 'GRUPO_DELETE', String(idGrupo));
+  return { success: true };
+}
+
+function guardarAgenda(token, datos) {
+  var session = requireSession_(token);
+  var perfil = getPerfilByUser_(session.id_usuario);
+  datos = normalizePayload_(datos);
+  if (!datos.titulo || !datos.tipo) return fail_('Agrega tipo y titulo.');
+  if (!datos.dia && !datos.fecha) return fail_('Agrega un dia recurrente o una fecha.');
+  var idAsignatura = datos.id_asignatura ? Number(datos.id_asignatura) : '';
+  if (idAsignatura && !estudianteCursaAsignatura_(perfil.id_estudiante, idAsignatura)) return fail_('Solo podes asociar agenda a tus asignaturas.');
+  var values = {
+    id_asignatura: idAsignatura,
+    tipo: trim_(datos.tipo || 'clase'),
+    titulo: trim_(datos.titulo),
+    dia: trim_(datos.dia),
+    fecha: datos.fecha ? new Date(datos.fecha) : '',
+    hora_ini: trim_(datos.hora_ini),
+    hora_fin: trim_(datos.hora_fin),
+    sala: trim_(datos.sala),
+    edificio: trim_(datos.edificio),
+    mapa_url: trim_(datos.mapa_url),
+    notas: trim_(datos.notas),
+    alerta_activa: datos.alerta_activa ? 1 : 0,
+    minutos_antes: numberOr_(datos.minutos_antes, 15),
+    activo: 1,
+    fecha_modificacion: now_()
+  };
+  if (datos.id_agenda) {
+    var row = findRow_(CONFIG.SHEETS.AGENDA, function(a) { return a.id_agenda == datos.id_agenda && a.id_estudiante == perfil.id_estudiante && a.activo != 0; });
+    if (row < 0) return fail_('Entrada de agenda no encontrada.');
+    updateRowById_(CONFIG.SHEETS.AGENDA, 'id_agenda', datos.id_agenda, values);
+  } else {
+    values.id_agenda = nextId_(CONFIG.SHEETS.AGENDA);
+    values.id_estudiante = perfil.id_estudiante;
+    values.fecha_creacion = now_();
+    appendObject_(CONFIG.SHEETS.AGENDA, values);
+  }
+  log_(session.id_usuario, 'AGENDA', values.tipo + ': ' + values.titulo);
+  return { success: true, message: 'Agenda guardada.' };
+}
+
+function eliminarAgenda(token, idAgenda) {
+  var session = requireSession_(token);
+  var perfil = getPerfilByUser_(session.id_usuario);
+  var row = findRow_(CONFIG.SHEETS.AGENDA, function(a) { return a.id_agenda == idAgenda && a.id_estudiante == perfil.id_estudiante && a.activo != 0; });
+  if (row < 0) return fail_('Entrada no encontrada.');
+  updateRowById_(CONFIG.SHEETS.AGENDA, 'id_agenda', idAgenda, { activo: 0, fecha_modificacion: now_() });
+  log_(session.id_usuario, 'AGENDA_DELETE', String(idAgenda));
+  return { success: true };
+}
+
+function guardarPreferencias(token, datos) {
+  var session = requireSession_(token);
+  var perfil = getPerfilByUser_(session.id_usuario);
+  datos = normalizePayload_(datos);
+  var values = {
+    alertas_clases: datos.alertas_clases ? 1 : 0,
+    alertas_examenes: datos.alertas_examenes ? 1 : 0,
+    alertas_reuniones: datos.alertas_reuniones ? 1 : 0,
+    alertas_entregas: datos.alertas_entregas ? 1 : 0,
+    minutos_clases: numberOr_(datos.minutos_clases, 15),
+    minutos_examenes: numberOr_(datos.minutos_examenes, 60),
+    minutos_reuniones: numberOr_(datos.minutos_reuniones, 20),
+    minutos_entregas: numberOr_(datos.minutos_entregas, 120),
+    instalacion_pwa: datos.instalacion_pwa ? 1 : 0,
+    fecha_modificacion: now_()
+  };
+  var pref = getRows_(CONFIG.SHEETS.PREFERENCIAS).find(function(p) { return p.id_estudiante == perfil.id_estudiante; });
+  if (pref) {
+    updateRowById_(CONFIG.SHEETS.PREFERENCIAS, 'id_preferencia', pref.id_preferencia, values);
+  } else {
+    values.id_preferencia = nextId_(CONFIG.SHEETS.PREFERENCIAS);
+    values.id_estudiante = perfil.id_estudiante;
+    appendObject_(CONFIG.SHEETS.PREFERENCIAS, values);
+  }
+  log_(session.id_usuario, 'PREFERENCIAS', 'Alertas actualizadas');
+  return { success: true, message: 'Preferencias guardadas.' };
 }
 
 function obtenerMisInscripciones_(idEstudiante) {
@@ -398,8 +610,8 @@ function obtenerMisInscripciones_(idEstudiante) {
   });
 }
 
-function obtenerMisNotas_(idEstudiante) {
-  var inscripciones = obtenerMisInscripciones_(idEstudiante);
+function obtenerMisNotas_(idEstudiante, inscripciones) {
+  inscripciones = inscripciones || obtenerMisInscripciones_(idEstudiante);
   var inscById = indexBy_(inscripciones, 'id_inscripcion');
   return getRows_(CONFIG.SHEETS.NOTAS).filter(function(n) {
     return !!inscById[n.id_inscripcion];
@@ -410,6 +622,63 @@ function obtenerMisNotas_(idEstudiante) {
     n.id_asignatura = i.id_asignatura;
     return n;
   });
+}
+
+function obtenerMisLecturas_(idEstudiante) {
+  var asignaturas = indexBy_(getRows_(CONFIG.SHEETS.ASIGNATURAS), 'id_asignatura');
+  return getRows_(CONFIG.SHEETS.LECTURAS).filter(function(l) {
+    return l.id_estudiante == idEstudiante;
+  }).map(function(l) {
+    l.nombre_asignatura = l.id_asignatura ? ((asignaturas[l.id_asignatura] || {}).nombre_asignatura || '') : '';
+    l.fecha_objetivo_iso = isoDate_(l.fecha_objetivo);
+    return l;
+  }).sort(function(a, b) {
+    var pa = priorityRank_(a.prioridad);
+    var pb = priorityRank_(b.prioridad);
+    return pa - pb || new Date(a.fecha_objetivo || '2999-12-31') - new Date(b.fecha_objetivo || '2999-12-31');
+  });
+}
+
+function obtenerMisGrupos_(idEstudiante) {
+  var asignaturas = indexBy_(getRows_(CONFIG.SHEETS.ASIGNATURAS), 'id_asignatura');
+  return getRows_(CONFIG.SHEETS.GRUPOS).filter(function(g) {
+    return g.id_estudiante == idEstudiante;
+  }).map(function(g) {
+    g.nombre_asignatura = g.id_asignatura ? ((asignaturas[g.id_asignatura] || {}).nombre_asignatura || '') : '';
+    g.proxima_fecha_iso = isoDate_(g.proxima_fecha);
+    return g;
+  }).sort(function(a, b) {
+    return new Date(a.proxima_fecha || '2999-12-31') - new Date(b.proxima_fecha || '2999-12-31');
+  });
+}
+
+function obtenerMiAgenda_(idEstudiante) {
+  var asignaturas = indexBy_(getRows_(CONFIG.SHEETS.ASIGNATURAS), 'id_asignatura');
+  return getRows_(CONFIG.SHEETS.AGENDA).filter(function(a) {
+    return a.id_estudiante == idEstudiante && a.activo != 0;
+  }).map(function(a) {
+    a.nombre_asignatura = a.id_asignatura ? ((asignaturas[a.id_asignatura] || {}).nombre_asignatura || '') : '';
+    a.fecha_iso = isoDate_(a.fecha);
+    return a;
+  }).sort(function(a, b) {
+    return agendaRank_(a) - agendaRank_(b) || String(a.hora_ini || '').localeCompare(String(b.hora_ini || ''));
+  });
+}
+
+function obtenerPreferencias_(idEstudiante) {
+  var pref = getRows_(CONFIG.SHEETS.PREFERENCIAS).find(function(p) { return p.id_estudiante == idEstudiante; });
+  if (pref) return pref;
+  return {
+    alertas_clases: 1,
+    alertas_examenes: 1,
+    alertas_reuniones: 1,
+    alertas_entregas: 1,
+    minutos_clases: 15,
+    minutos_examenes: 60,
+    minutos_reuniones: 20,
+    minutos_entregas: 120,
+    instalacion_pwa: 0
+  };
 }
 
 function obtenerMisApuntes_(idEstudiante) {
@@ -437,9 +706,14 @@ function obtenerMisEventos_(idEstudiante) {
   });
 }
 
-function resumen_(idEstudiante) {
-  var inscripciones = obtenerMisInscripciones_(idEstudiante);
-  var notas = obtenerMisNotas_(idEstudiante);
+function resumen_(idEstudiante, inscripciones, notas, apuntes, eventos, lecturas, grupos, agenda) {
+  inscripciones = inscripciones || obtenerMisInscripciones_(idEstudiante);
+  notas = notas || obtenerMisNotas_(idEstudiante, inscripciones);
+  apuntes = apuntes || obtenerMisApuntes_(idEstudiante);
+  eventos = eventos || obtenerMisEventos_(idEstudiante);
+  lecturas = lecturas || obtenerMisLecturas_(idEstudiante);
+  grupos = grupos || obtenerMisGrupos_(idEstudiante);
+  agenda = agenda || obtenerMiAgenda_(idEstudiante);
   var hoy = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'][new Date().getDay()];
   var clasesHoy = [];
   inscripciones.forEach(function(i) {
@@ -452,7 +726,12 @@ function resumen_(idEstudiante) {
     totalAsignaturas: inscripciones.length,
     promedio: promedio_(promedios) || 0,
     aprobadas: notas.filter(function(n) { return n.estado === 'Aprobada'; }).length,
-    clasesHoy: clasesHoy
+    clasesHoy: clasesHoy,
+    pendientes: eventos.filter(function(e) { return !e.completado; }).length,
+    lecturasPendientes: lecturas.filter(function(l) { return String(l.estado || '').toLowerCase() !== 'completada'; }).length,
+    gruposActivos: grupos.filter(function(g) { return String(g.estado || '').toLowerCase() !== 'cerrado'; }).length,
+    agendaActiva: agenda.length,
+    apuntes: apuntes.length
   };
 }
 
@@ -509,29 +788,42 @@ function getSpreadsheet_() {
 }
 
 function getSheet_(name) {
+  if (SHEET_CACHE_[name]) return SHEET_CACHE_[name];
   var sheet = getSpreadsheet_().getSheetByName(name);
-  if (!sheet) throw new Error('Falta la hoja ' + name + '. Ejecuta setupFacenAppV3().');
+  if (!sheet && SCHEMA[name]) {
+    sheet = getSpreadsheet_().insertSheet(name);
+    sheet.getRange(1, 1, 1, SCHEMA[name].length).setValues([SCHEMA[name]]);
+    styleHeader_(sheet, SCHEMA[name].length);
+  }
+  if (!sheet) throw new Error('Falta la hoja ' + name + '. Ejecuta setupFacenAppV4().');
+  SHEET_CACHE_[name] = sheet;
   return sheet;
 }
 
 function getRows_(name) {
+  if (ROW_CACHE_[name]) return ROW_CACHE_[name];
   var sheet = getSheet_(name);
   var values = sheet.getDataRange().getValues();
-  if (values.length < 2) return [];
+  if (values.length < 2) {
+    ROW_CACHE_[name] = [];
+    return ROW_CACHE_[name];
+  }
   var headers = values[0];
-  return values.slice(1).filter(function(row) {
+  ROW_CACHE_[name] = values.slice(1).filter(function(row) {
     return row.some(function(v) { return v !== ''; });
   }).map(function(row) {
     var obj = {};
     headers.forEach(function(h, i) { obj[h] = row[i]; });
     return obj;
   });
+  return ROW_CACHE_[name];
 }
 
 function appendObject_(sheetName, obj) {
   var sheet = getSheet_(sheetName);
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   sheet.appendRow(headers.map(function(h) { return obj[h] === undefined ? '' : obj[h]; }));
+  clearRows_(sheetName);
 }
 
 function updateRowById_(sheetName, idColumn, idValue, values) {
@@ -549,6 +841,7 @@ function updateRowByKey_(sheetName, keyColumn, keyValue, values) {
         var c = headers.indexOf(k);
         if (c >= 0) sheet.getRange(r + 1, c + 1).setValue(values[k]);
       });
+      clearRows_(sheetName);
       return true;
     }
   }
@@ -568,6 +861,19 @@ function nextId_(sheetName) {
   if (!rows.length) return 1;
   var firstKey = Object.keys(rows[0])[0];
   return Math.max.apply(null, rows.map(function(r) { return Number(r[firstKey]) || 0; })) + 1;
+}
+
+function clearRows_(sheetName) {
+  delete ROW_CACHE_[sheetName];
+  if ([CONFIG.SHEETS.ASIGNATURAS, CONFIG.SHEETS.SECCIONES, CONFIG.SHEETS.HORARIOS, CONFIG.SHEETS.AULAS].indexOf(sheetName) >= 0) {
+    clearCatalogCache_();
+  }
+}
+
+function clearCatalogCache_() {
+  try {
+    CacheService.getScriptCache().remove('facen_v4_catalogo');
+  } catch (e) {}
 }
 
 function withLock_(callback) {
@@ -688,6 +994,30 @@ function promedio_(values) {
   if (!nums.length) return '';
   var sum = nums.reduce(function(a, b) { return a + b; }, 0);
   return Math.round((sum / nums.length) * 100) / 100;
+}
+
+function priorityRank_(value) {
+  var v = normalize_(value);
+  if (v === 'alta') return 0;
+  if (v === 'media') return 1;
+  if (v === 'baja') return 2;
+  return 3;
+}
+
+function agendaRank_(item) {
+  if (item.fecha) return new Date(item.fecha).getTime();
+  var order = dayOrderValue_(item.dia);
+  return Date.now() + order * 24 * 60 * 60 * 1000;
+}
+
+function dayOrderValue_(day) {
+  var n = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'].indexOf(normalize_(day));
+  return n < 0 ? 99 : n;
+}
+
+function numberOr_(value, fallback) {
+  var n = Number(value);
+  return isNaN(n) ? fallback : n;
 }
 
 function indexBy_(rows, key) {
