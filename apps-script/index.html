@@ -452,7 +452,12 @@
     function loadApp() {
       showAppShell();
       document.getElementById('content').innerHTML = '<div class="empty">Cargando tus datos...</div>';
+      clearTimeout(window.bootstrapTimer);
+      window.bootstrapTimer = setTimeout(function() {
+        document.getElementById('content').innerHTML = '<div class="empty">La carga esta tardando demasiado. <button class="btn btn-outline btn-small" onclick="loadApp()">Reintentar</button> <button class="btn btn-danger btn-small" onclick="logout()">Cerrar sesion</button></div>';
+      }, 18000);
       server('obtenerBootstrap', [State.token], function(res) {
+        clearTimeout(window.bootstrapTimer);
         State.data = res;
         State.user = res.user;
         document.getElementById('user-name').textContent = res.user.nombre || res.user.username;
@@ -460,6 +465,7 @@
         render();
         scheduleLocalAlerts();
       }, function() {
+        clearTimeout(window.bootstrapTimer);
         document.getElementById('content').innerHTML = '<div class="empty">No se pudieron cargar tus datos. Reintenta en unos segundos o vuelve a iniciar sesion.</div>';
       });
     }
@@ -485,7 +491,33 @@
     function go(view) {
       State.view = view;
       document.getElementById('sidebar').classList.remove('open');
+      ensureViewData(view);
       render();
+    }
+
+    function ensureViewData(view) {
+      if (!State.data) return;
+      if (view === 'materias' && !State.data.catalogoLoaded) return loadVista('catalogo', 'catalogo', 'catalogoLoaded');
+      if (view === 'apuntes' && !State.data.apuntesLoaded) return loadVista('apuntes', 'apuntes', 'apuntesLoaded');
+      if (view === 'recordatorios' && !State.data.eventosLoaded) return loadVista('eventos', 'eventos', 'eventosLoaded');
+      if (view === 'lecturas' && !State.data.lecturasLoaded) return loadVista('lecturas', 'lecturas', 'lecturasLoaded');
+      if (view === 'grupos' && !State.data.gruposLoaded) return loadVista('grupos', 'grupos', 'gruposLoaded');
+    }
+
+    function loadVista(vista, key, loadedKey) {
+      var loadingKey = 'loading_' + key;
+      if (State.data[loadingKey]) return;
+      State.data[loadingKey] = true;
+      server('obtenerDatosVista', [State.token, vista], function(res) {
+        State.data[key] = res[key] || [];
+        State.data[loadedKey] = true;
+        State.data[loadingKey] = false;
+        if (State.view === vista || (vista === 'catalogo' && State.view === 'materias') || (vista === 'eventos' && State.view === 'recordatorios')) render();
+      }, function() {
+        State.data[loadedKey] = true;
+        State.data[loadingKey] = false;
+        if (State.view === vista || (vista === 'catalogo' && State.view === 'materias') || (vista === 'eventos' && State.view === 'recordatorios')) render();
+      });
     }
 
     function render() {
@@ -545,6 +577,7 @@
     }
 
     function renderMaterias() {
+      if (!State.data.catalogoLoaded) return head('Materias', 'Selecciona las asignaturas y secciones que estas cursando.') + '<div class="empty">Cargando catalogo de asignaturas...</div>';
       var q = '';
       var elegidas = {};
       (State.data.inscripciones || []).forEach(function(i) { elegidas[String(i.id_asignatura)] = true; });
@@ -612,6 +645,7 @@
     }
 
     function renderApuntes() {
+      if (!State.data.apuntesLoaded) return head('Apuntes', 'Guarda informacion util, enlaces, tareas y recordatorios de estudio.') + '<div class="empty">Cargando apuntes...</div>';
       var rows = State.data.apuntes.map(function(a) {
         return item(a.titulo, [a.tipo, a.nombre_asignatura, a.fecha_modificacion].filter(Boolean).join(' - '), '<button class="btn btn-outline btn-small" onclick="openApunte(' + a.id_apunte + ')">Editar</button><button class="btn btn-danger btn-small" onclick="deleteApunte(' + a.id_apunte + ')">Eliminar</button>');
       }).join('') || '<div class="empty">Crea tu primer apunte.</div>';
@@ -620,6 +654,7 @@
     }
 
     function renderLecturas() {
+      if (!State.data.lecturasLoaded) return head('Lecturas', 'Planifica que leer, prioriza y marca el avance por asignatura.') + '<div class="empty">Cargando lecturas...</div>';
       var rows = (State.data.lecturas || []).map(function(l) {
         var sub = [l.estado, l.prioridad, l.nombre_asignatura, l.fecha_objetivo_iso, l.fuente].filter(Boolean).join(' - ');
         var actions = '<button class="btn btn-outline btn-small" onclick="openLectura(' + l.id_lectura + ')">Editar</button><button class="btn btn-danger btn-small" onclick="deleteLectura(' + l.id_lectura + ')">Eliminar</button>';
@@ -630,6 +665,7 @@
     }
 
     function renderGrupos() {
+      if (!State.data.gruposLoaded) return head('Grupos', 'Organiza equipos de estudio con fecha, canal, lugar y objetivo de la proxima reunion.') + '<div class="empty">Cargando grupos...</div>';
       var rows = (State.data.grupos || []).map(function(g) {
         var sub = [g.nombre_asignatura, g.integrantes, g.canal, g.lugar, g.proxima_fecha_iso, g.proxima_hora, g.objetivo].filter(Boolean).join(' - ');
         return item(g.nombre, sub, '<button class="btn btn-outline btn-small" onclick="openGrupo(' + g.id_grupo + ')">Editar</button><button class="btn btn-danger btn-small" onclick="deleteGrupo(' + g.id_grupo + ')">Eliminar</button>');
@@ -672,6 +708,7 @@
     }
 
     function renderRecordatorios() {
+      if (!State.data.eventosLoaded) return head('Recordatorios', 'Fechas importantes, entregas, examenes y eventos propios.') + '<div class="empty">Cargando recordatorios...</div>';
       var rows = State.data.eventos.map(function(e) {
         return item(e.titulo, [e.fecha_iso, e.hora, e.nombre_asignatura, e.descripcion].filter(Boolean).join(' - '), '<button class="btn btn-outline btn-small" onclick="openEvento(' + e.id_evento + ')">Editar</button><button class="btn btn-danger btn-small" onclick="deleteEvento(' + e.id_evento + ')">Eliminar</button>');
       }).join('') || '<div class="empty">Sin recordatorios guardados.</div>';

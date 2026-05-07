@@ -181,32 +181,44 @@ function verificarSesion(token) {
 function obtenerBootstrap(token) {
   var session = requireSession_(token);
   var perfil = getPerfilByUser_(session.id_usuario);
-  var catalogo = obtenerCatalogo_(true);
   var inscripciones = obtenerMisInscripciones_(perfil.id_estudiante);
   var notas = obtenerMisNotas_(perfil.id_estudiante, inscripciones);
-  var apuntes = obtenerMisApuntes_(perfil.id_estudiante);
-  var eventos = obtenerMisEventos_(perfil.id_estudiante);
-  var lecturas = obtenerMisLecturas_(perfil.id_estudiante);
-  var grupos = obtenerMisGrupos_(perfil.id_estudiante);
   var agenda = obtenerMiAgenda_(perfil.id_estudiante);
   var preferencias = obtenerPreferencias_(perfil.id_estudiante);
   return {
     success: true,
-    user: publicUser_(session.id_usuario, session.rol),
+    user: publicUserFromPerfil_(session.id_usuario, session.rol, '', perfil),
     perfil: perfil,
-    catalogo: catalogo,
+    catalogo: [],
+    catalogoLoaded: false,
     inscripciones: inscripciones,
     notas: notas,
-    apuntes: apuntes,
-    eventos: eventos,
-    lecturas: lecturas,
-    grupos: grupos,
+    apuntes: [],
+    apuntesLoaded: false,
+    eventos: [],
+    eventosLoaded: false,
+    lecturas: [],
+    lecturasLoaded: false,
+    grupos: [],
+    gruposLoaded: false,
     agenda: agenda,
     preferencias: preferencias,
     companeros: [],
     companerosLoaded: false,
-    resumen: resumen_(perfil.id_estudiante, inscripciones, notas, apuntes, eventos, lecturas, grupos, agenda)
+    resumen: resumen_(perfil.id_estudiante, inscripciones, notas, [], [], [], [], agenda)
   };
+}
+
+function obtenerDatosVista(token, vista) {
+  var session = requireSession_(token);
+  var perfil = getPerfilByUser_(session.id_usuario);
+  vista = String(vista || '');
+  if (vista === 'catalogo') return { success: true, catalogo: obtenerCatalogo_(true) };
+  if (vista === 'apuntes') return { success: true, apuntes: obtenerMisApuntes_(perfil.id_estudiante) };
+  if (vista === 'eventos') return { success: true, eventos: obtenerMisEventos_(perfil.id_estudiante) };
+  if (vista === 'lecturas') return { success: true, lecturas: obtenerMisLecturas_(perfil.id_estudiante) };
+  if (vista === 'grupos') return { success: true, grupos: obtenerMisGrupos_(perfil.id_estudiante) };
+  return { success: true };
 }
 
 function obtenerCompaneros(token) {
@@ -816,18 +828,33 @@ function requireSession_(token, soft) {
 function findSession_(token) {
   if (!token) return null;
   var hash = tokenHash_(token);
-  var rows = getRows_(CONFIG.SHEETS.SESIONES);
-  var found = rows.find(function(s) {
-    return s.token_hash === hash && s.activo != 0 && new Date(s.expira_en).getTime() > Date.now();
-  });
-  return found || null;
+  var sheet = getSheet_(CONFIG.SHEETS.SESIONES);
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return null;
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var tokenCol = headers.indexOf('token_hash') + 1;
+  if (tokenCol < 1) return null;
+  var matches = sheet.getRange(2, tokenCol, lastRow - 1, 1).createTextFinder(hash).matchEntireCell(true).findAll();
+  for (var i = matches.length - 1; i >= 0; i--) {
+    var row = matches[i].getRow();
+    var values = sheet.getRange(row, 1, 1, headers.length).getValues()[0];
+    var obj = {};
+    headers.forEach(function(h, c) { obj[h] = values[c]; });
+    if (obj.activo != 0 && new Date(obj.expira_en).getTime() > Date.now()) return obj;
+  }
+  return null;
 }
 
 function publicUser_(idUsuario, rol, username) {
   var perfil = getPerfilByUser_(idUsuario);
+  return publicUserFromPerfil_(idUsuario, rol, username, perfil);
+}
+
+function publicUserFromPerfil_(idUsuario, rol, username, perfil) {
+  username = username || getUsername_(idUsuario);
   return {
     id: Number(idUsuario),
-    username: username || getUsername_(idUsuario),
+    username: username,
     rol: rol || CONFIG.ROLES.ESTUDIANTE,
     nombre: perfil ? (perfil.nombres + ' ' + perfil.apellidos).trim() : username
   };
