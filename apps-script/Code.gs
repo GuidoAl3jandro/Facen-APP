@@ -264,10 +264,6 @@ function obtenerCatalogo_(useCache) {
 function ensureCatalogSeeded_() {
   if (getRows_(CONFIG.SHEETS.ASIGNATURAS).length && getRows_(CONFIG.SHEETS.SECCIONES).length) return;
   seedCatalog_();
-  clearRows_(CONFIG.SHEETS.AULAS);
-  clearRows_(CONFIG.SHEETS.ASIGNATURAS);
-  clearRows_(CONFIG.SHEETS.SECCIONES);
-  clearRows_(CONFIG.SHEETS.HORARIOS);
 }
 
 function defaultCatalogo_() {
@@ -342,6 +338,7 @@ function guardarPerfil(token, datos) {
 function inscribirSeccion(token, idSeccion) {
   var session = requireSession_(token);
   var perfil = getPerfilByUser_(session.id_usuario);
+  ensureCatalogSeeded_();
   var seccion = getRows_(CONFIG.SHEETS.SECCIONES).find(function(s) { return s.id_seccion == idSeccion && s.activo != 0; });
   if (!seccion) return fail_('La seccion no existe.');
   return withLock_(function() {
