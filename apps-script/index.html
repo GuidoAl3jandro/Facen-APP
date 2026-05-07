@@ -479,10 +479,11 @@
       }, 18000);
       server('obtenerBootstrap', [State.token], function(res) {
         clearTimeout(window.bootstrapTimer);
+        res = normalizeBootstrap(res);
         State.data = res;
         State.user = res.user;
-        document.getElementById('user-name').textContent = res.user.nombre || res.user.username;
-        document.getElementById('top-user').textContent = res.user.nombre || res.user.username;
+        document.getElementById('user-name').textContent = State.user.nombre || State.user.username || 'Estudiante';
+        document.getElementById('top-user').textContent = State.user.nombre || State.user.username || 'Estudiante';
         if (res.warning) toast(res.warning, 'error');
         render();
         scheduleLocalAlerts();
@@ -490,6 +491,28 @@
         clearTimeout(window.bootstrapTimer);
         document.getElementById('content').innerHTML = '<div class="empty">No se pudieron cargar tus datos. Reintenta en unos segundos o vuelve a iniciar sesion.</div>';
       });
+    }
+
+    function normalizeBootstrap(res) {
+      res = res || {};
+      var perfil = res.perfil || {};
+      var name = [perfil.nombres, perfil.apellidos].filter(Boolean).join(' ');
+      res.user = res.user || State.user || {};
+      res.user.nombre = res.user.nombre || name || res.user.username || 'Estudiante';
+      res.user.username = res.user.username || '';
+      res.perfil = perfil;
+      res.catalogo = res.catalogo || [];
+      res.inscripciones = res.inscripciones || [];
+      res.notas = res.notas || [];
+      res.apuntes = res.apuntes || [];
+      res.eventos = res.eventos || [];
+      res.lecturas = res.lecturas || [];
+      res.grupos = res.grupos || [];
+      res.agenda = res.agenda || [];
+      res.companeros = res.companeros || [];
+      res.preferencias = res.preferencias || {};
+      res.resumen = res.resumen || {};
+      return res;
     }
 
     function showAuth() {

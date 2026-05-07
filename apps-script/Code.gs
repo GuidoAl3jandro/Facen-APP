@@ -704,6 +704,7 @@ function obtenerPreferenciasDefault_() {
 }
 
 function bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, warning) {
+  perfil = perfil || {};
   return {
     success: true,
     warning: warning || '',
