@@ -30,7 +30,7 @@ El despliegue puede ser anonimo porque la aplicacion maneja sesiones por token p
 
 - Spreadsheet: `https://docs.google.com/spreadsheets/d/1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc/edit`
 - Apps Script: `https://script.google.com/d/1mXbo3LGQwW6S3wKtAcCyMHPBDHkm0KFRXaRpBbAcdNAM-8hr5z9FfLZT/edit`
-- Web app deployment: `AKfycbz9gzJFVMqVe5uvFs8usMiDeXW4ZMWbninLFyXYPE8zgJ5Ts8vYVN-YF5kASZn814KJaA`
+- Web app deployment: `AKfycbwIZN9cQ2PBKLYMNnTdzDTuWYqWeyBZuv_0u5RiBynN8zPQ_Cst9iFG0xoLgZv5mmyftA`
 - GitHub Pages: `https://guidoal3jandro.github.io/Facen-APP/`
 
 La raiz del repositorio contiene el shell PWA instalable de GitHub Pages (`index.html`, `manifest.webmanifest`, `sw.js`, `icon.svg`). La aplicacion real vive en Apps Script porque usa `google.script.run` para comunicarse con el backend.

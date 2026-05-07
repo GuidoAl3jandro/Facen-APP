@@ -376,6 +376,7 @@
       user: null,
       data: null,
       view: 'dashboard',
+      alertTimers: [],
       nav: [
         ['dashboard', 'Inicio'],
         ['materias', 'Materias'],
@@ -455,6 +456,7 @@
         document.getElementById('user-name').textContent = res.user.nombre || res.user.username;
         document.getElementById('top-user').textContent = res.user.nombre || res.user.username;
         render();
+        scheduleLocalAlerts();
       });
     }
 
@@ -801,7 +803,69 @@
 
     function savePreferencias(e) {
       e.preventDefault();
+      requestNotifications();
       server('guardarPreferencias', [State.token, formData(e.target)], function() { toast('Alertas guardadas', 'ok'); loadApp(); });
+    }
+
+    function requestNotifications() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+
+    function scheduleLocalAlerts() {
+      State.alertTimers.forEach(function(id) { clearTimeout(id); });
+      State.alertTimers = [];
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      var prefs = State.data.preferencias || {};
+      (State.data.agenda || []).forEach(function(a) {
+        if (!a.alerta_activa || !alertEnabledFor(a.tipo, prefs)) return;
+        var when = nextAgendaDate(a);
+        if (!when) return;
+        var mins = Number(a.minutos_antes || minutesFor(a.tipo, prefs) || 15);
+        var delay = when.getTime() - Date.now() - mins * 60000;
+        if (delay < 0 || delay > 24 * 60 * 60 * 1000) return;
+        State.alertTimers.push(setTimeout(function() {
+          new Notification('FACEN App', {
+            body: a.titulo + ' - ' + [a.sala, a.edificio, a.hora_ini].filter(Boolean).join(' - '),
+            tag: 'facen-' + a.id_agenda
+          });
+        }, delay));
+      });
+    }
+
+    function alertEnabledFor(tipo, prefs) {
+      var t = String(tipo || '').toLowerCase();
+      if (t === 'clase') return String(prefs.alertas_clases) !== '0';
+      if (t === 'examen') return String(prefs.alertas_examenes) !== '0';
+      if (t === 'reunion') return String(prefs.alertas_reuniones) !== '0';
+      if (t === 'entrega') return String(prefs.alertas_entregas) !== '0';
+      return true;
+    }
+
+    function minutesFor(tipo, prefs) {
+      var t = String(tipo || '').toLowerCase();
+      if (t === 'clase') return prefs.minutos_clases;
+      if (t === 'examen') return prefs.minutos_examenes;
+      if (t === 'reunion') return prefs.minutos_reuniones;
+      if (t === 'entrega') return prefs.minutos_entregas;
+      return 15;
+    }
+
+    function nextAgendaDate(a) {
+      var date = a.fecha_iso ? new Date(a.fecha_iso + 'T' + (a.hora_ini || '08:00')) : null;
+      if (!date && a.dia) {
+        var today = new Date();
+        var target = dayOrder(a.dia);
+        if (target < 0) return null;
+        var current = (today.getDay() + 6) % 7;
+        var diff = (target - current + 7) % 7;
+        date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diff);
+        var parts = String(a.hora_ini || '08:00').split(':');
+        date.setHours(Number(parts[0]) || 8, Number(parts[1]) || 0, 0, 0);
+        if (date.getTime() < Date.now()) date.setDate(date.getDate() + 7);
+      }
+      return date;
     }
 
     function subjectOptions(selected) {
