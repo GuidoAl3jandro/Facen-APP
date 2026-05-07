@@ -952,7 +952,17 @@
 
     function savePerfil(e) {
       e.preventDefault();
-      server('guardarPerfil', [State.token, formData(e.target)], function() { toast('Perfil guardado', 'ok'); loadApp(); });
+      server('guardarPerfil', [State.token, formData(e.target)], function(res) {
+        if (res.perfil) State.data.perfil = res.perfil;
+        if (res.user) {
+          State.user = res.user;
+          State.data.user = res.user;
+        }
+        if (res.catalogo) State.data.catalogo = res.catalogo;
+        if (res.catalogoLoaded !== undefined) State.data.catalogoLoaded = res.catalogoLoaded;
+        toast('Perfil guardado', 'ok');
+        render();
+      });
     }
 
     function savePreferencias(e) {

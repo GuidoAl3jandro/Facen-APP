@@ -333,9 +333,9 @@ function defaultCatalogo_() {
 
 function guardarPerfil(token, datos) {
   var session = requireSession_(token);
-  var perfil = getPerfilByUser_(session.id_usuario);
+  var perfil = getOrCreatePerfil_(session.id_usuario);
   datos = normalizePayload_(datos);
-  updateRowById_(CONFIG.SHEETS.ESTUDIANTES, 'id_estudiante', perfil.id_estudiante, {
+  var values = {
     nombres: trim_(datos.nombres),
     apellidos: trim_(datos.apellidos),
     cedula: trim_(datos.cedula),
@@ -346,9 +346,18 @@ function guardarPerfil(token, datos) {
     semestre: trim_(datos.semestre),
     turno: trim_(datos.turno),
     observaciones: trim_(datos.observaciones)
-  });
+  };
+  updateProfilesByUser_(session.id_usuario, values);
+  perfil = getPerfilByUser_(session.id_usuario);
   log_(session.id_usuario, 'PERFIL', 'Actualizado');
-  return { success: true, message: 'Perfil guardado.' };
+  return {
+    success: true,
+    message: 'Perfil guardado.',
+    perfil: perfil,
+    user: publicUserFromPerfil_(session.id_usuario, session.rol, '', perfil),
+    catalogo: obtenerCatalogoParaPerfil_(perfil, false),
+    catalogoLoaded: true
+  };
 }
 
 function inscribirSeccion(token, idSeccion) {
@@ -977,14 +986,82 @@ function publicUserFromPerfil_(idUsuario, rol, username, perfil) {
 function getPerfilByUser_(idUsuario) {
   var perfiles = getRows_(CONFIG.SHEETS.ESTUDIANTES).filter(function(e) { return e.id_usuario == idUsuario; });
   if (!perfiles.length) return null;
-  perfiles.sort(function(a, b) { return perfilScore_(b) - perfilScore_(a); });
-  return perfiles[0];
+  if (perfiles.length === 1) return perfiles[0];
+  perfiles.sort(function(a, b) { return perfilRank_(b) - perfilRank_(a); });
+  var primary = perfiles[0];
+  var merged = mergeProfiles_(primary, perfiles);
+  perfiles.slice(1).forEach(function(p) {
+    if (p.id_estudiante != primary.id_estudiante) reassignStudentData_(p.id_estudiante, primary.id_estudiante);
+  });
+  updateRowById_(CONFIG.SHEETS.ESTUDIANTES, 'id_estudiante', primary.id_estudiante, merged);
+  return getRows_(CONFIG.SHEETS.ESTUDIANTES).filter(function(e) { return e.id_estudiante == primary.id_estudiante; })[0] || merged;
 }
 
 function perfilScore_(perfil) {
   return ['nombres', 'apellidos', 'cedula', 'email', 'telefono', 'carrera', 'semestre', 'turno', 'observaciones'].reduce(function(score, key) {
     return score + (trim_(perfil[key]) ? 1 : 0);
   }, 0);
+}
+
+function perfilRank_(perfil) {
+  return studentDataCount_(perfil.id_estudiante) * 1000 + perfilScore_(perfil) * 10 + Number(perfil.id_estudiante || 0);
+}
+
+function studentDataCount_(idEstudiante) {
+  return getRows_(CONFIG.SHEETS.INSCRIPCIONES).filter(function(i) { return i.id_estudiante == idEstudiante && isActive_(i.activo); }).length +
+    getRows_(CONFIG.SHEETS.APUNTES).filter(function(i) { return i.id_estudiante == idEstudiante; }).length +
+    getRows_(CONFIG.SHEETS.EVENTOS).filter(function(i) { return i.id_estudiante == idEstudiante; }).length +
+    getRows_(CONFIG.SHEETS.LECTURAS).filter(function(i) { return i.id_estudiante == idEstudiante; }).length +
+    getRows_(CONFIG.SHEETS.GRUPOS).filter(function(i) { return i.id_estudiante == idEstudiante; }).length +
+    getRows_(CONFIG.SHEETS.AGENDA).filter(function(i) { return i.id_estudiante == idEstudiante && isActive_(i.activo); }).length;
+}
+
+function mergeProfiles_(primary, perfiles) {
+  var merged = {};
+  Object.keys(primary).forEach(function(k) { merged[k] = primary[k]; });
+  perfiles.slice().sort(function(a, b) { return perfilScore_(b) - perfilScore_(a); }).forEach(function(p) {
+    ['nombres', 'apellidos', 'cedula', 'email', 'telefono', 'comparte_contacto', 'carrera', 'semestre', 'turno', 'observaciones'].forEach(function(k) {
+      if (!trim_(merged[k]) && trim_(p[k])) merged[k] = p[k];
+    });
+  });
+  merged.id_usuario = primary.id_usuario;
+  return merged;
+}
+
+function updateProfilesByUser_(idUsuario, values) {
+  var perfiles = getRows_(CONFIG.SHEETS.ESTUDIANTES).filter(function(e) { return e.id_usuario == idUsuario; });
+  if (!perfiles.length) return false;
+  perfiles.forEach(function(p) {
+    updateRowById_(CONFIG.SHEETS.ESTUDIANTES, 'id_estudiante', p.id_estudiante, values);
+  });
+  return true;
+}
+
+function reassignStudentData_(fromId, toId) {
+  [
+    CONFIG.SHEETS.INSCRIPCIONES,
+    CONFIG.SHEETS.APUNTES,
+    CONFIG.SHEETS.EVENTOS,
+    CONFIG.SHEETS.LECTURAS,
+    CONFIG.SHEETS.GRUPOS,
+    CONFIG.SHEETS.AGENDA,
+    CONFIG.SHEETS.PREFERENCIAS
+  ].forEach(function(sheetName) {
+    replaceStudentId_(sheetName, fromId, toId);
+  });
+}
+
+function replaceStudentId_(sheetName, fromId, toId) {
+  var sheet = getSheet_(sheetName);
+  var data = sheet.getDataRange().getValues();
+  if (data.length < 2) return;
+  var headers = data[0];
+  var col = headers.indexOf('id_estudiante');
+  if (col < 0) return;
+  for (var r = 1; r < data.length; r++) {
+    if (String(data[r][col]) === String(fromId)) sheet.getRange(r + 1, col + 1).setValue(toId);
+  }
+  clearRows_(sheetName);
 }
 
 function getOrCreatePerfil_(idUsuario) {
