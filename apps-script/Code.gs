@@ -34,7 +34,7 @@ var CONFIG = {
 var SCHEMA = {
   USUARIOS: ['id_usuario', 'username', 'password_hash', 'salt', 'rol', 'activo', 'fecha_creacion', 'ultimo_acceso'],
   SESIONES: ['token_hash', 'id_usuario', 'rol', 'creado_en', 'expira_en', 'activo'],
-  ESTUDIANTES: ['id_estudiante', 'id_usuario', 'nombres', 'apellidos', 'cedula', 'email', 'telefono', 'carrera', 'semestre', 'turno', 'observaciones'],
+  ESTUDIANTES: ['id_estudiante', 'id_usuario', 'nombres', 'apellidos', 'cedula', 'email', 'telefono', 'comparte_contacto', 'carrera', 'semestre', 'turno', 'observaciones'],
   ASIGNATURAS: ['id_asignatura', 'codigo', 'nombre_asignatura', 'carrera', 'semestre', 'creditos', 'activo'],
   SECCIONES: ['id_seccion', 'id_asignatura', 'codigo_seccion', 'cupo', 'activo'],
   HORARIOS_ASIGNATURAS: ['id_horario', 'id_seccion', 'dia', 'hora_ini', 'hora_fin', 'id_aula'],
@@ -67,6 +67,8 @@ function setupFacenAppV3() {
     if (sheet.getLastRow() === 0) {
       sheet.getRange(1, 1, 1, SCHEMA[sheetName].length).setValues([SCHEMA[sheetName]]);
       styleHeader_(sheet, SCHEMA[sheetName].length);
+    } else {
+      ensureHeaders_(sheet, SCHEMA[sheetName]);
     }
   });
   seedCatalog_();
@@ -115,6 +117,7 @@ function registrarEstudiante(datos) {
         cedula: trim_(datos.cedula),
         email: trim_(datos.email),
         telefono: trim_(datos.telefono),
+        comparte_contacto: datos.comparte_contacto ? 1 : 0,
         carrera: trim_(datos.carrera),
         semestre: trim_(datos.semestre),
         turno: trim_(datos.turno),
@@ -186,6 +189,7 @@ function obtenerBootstrap(token) {
   var grupos = obtenerMisGrupos_(perfil.id_estudiante);
   var agenda = obtenerMiAgenda_(perfil.id_estudiante);
   var preferencias = obtenerPreferencias_(perfil.id_estudiante);
+  var companeros = obtenerMisCompaneros_(perfil.id_estudiante, inscripciones);
   return {
     success: true,
     user: publicUser_(session.id_usuario, session.rol),
@@ -199,6 +203,7 @@ function obtenerBootstrap(token) {
     grupos: grupos,
     agenda: agenda,
     preferencias: preferencias,
+    companeros: companeros,
     resumen: resumen_(perfil.id_estudiante, inscripciones, notas, apuntes, eventos, lecturas, grupos, agenda)
   };
 }
@@ -248,6 +253,7 @@ function guardarPerfil(token, datos) {
     cedula: trim_(datos.cedula),
     email: trim_(datos.email),
     telefono: trim_(datos.telefono),
+    comparte_contacto: datos.comparte_contacto ? 1 : 0,
     carrera: trim_(datos.carrera),
     semestre: trim_(datos.semestre),
     turno: trim_(datos.turno),
@@ -681,6 +687,49 @@ function obtenerPreferencias_(idEstudiante) {
   };
 }
 
+function obtenerMisCompaneros_(idEstudiante, inscripciones) {
+  inscripciones = inscripciones || obtenerMisInscripciones_(idEstudiante);
+  var misSecciones = {};
+  var misAsignaturas = {};
+  inscripciones.forEach(function(i) {
+    misSecciones[String(i.id_seccion)] = i;
+    misAsignaturas[String(i.id_asignatura)] = i;
+  });
+  var estudiantes = indexBy_(getRows_(CONFIG.SHEETS.ESTUDIANTES), 'id_estudiante');
+  var secciones = indexBy_(getRows_(CONFIG.SHEETS.SECCIONES), 'id_seccion');
+  var asignaturas = indexBy_(getRows_(CONFIG.SHEETS.ASIGNATURAS), 'id_asignatura');
+  var map = {};
+  getRows_(CONFIG.SHEETS.INSCRIPCIONES).forEach(function(i) {
+    if (i.activo == 0 || i.id_estudiante == idEstudiante) return;
+    var sec = secciones[i.id_seccion] || {};
+    var own = misSecciones[String(i.id_seccion)] || misAsignaturas[String(sec.id_asignatura)];
+    if (!own) return;
+    var estudiante = estudiantes[i.id_estudiante];
+    if (!estudiante) return;
+    if (!map[i.id_estudiante]) {
+      map[i.id_estudiante] = {
+        id_estudiante: i.id_estudiante,
+        nombre: [estudiante.nombres, estudiante.apellidos].filter(Boolean).join(' '),
+        carrera: estudiante.carrera || '',
+        semestre: estudiante.semestre || '',
+        comparte_contacto: estudiante.comparte_contacto == 1,
+        telefono: estudiante.comparte_contacto == 1 ? estudiante.telefono : '',
+        email: estudiante.comparte_contacto == 1 ? estudiante.email : '',
+        coincidencias: []
+      };
+    }
+    var asig = asignaturas[sec.id_asignatura] || {};
+    map[i.id_estudiante].coincidencias.push({
+      id_asignatura: sec.id_asignatura,
+      nombre_asignatura: asig.nombre_asignatura || own.nombre_asignatura || '',
+      codigo_seccion: sec.codigo_seccion || ''
+    });
+  });
+  return Object.keys(map).map(function(k) { return map[k]; }).sort(function(a, b) {
+    return String(a.nombre).localeCompare(String(b.nombre));
+  });
+}
+
 function obtenerMisApuntes_(idEstudiante) {
   var asignaturas = indexBy_(getRows_(CONFIG.SHEETS.ASIGNATURAS), 'id_asignatura');
   return getRows_(CONFIG.SHEETS.APUNTES).filter(function(a) {
@@ -796,6 +845,7 @@ function getSheet_(name) {
     styleHeader_(sheet, SCHEMA[name].length);
   }
   if (!sheet) throw new Error('Falta la hoja ' + name + '. Ejecuta setupFacenAppV4().');
+  if (SCHEMA[name] && sheet.getLastRow() > 0) ensureHeaders_(sheet, SCHEMA[name]);
   SHEET_CACHE_[name] = sheet;
   return sheet;
 }
@@ -890,6 +940,19 @@ function styleHeader_(sheet, cols) {
   sheet.getRange(1, 1, 1, cols).setFontWeight('bold').setBackground('#163a5f').setFontColor('#ffffff');
   sheet.setFrozenRows(1);
   for (var i = 1; i <= cols; i++) sheet.setColumnWidth(i, 150);
+}
+
+function ensureHeaders_(sheet, expected) {
+  var lastColumn = Math.max(sheet.getLastColumn(), 1);
+  var headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+  var added = 0;
+  expected.forEach(function(header) {
+    if (headers.indexOf(header) < 0) {
+      sheet.getRange(1, headers.length + added + 1).setValue(header);
+      added++;
+    }
+  });
+  if (added) styleHeader_(sheet, headers.length + added);
 }
 
 function seedCatalog_() {

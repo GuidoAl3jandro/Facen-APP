@@ -323,6 +323,7 @@
         <div class="field"><label>Usuario</label><input class="input" name="username" autocomplete="username" required></div>
         <div class="field"><label>Contrasena</label><input class="input" name="password" type="password" autocomplete="new-password" minlength="8" required></div>
         <div class="field"><label>Email</label><input class="input" name="email" type="email"></div>
+        <div class="field"><label><input type="checkbox" name="comparte_contacto"> Compartir mi movil con companeros de mis asignaturas</label></div>
         <div class="grid grid-2">
           <div class="field"><label>Carrera</label><input class="input" name="carrera"></div>
           <div class="field"><label>Semestre</label><input class="input" name="semestre"></div>
@@ -385,6 +386,7 @@
         ['notas', 'Notas'],
         ['apuntes', 'Apuntes'],
         ['lecturas', 'Lecturas'],
+        ['companeros', 'Companeros'],
         ['grupos', 'Grupos'],
         ['recordatorios', 'Recordatorios'],
         ['perfil', 'Perfil']
@@ -489,7 +491,7 @@
       document.querySelectorAll('[data-view]').forEach(function(btn) {
         btn.classList.toggle('active', btn.getAttribute('data-view') === State.view);
       });
-      var titles = { dashboard: 'Inicio', materias: 'Materias', horario: 'Horario', agenda: 'Agenda', notas: 'Notas', apuntes: 'Apuntes', lecturas: 'Lecturas', grupos: 'Grupos', recordatorios: 'Recordatorios', perfil: 'Perfil' };
+      var titles = { dashboard: 'Inicio', materias: 'Materias', horario: 'Horario', agenda: 'Agenda', notas: 'Notas', apuntes: 'Apuntes', lecturas: 'Lecturas', companeros: 'Companeros', grupos: 'Grupos', recordatorios: 'Recordatorios', perfil: 'Perfil' };
       document.getElementById('view-title').textContent = titles[State.view] || 'FACEN App';
       var views = {
         dashboard: renderDashboard,
@@ -499,6 +501,7 @@
         notas: renderNotas,
         apuntes: renderApuntes,
         lecturas: renderLecturas,
+        companeros: renderCompaneros,
         grupos: renderGrupos,
         recordatorios: renderRecordatorios,
         perfil: renderPerfil
@@ -633,6 +636,18 @@
         '<div class="card card-pad"><div class="list">' + rows + '</div></div>';
     }
 
+    function renderCompaneros() {
+      var rows = (State.data.companeros || []).map(function(c) {
+        var materias = (c.coincidencias || []).map(function(x) { return x.nombre_asignatura + (x.codigo_seccion ? ' - Seccion ' + x.codigo_seccion : ''); }).join(', ');
+        var contacto = c.comparte_contacto ? ['Movil: ' + c.telefono, c.email].filter(Boolean).join(' - ') : 'No comparte contacto';
+        var actions = '<button class="btn btn-outline btn-small" onclick="openGrupoCon(' + c.id_estudiante + ')">Crear grupo</button>';
+        if (c.telefono) actions += '<a class="btn btn-outline btn-small" href="https://wa.me/' + phoneForWhatsApp(c.telefono) + '" target="_blank">WhatsApp</a>';
+        return item(c.nombre, [materias, contacto].filter(Boolean).join('\n'), actions);
+      }).join('') || '<div class="empty">Cuando selecciones asignaturas, aca veras companeros que cursan contigo. El movil solo aparece si cada estudiante lo autoriza.</div>';
+      return head('Companeros', 'Encuentra estudiantes de tus asignaturas y arma grupos de estudio con consentimiento de contacto.') +
+        '<div class="card card-pad"><div class="list">' + rows + '</div></div>';
+    }
+
     function renderRecordatorios() {
       var rows = State.data.eventos.map(function(e) {
         return item(e.titulo, [e.fecha_iso, e.hora, e.nombre_asignatura, e.descripcion].filter(Boolean).join(' - '), '<button class="btn btn-outline btn-small" onclick="openEvento(' + e.id_evento + ')">Editar</button><button class="btn btn-danger btn-small" onclick="deleteEvento(' + e.id_evento + ')">Eliminar</button>');
@@ -647,6 +662,7 @@
         '<form class="card card-pad form" onsubmit="savePerfil(event)">' +
         '<div class="grid grid-2"><div class="field"><label>Nombres</label><input class="input" name="nombres" value="' + escAttr(p.nombres) + '"></div><div class="field"><label>Apellidos</label><input class="input" name="apellidos" value="' + escAttr(p.apellidos) + '"></div></div>' +
         '<div class="grid grid-3"><div class="field"><label>Cedula</label><input class="input" name="cedula" value="' + escAttr(p.cedula) + '"></div><div class="field"><label>Email</label><input class="input" name="email" value="' + escAttr(p.email) + '"></div><div class="field"><label>Telefono</label><input class="input" name="telefono" value="' + escAttr(p.telefono) + '"></div></div>' +
+        '<div class="field"><label><input type="checkbox" name="comparte_contacto"' + (String(p.comparte_contacto) === '1' ? ' checked' : '') + '> Permitir que mis companeros vean mi movil y email</label></div>' +
         '<div class="grid grid-3"><div class="field"><label>Carrera</label><input class="input" name="carrera" value="' + escAttr(p.carrera) + '"></div><div class="field"><label>Semestre</label><input class="input" name="semestre" value="' + escAttr(p.semestre) + '"></div><div class="field"><label>Turno</label><input class="input" name="turno" value="' + escAttr(p.turno) + '"></div></div>' +
         '<div class="field"><label>Observaciones</label><textarea class="textarea" name="observaciones">' + esc(p.observaciones) + '</textarea></div>' +
         '<button class="btn btn-primary">Guardar perfil</button></form>';
@@ -759,9 +775,15 @@
     function saveLectura() { server('guardarLectura', [State.token, formData(document.getElementById('lectura-form'))], function() { closeModal(); toast('Lectura guardada', 'ok'); loadApp(); }); }
     function deleteLectura(id) { if (confirm('Eliminar lectura?')) server('eliminarLectura', [State.token, id], function() { toast('Lectura eliminada', 'ok'); loadApp(); }); }
 
-    function openGrupo(id) {
+    function openGrupo(id, prefill) {
       var g = id ? State.data.grupos.find(function(x) { return x.id_grupo == id; }) : {};
       g = g || {};
+      if (!id && prefill) {
+        g.integrantes = prefill.integrantes || '';
+        g.id_asignatura = prefill.id_asignatura || '';
+        g.nombre = prefill.nombre || '';
+        g.canal = prefill.canal || '';
+      }
       openModal(id ? 'Editar grupo' : 'Nuevo grupo', '<form id="grupo-form" class="form">' +
         '<input type="hidden" name="id_grupo" value="' + escAttr(g.id_grupo) + '">' +
         '<div class="field"><label>Nombre</label><input class="input" name="nombre" value="' + escAttr(g.nombre) + '" required></div>' +
@@ -774,6 +796,17 @@
     }
     function saveGrupo() { server('guardarGrupo', [State.token, formData(document.getElementById('grupo-form'))], function() { closeModal(); toast('Grupo guardado', 'ok'); loadApp(); }); }
     function deleteGrupo(id) { if (confirm('Eliminar grupo?')) server('eliminarGrupo', [State.token, id], function() { toast('Grupo eliminado', 'ok'); loadApp(); }); }
+    function openGrupoCon(idEstudiante) {
+      var c = (State.data.companeros || []).find(function(x) { return x.id_estudiante == idEstudiante; });
+      if (!c) return;
+      var first = (c.coincidencias || [])[0] || {};
+      openGrupo(null, {
+        nombre: 'Grupo de estudio - ' + (first.nombre_asignatura || c.nombre),
+        integrantes: c.nombre + (c.telefono ? ' (' + c.telefono + ')' : ''),
+        id_asignatura: first.id_asignatura || '',
+        canal: c.telefono ? 'WhatsApp' : ''
+      });
+    }
 
     function openAgenda(id, tipo) {
       var a = id ? State.data.agenda.find(function(x) { return x.id_agenda == id; }) : {};
@@ -890,6 +923,11 @@
     }
     function dayOrder(day) {
       return ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'].indexOf(norm(day));
+    }
+    function phoneForWhatsApp(phone) {
+      var digits = String(phone || '').replace(/\D/g, '');
+      if (digits && digits.indexOf('595') !== 0 && digits.charAt(0) === '0') digits = '595' + digits.slice(1);
+      return digits;
     }
     function logout() {
       server('cerrarSesion', [State.token], function() {});

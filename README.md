@@ -10,6 +10,7 @@ Agenda academica instalable y optimizada para estudiantes de FACEN.
 - Agenda editable de clases, examenes, entregas y reuniones.
 - Salas, edificios y enlaces de mapa por actividad.
 - Preferencias de alertas por tipo de actividad.
+- Seccion Mis companeros con contacto opt-in y creacion rapida de grupos de estudio.
 - Registro de notas personales por inscripcion.
 - Apuntes, lecturas, grupos de estudio, recordatorios y enlaces por estudiante.
 - Perfil academico editable.
@@ -30,7 +31,7 @@ El despliegue puede ser anonimo porque la aplicacion maneja sesiones por token p
 
 - Spreadsheet: `https://docs.google.com/spreadsheets/d/1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc/edit`
 - Apps Script: `https://script.google.com/d/1mXbo3LGQwW6S3wKtAcCyMHPBDHkm0KFRXaRpBbAcdNAM-8hr5z9FfLZT/edit`
-- Web app deployment: `AKfycbwIZN9cQ2PBKLYMNnTdzDTuWYqWeyBZuv_0u5RiBynN8zPQ_Cst9iFG0xoLgZv5mmyftA`
+- Web app deployment: `AKfycbwgtJYS1xoSpPpBc9K0J_vAB5q0poawRvmaAKmvbmsseorv70jxaoh3YRBzyl1uqsH5ag`
 - GitHub Pages: `https://guidoal3jandro.github.io/Facen-APP/`
 
 La raiz del repositorio contiene el shell PWA instalable de GitHub Pages (`index.html`, `manifest.webmanifest`, `sw.js`, `icon.svg`). La aplicacion real vive en Apps Script porque usa `google.script.run` para comunicarse con el backend.
