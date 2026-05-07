@@ -647,9 +647,10 @@
           var text = elegidas[String(a.id_asignatura)] ? 'Ya seleccionada' : 'Elegir seccion ' + esc(s.codigo_seccion);
           return '<button class="btn btn-outline btn-small" onclick="inscribir(event,' + s.id_seccion + ')"' + disabled + '>' + text + '</button><div class="sub">' + esc(hs || 'Sin horario') + '</div>';
         }).join('<div style="height:8px"></div>');
+        var meta = [a.carrera, a.semestre ? 'Semestre ' + a.semestre : '', a.creditos ? a.creditos + ' creditos' : ''].filter(Boolean).join(' - ');
         return '<article class="card card-pad subject" data-search="' + esc((a.codigo + ' ' + a.nombre_asignatura + ' ' + a.carrera).toLowerCase()) + '">' +
           '<div class="title">' + esc(a.codigo) + ' - ' + esc(a.nombre_asignatura) + '</div>' +
-          '<div class="sub">' + esc(a.carrera) + ' - Semestre ' + esc(a.semestre) + '</div>' +
+          '<div class="sub">' + esc(meta) + '</div>' +
           '<div style="margin-top:12px;">' + secs + '</div></article>';
       }).join('');
       var catalogoBody = catalogo || '<div class="empty">No hay asignaturas disponibles todavia. <button class="btn btn-outline btn-small" onclick="reloadCatalogo()">Recargar catalogo</button></div>';

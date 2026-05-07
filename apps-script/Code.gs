@@ -230,7 +230,7 @@ function obtenerCatalogo(token) {
 }
 
 function obtenerCatalogo_(useCache) {
-  var cacheKey = 'facen_v4_catalogo';
+  var cacheKey = catalogCacheKey_();
   if (useCache !== false) {
     try {
       var cached = CacheService.getScriptCache().get(cacheKey);
@@ -240,17 +240,24 @@ function obtenerCatalogo_(useCache) {
   ensureCatalogSeeded_();
   var aulas = indexBy_(getRows_(CONFIG.SHEETS.AULAS), 'id_aula');
   var horarios = getRows_(CONFIG.SHEETS.HORARIOS);
-  var secciones = getRows_(CONFIG.SHEETS.SECCIONES).filter(function(s) { return s.activo != 0; });
+  var secciones = getRows_(CONFIG.SHEETS.SECCIONES).filter(function(s) { return isActive_(s.activo); });
   var seccionesByAsig = {};
   secciones.forEach(function(s) {
     s.horarios = horarios.filter(function(h) { return h.id_seccion == s.id_seccion; }).map(function(h) {
       var aula = aulas[h.id_aula] || {};
       return { dia: h.dia, hora_ini: h.hora_ini, hora_fin: h.hora_fin, aula: aula.nombre_aula || 'Sin aula', edificio: aula.edificio || '' };
     });
+    s.codigo_seccion = s.codigo_seccion || 'A';
+    s.cupo = s.cupo || '';
     if (!seccionesByAsig[s.id_asignatura]) seccionesByAsig[s.id_asignatura] = [];
     seccionesByAsig[s.id_asignatura].push(s);
   });
-  var asignaturas = getRows_(CONFIG.SHEETS.ASIGNATURAS).filter(function(a) { return a.activo != 0; }).map(function(a) {
+  var asignaturas = getRows_(CONFIG.SHEETS.ASIGNATURAS).filter(function(a) { return isActive_(a.activo); }).map(function(a) {
+    a.codigo = a.codigo || ('ASIG-' + a.id_asignatura);
+    a.nombre_asignatura = a.nombre_asignatura || a.nombre || 'Asignatura sin nombre';
+    a.carrera = a.carrera || 'FACEN';
+    a.semestre = a.semestre || '';
+    a.creditos = a.creditos || '';
     a.secciones = seccionesByAsig[a.id_asignatura] || [];
     return a;
   });
@@ -339,7 +346,7 @@ function inscribirSeccion(token, idSeccion) {
   var session = requireSession_(token);
   var perfil = getPerfilByUser_(session.id_usuario);
   ensureCatalogSeeded_();
-  var seccion = getRows_(CONFIG.SHEETS.SECCIONES).find(function(s) { return s.id_seccion == idSeccion && s.activo != 0; });
+  var seccion = getRows_(CONFIG.SHEETS.SECCIONES).find(function(s) { return s.id_seccion == idSeccion && isActive_(s.activo); });
   if (!seccion) return fail_('La seccion no existe.');
   return withLock_(function() {
     var secciones = indexBy_(getRows_(CONFIG.SHEETS.SECCIONES), 'id_seccion');
@@ -1083,8 +1090,23 @@ function clearRows_(sheetName) {
 
 function clearCatalogCache_() {
   try {
+    CacheService.getScriptCache().remove(catalogCacheKey_());
     CacheService.getScriptCache().remove('facen_v4_catalogo');
   } catch (e) {}
+}
+
+function catalogCacheKey_() {
+  return 'facen_v4_catalogo_real_xlsx_v2';
+}
+
+function isActive_(value) {
+  if (value === '' || value === null || value === undefined) return true;
+  if (typeof value === 'string') {
+    var normalized = value.toLowerCase().trim();
+    if (!normalized) return true;
+    return ['0', 'false', 'no', 'inactivo', 'inactiva'].indexOf(normalized) < 0;
+  }
+  return Number(value) !== 0;
 }
 
 function withLock_(callback) {
