@@ -76,7 +76,7 @@
     }
     .brand strong { display: block; font-size: 18px; }
     .brand span { color: var(--muted); font-size: 13px; }
-    .tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); padding: 4px; border-radius: 8px; margin-bottom: 20px; }
+    .tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--surface-2); padding: 4px; border-radius: 8px; margin-bottom: 20px; }
     .tab { border: 0; background: transparent; border-radius: 6px; padding: 10px; color: var(--muted); }
     .tab.active { background: #fff; color: var(--ink); box-shadow: 0 4px 14px rgba(31,50,68,.08); }
     .form { display: grid; gap: 12px; }
@@ -309,11 +309,21 @@
       <div class="tabs">
         <button id="login-tab" class="tab active" onclick="setAuthMode('login')">Ingresar</button>
         <button id="register-tab" class="tab" onclick="setAuthMode('register')">Crear cuenta</button>
+        <button id="recover-tab" class="tab" onclick="setAuthMode('recover')">Recuperar</button>
       </div>
       <form id="login-form" class="form" onsubmit="login(event)">
         <div class="field"><label>Usuario</label><input class="input" name="username" autocomplete="username" required></div>
         <div class="field"><label>Contrasena</label><input class="input" name="password" type="password" autocomplete="current-password" required></div>
         <button class="btn btn-primary" type="submit">Entrar</button>
+      </form>
+      <form id="recover-form" class="form hidden" onsubmit="recoverPassword(event)">
+        <div class="field"><label>Usuario</label><input class="input" name="username" autocomplete="username" required></div>
+        <div class="grid grid-2">
+          <div class="field"><label>Email del perfil</label><input class="input" name="email" type="email"></div>
+          <div class="field"><label>Cedula del perfil</label><input class="input" name="cedula"></div>
+        </div>
+        <button class="btn btn-primary" type="submit">Generar temporal</button>
+        <div id="recover-result" class="empty hidden"></div>
       </form>
       <form id="register-form" class="form hidden" onsubmit="register(event)">
         <div class="grid grid-2">
@@ -448,8 +458,10 @@
     function setAuthMode(mode) {
       document.getElementById('login-tab').classList.toggle('active', mode === 'login');
       document.getElementById('register-tab').classList.toggle('active', mode === 'register');
+      document.getElementById('recover-tab').classList.toggle('active', mode === 'recover');
       document.getElementById('login-form').classList.toggle('hidden', mode !== 'login');
       document.getElementById('register-form').classList.toggle('hidden', mode !== 'register');
+      document.getElementById('recover-form').classList.toggle('hidden', mode !== 'recover');
     }
 
     function login(e) {
@@ -461,6 +473,17 @@
     function register(e) {
       e.preventDefault();
       server('registrarEstudiante', [formData(e.target)], afterLogin);
+    }
+
+    function recoverPassword(e) {
+      e.preventDefault();
+      var box = document.getElementById('recover-result');
+      box.classList.add('hidden');
+      server('recuperarContrasena', [formData(e.target)], function(res) {
+        box.innerHTML = 'Contrasena temporal: <strong>' + esc(res.temporaryPassword || '') + '</strong><br>Usala para ingresar y luego actualizala desde tu perfil.';
+        box.classList.remove('hidden');
+        toast('Contrasena temporal generada', 'ok');
+      });
     }
 
     function afterLogin(res) {
@@ -631,18 +654,16 @@
     }
 
     function renderMaterias() {
-      if (!State.data.catalogoLoaded) return head('Materias', 'Selecciona las asignaturas y secciones que estas cursando.') + '<div class="empty">Cargando catalogo de asignaturas...</div>';
       State.data.catalogo = State.data.catalogo || [];
-      var q = '';
       var elegidas = {};
       (State.data.inscripciones || []).forEach(function(i) { elegidas[String(i.id_asignatura)] = true; });
       var actuales = (State.data.inscripciones || []).map(function(i) {
-        var horarios = i.horarios.map(function(h) { return h.dia + ' ' + h.hora_ini + '-' + h.hora_fin + ' - ' + h.aula; }).join('\n');
+        var horarios = (i.horarios || []).map(function(h) { return h.dia + ' ' + h.hora_ini + '-' + h.hora_fin + ' - ' + h.aula; }).join('\n');
         return item(i.nombre_asignatura + ' - ' + i.codigo_seccion, horarios || 'Sin horario', '<button class="btn btn-danger btn-small" onclick="quitarMateria(' + i.id_inscripcion + ')">Quitar</button>');
       }).join('') || '<div class="empty">Todavia no seleccionaste asignaturas.</div>';
-      var catalogo = State.data.catalogo.map(function(a) {
+      var catalogo = !State.data.catalogoLoaded ? '<div class="empty">Cargando catalogo de tu carrera...</div>' : State.data.catalogo.map(function(a) {
         var secs = (a.secciones || []).map(function(s) {
-          var hs = s.horarios.map(function(h) { return h.dia + ' ' + h.hora_ini + '-' + h.hora_fin + ' - ' + h.aula; }).join(', ');
+          var hs = (s.horarios || []).map(function(h) { return h.dia + ' ' + h.hora_ini + '-' + h.hora_fin + ' - ' + h.aula; }).join(', ');
           var disabled = elegidas[String(a.id_asignatura)] ? ' disabled' : '';
           var text = elegidas[String(a.id_asignatura)] ? 'Ya seleccionada' : 'Elegir seccion ' + esc(s.codigo_seccion);
           return '<button class="btn btn-outline btn-small" onclick="inscribir(event,' + s.id_seccion + ')"' + disabled + '>' + text + '</button><div class="sub">' + esc(hs || 'Sin horario') + '</div>';
@@ -662,8 +683,8 @@
 
     function renderHorario() {
       var rows = [];
-      State.data.inscripciones.forEach(function(i) {
-        i.horarios.forEach(function(h) { rows.push({ materia: i.nombre_asignatura, seccion: i.codigo_seccion, h: h }); });
+      (State.data.inscripciones || []).forEach(function(i) {
+        (i.horarios || []).forEach(function(h) { rows.push({ materia: i.nombre_asignatura, seccion: i.codigo_seccion, h: h }); });
       });
       (State.data.agenda || []).filter(function(a) { return String(a.tipo || '').toLowerCase() === 'clase'; }).forEach(function(a) {
         rows.push({ materia: a.titulo, seccion: 'personal', h: { dia: a.dia || a.fecha_iso, hora_ini: a.hora_ini, hora_fin: a.hora_fin, aula: a.sala || 'Sin sala', edificio: a.edificio || '', mapa_url: a.mapa_url } });
@@ -781,6 +802,7 @@
         '<div class="grid grid-3"><div class="field"><label>Cedula</label><input class="input" name="cedula" value="' + escAttr(p.cedula) + '"></div><div class="field"><label>Email</label><input class="input" name="email" value="' + escAttr(p.email) + '"></div><div class="field"><label>Telefono</label><input class="input" name="telefono" value="' + escAttr(p.telefono) + '"></div></div>' +
         '<div class="field"><label><input type="checkbox" name="comparte_contacto"' + (String(p.comparte_contacto) === '1' ? ' checked' : '') + '> Permitir que mis companeros vean mi movil y email</label></div>' +
         '<div class="grid grid-3"><div class="field"><label>Carrera</label><input class="input" name="carrera" value="' + escAttr(p.carrera) + '"></div><div class="field"><label>Semestre</label><input class="input" name="semestre" value="' + escAttr(p.semestre) + '"></div><div class="field"><label>Turno</label><input class="input" name="turno" value="' + escAttr(p.turno) + '"></div></div>' +
+        '<div class="field"><label>Nueva contrasena</label><input class="input" name="nueva_password" type="password" autocomplete="new-password" minlength="8" placeholder="Dejar vacio para no cambiar"></div>' +
         '<div class="field"><label>Observaciones</label><textarea class="textarea" name="observaciones">' + esc(p.observaciones) + '</textarea></div>' +
         '<button class="btn btn-primary">Guardar perfil</button></form>';
     }
@@ -833,13 +855,23 @@
       server('inscribirSeccion', [State.token, id], function(res) {
         if (res.inscripciones) State.data.inscripciones = res.inscripciones;
         if (res.notas) State.data.notas = res.notas;
+        if (res.resumen) State.data.resumen = res.resumen;
         if (res.catalogo) State.data.catalogo = res.catalogo;
         if (res.catalogoLoaded !== undefined) State.data.catalogoLoaded = res.catalogoLoaded;
         toast('Materia agregada', 'ok');
         render();
       }, function() { releaseButton(btn); });
     }
-    function quitarMateria(id) { if (confirm('Quitar esta asignatura?')) server('quitarInscripcion', [State.token, id], function() { toast('Materia quitada', 'ok'); loadApp(); }); }
+    function quitarMateria(id) {
+      if (!confirm('Quitar esta asignatura?')) return;
+      server('quitarInscripcion', [State.token, id], function(res) {
+        if (res.inscripciones) State.data.inscripciones = res.inscripciones;
+        if (res.notas) State.data.notas = res.notas;
+        if (res.resumen) State.data.resumen = res.resumen;
+        toast('Materia quitada', 'ok');
+        render();
+      });
+    }
 
     function openNota(idInscripcion) {
       var n = State.data.notas.find(function(x) { return x.id_inscripcion == idInscripcion; }) || {};

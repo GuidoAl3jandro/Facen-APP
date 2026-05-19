@@ -167,6 +167,38 @@ function iniciarSesion(username, password) {
   }
 }
 
+function recuperarContrasena(datos) {
+  try {
+    datos = normalizePayload_(datos);
+    var username = cleanUsername_(datos.username);
+    if (!username) return fail_('Ingresa tu usuario.');
+    if (!datos.email && !datos.cedula) return fail_('Ingresa el email o la cedula guardada en tu perfil.');
+    return withLock_(function() {
+      var user = getRows_(CONFIG.SHEETS.USUARIOS).find(function(u) { return cleanUsername_(u.username) === username; });
+      if (!user || !isActive_(user.activo)) return fail_('No encontramos una cuenta activa con ese usuario.');
+      var perfil = getPerfilByUser_(user.id_usuario) || {};
+      var emailOk = datos.email && normalize_(perfil.email) === normalize_(datos.email);
+      var cedulaOk = datos.cedula && digitsOnly_(perfil.cedula) === digitsOnly_(datos.cedula);
+      if (!emailOk && !cedulaOk) return fail_('Los datos no coinciden con el perfil guardado.');
+      var tempPassword = makeTempPassword_();
+      var salt = makeSalt_();
+      updateRowById_(CONFIG.SHEETS.USUARIOS, 'id_usuario', user.id_usuario, {
+        password_hash: hashPassword_(tempPassword, salt),
+        salt: salt,
+        ultimo_acceso: ''
+      });
+      log_(user.id_usuario, 'RECUPERAR_CONTRASENA', 'Clave temporal generada');
+      return {
+        success: true,
+        message: 'Contrasena temporal generada.',
+        temporaryPassword: tempPassword
+      };
+    });
+  } catch (e) {
+    return fail_('No se pudo recuperar la contrasena. ' + e.message);
+  }
+}
+
 function cerrarSesion(token) {
   if (findSession_(token)) updateRowByKey_(CONFIG.SHEETS.SESIONES, 'token_hash', tokenHash_(token), { activo: 0 });
   return { success: true };
@@ -182,15 +214,11 @@ function obtenerBootstrap(token) {
   try {
     var session = requireSession_(token);
     var perfil = getOrCreatePerfil_(session.id_usuario);
-    var catalogo = safeCall_(function() { return obtenerCatalogoParaPerfil_(perfil, false); }, defaultCatalogo_());
     var inscripciones = safeCall_(function() { return obtenerMisInscripciones_(perfil.id_estudiante); }, []);
     var notas = safeCall_(function() { return obtenerMisNotas_(perfil.id_estudiante, inscripciones); }, []);
     var agenda = safeCall_(function() { return obtenerMiAgenda_(perfil.id_estudiante); }, []);
     var preferencias = safeCall_(function() { return obtenerPreferencias_(perfil.id_estudiante); }, obtenerPreferenciasDefault_());
-    var response = bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, '');
-    response.catalogo = catalogo;
-    response.catalogoLoaded = true;
-    return response;
+    return bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, '');
   } catch (e) {
     return {
       success: false,
@@ -348,6 +376,14 @@ function guardarPerfil(token, datos) {
     observaciones: trim_(datos.observaciones)
   };
   updateProfilesByUser_(session.id_usuario, values);
+  if (datos.nueva_password) {
+    if (String(datos.nueva_password).length < 8) return fail_('La nueva contrasena debe tener al menos 8 caracteres.');
+    var salt = makeSalt_();
+    updateRowById_(CONFIG.SHEETS.USUARIOS, 'id_usuario', session.id_usuario, {
+      password_hash: hashPassword_(datos.nueva_password, salt),
+      salt: salt
+    });
+  }
   perfil = getPerfilByUser_(session.id_usuario);
   log_(session.id_usuario, 'PERFIL', 'Actualizado');
   return {
@@ -405,6 +441,7 @@ function inscribirSeccion(token, idSeccion) {
       message: 'Asignatura agregada.',
       inscripciones: inscripciones,
       notas: obtenerMisNotas_(perfil.id_estudiante, inscripciones),
+      resumen: resumen_(perfil.id_estudiante, inscripciones, null, [], [], [], [], obtenerMiAgenda_(perfil.id_estudiante)),
       catalogo: obtenerCatalogoParaPerfil_(perfil, false),
       catalogoLoaded: true
     };
@@ -417,7 +454,15 @@ function quitarInscripcion(token, idInscripcion) {
   if (!getOwnedInscripcion_(perfil.id_estudiante, idInscripcion)) return fail_('Inscripcion no encontrada.');
   updateRowById_(CONFIG.SHEETS.INSCRIPCIONES, 'id_inscripcion', idInscripcion, { activo: 0 });
   log_(session.id_usuario, 'DESINSCRIPCION', String(idInscripcion));
-  return { success: true, message: 'Asignatura quitada.' };
+  var inscripciones = obtenerMisInscripciones_(perfil.id_estudiante);
+  var agenda = obtenerMiAgenda_(perfil.id_estudiante);
+  return {
+    success: true,
+    message: 'Asignatura quitada.',
+    inscripciones: inscripciones,
+    notas: obtenerMisNotas_(perfil.id_estudiante, inscripciones),
+    resumen: resumen_(perfil.id_estudiante, inscripciones, null, [], [], [], [], agenda)
+  };
 }
 
 function guardarNota(token, idInscripcion, datos) {
@@ -1296,6 +1341,14 @@ function legacyHashPassword_(password, salt) {
 
 function tokenHash_(token) {
   return digestHex_(String(token));
+}
+
+function makeTempPassword_() {
+  return 'Facen-' + Utilities.getUuid().slice(0, 8);
+}
+
+function digitsOnly_(value) {
+  return String(value === null || value === undefined ? '' : value).replace(/\D/g, '');
 }
 
 function digestHex_(text) {
