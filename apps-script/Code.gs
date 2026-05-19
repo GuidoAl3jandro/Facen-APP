@@ -41,7 +41,7 @@ var SCHEMA = {
   SECCIONES: ['id_seccion', 'id_asignatura', 'codigo_seccion', 'cupo', 'activo'],
   HORARIOS_ASIGNATURAS: ['id_horario', 'id_seccion', 'dia', 'hora_ini', 'hora_fin', 'id_aula'],
   AULAS: ['id_aula', 'nombre_aula', 'edificio', 'capacidad'],
-  INSCRIPCIONES: ['id_inscripcion', 'id_estudiante', 'id_seccion', 'periodo', 'fecha_inscripcion', 'activo'],
+  INSCRIPCIONES: ['id_inscripcion', 'id_estudiante', 'id_seccion', 'semestre_anho', 'fecha_inscripcion', 'activo', 'periodo'],
   NOTAS: ['id_nota', 'id_inscripcion', 'parcial1', 'parcial2', 'trabajos', 'final', 'promedio', 'estado', 'observaciones', 'fecha_modificacion'],
   APUNTES: ['id_apunte', 'id_estudiante', 'id_asignatura', 'tipo', 'titulo', 'contenido', 'fecha_creacion', 'fecha_modificacion'],
   EVENTOS_PERSONALES: ['id_evento', 'id_estudiante', 'id_asignatura', 'titulo', 'descripcion', 'fecha', 'hora', 'tipo', 'completado'],
@@ -490,13 +490,15 @@ function inscribirSeccion(token, idSeccion) {
     })) return fail_('Ya tenes una seccion de esa asignatura.');
 
     var idInscripcion = nextId_(CONFIG.SHEETS.INSCRIPCIONES);
+    var periodo = periodoActual_();
     appendObject_(CONFIG.SHEETS.INSCRIPCIONES, {
       id_inscripcion: idInscripcion,
       id_estudiante: perfil.id_estudiante,
       id_seccion: Number(idSeccion),
-      periodo: periodoActual_(),
+      semestre_anho: periodo,
       fecha_inscripcion: now_(),
-      activo: 1
+      activo: 1,
+      periodo: periodo
     });
     appendObject_(CONFIG.SHEETS.NOTAS, {
       id_nota: nextId_(CONFIG.SHEETS.NOTAS),
@@ -510,6 +512,9 @@ function inscribirSeccion(token, idSeccion) {
       observaciones: '',
       fecha_modificacion: now_()
     });
+    SpreadsheetApp.flush();
+    clearRows_(CONFIG.SHEETS.INSCRIPCIONES);
+    clearRows_(CONFIG.SHEETS.NOTAS);
     log_(session.id_usuario, 'INSCRIPCION', String(idSeccion));
     var inscripciones = obtenerMisInscripciones_(perfil.id_estudiante);
     return {

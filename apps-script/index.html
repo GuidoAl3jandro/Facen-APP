@@ -960,6 +960,7 @@
         if (res.catalogoLoaded !== undefined) State.data.catalogoLoaded = res.catalogoLoaded;
         toast('Materia agregada', 'ok');
         render();
+        setTimeout(loadApp, 250);
       }, function() { releaseButton(btn); });
     }
     function quitarMateria(id) {
