@@ -80,6 +80,7 @@
         <div><strong>FACEN App</strong><span>Instalable para estudiantes</span></div>
       </div>
       <div class="actions">
+        <button id="refresh" title="Actualizar a la version mas reciente">Actualizar</button>
         <button id="install" class="primary" hidden>Instalar</button>
         <a class="btn" id="open-direct" target="_blank" rel="noopener">Abrir</a>
       </div>
@@ -89,12 +90,31 @@
   <script>
     var APP_URL = 'https://script.google.com/macros/s/AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg/exec';
     var deferredPrompt = null;
-    document.getElementById('app').src = APP_URL;
+    function versionedAppUrl() {
+      var params = new URLSearchParams(window.location.search);
+      var v = params.get('v') || '';
+      return APP_URL + (v ? '?v=' + encodeURIComponent(v) : '');
+    }
+
+    document.getElementById('app').src = versionedAppUrl();
     document.getElementById('open-direct').href = APP_URL;
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').catch(function() {});
     }
+
+    document.getElementById('refresh').addEventListener('click', function() {
+      var stamp = Date.now();
+      var clearCaches = 'caches' in window ? caches.keys().then(function(keys) {
+        return Promise.all(keys.map(function(key) { return caches.delete(key); }));
+      }) : Promise.resolve();
+      var clearWorkers = 'serviceWorker' in navigator ? navigator.serviceWorker.getRegistrations().then(function(regs) {
+        return Promise.all(regs.map(function(reg) { return reg.update().then(function() { return reg.unregister(); }).catch(function() { return reg.unregister(); }); }));
+      }) : Promise.resolve();
+      Promise.all([clearCaches, clearWorkers]).finally(function() {
+        window.location.replace('./?v=' + stamp);
+      });
+    });
 
     window.addEventListener('beforeinstallprompt', function(event) {
       event.preventDefault();
