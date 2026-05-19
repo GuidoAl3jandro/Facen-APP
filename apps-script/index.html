@@ -147,6 +147,7 @@
       z-index: 4;
     }
     .menu-btn { display: none; }
+    .top-actions { display: flex; gap: 8px; align-items: center; }
     .user-pill { color: var(--muted); font-weight: 700; }
     .content { padding: 26px; max-width: 1240px; margin: 0 auto; }
     .page-head { display: flex; justify-content: space-between; gap: 18px; align-items: end; margin-bottom: 18px; }
@@ -277,6 +278,8 @@
       }
       .sidebar.open { transform: translateX(0); }
       .menu-btn { display: inline-flex; }
+      .top-actions { margin-left: auto; }
+      .top-actions .user-pill { display: none; }
       .content { padding: 18px 14px 86px; }
       .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
       .page-head { align-items: start; flex-direction: column; }
@@ -362,7 +365,10 @@
       <header class="topbar">
         <button class="btn btn-outline btn-small menu-btn" onclick="toggleMenu()">Menu</button>
         <strong id="view-title">Inicio</strong>
-        <span class="user-pill" id="top-user"></span>
+        <div class="top-actions">
+          <button class="btn btn-outline btn-small" onclick="updateAppVersion()">Actualizar app</button>
+          <span class="user-pill" id="top-user"></span>
+        </div>
       </header>
       <div id="content" class="content"></div>
     </main>
@@ -1091,6 +1097,18 @@
       var digits = String(phone || '').replace(/\D/g, '');
       if (digits && digits.indexOf('595') !== 0 && digits.charAt(0) === '0') digits = '595' + digits.slice(1);
       return digits;
+    }
+    function updateAppVersion() {
+      var stamp = Date.now();
+      toast('Buscando version nueva...', 'ok');
+      if ('caches' in window) caches.keys().then(function(keys) {
+        return Promise.all(keys.map(function(key) { return caches.delete(key); }));
+      }).catch(function() {});
+      if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(function(regs) {
+        return Promise.all(regs.map(function(reg) { return reg.update().then(function() { return reg.unregister(); }).catch(function() { return reg.unregister(); }); }));
+      }).catch(function() {});
+      try { sessionStorage.setItem('facen_updated_at', String(stamp)); } catch (e) {}
+      window.open('https://guidoal3jandro.github.io/Facen-APP/?v=' + stamp, '_top');
     }
     function logout() {
       server('cerrarSesion', [State.token], function() {});
