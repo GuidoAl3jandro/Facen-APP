@@ -11,6 +11,7 @@ var CONFIG = {
     USUARIOS: 'USUARIOS',
     SESIONES: 'SESIONES',
     ESTUDIANTES: 'ESTUDIANTES',
+    CARRERAS: 'CARRERAS',
     ASIGNATURAS: 'ASIGNATURAS',
     SECCIONES: 'SECCIONES',
     HORARIOS: 'HORARIOS_ASIGNATURAS',
@@ -35,6 +36,7 @@ var SCHEMA = {
   USUARIOS: ['id_usuario', 'username', 'password_hash', 'salt', 'rol', 'activo', 'fecha_creacion', 'ultimo_acceso'],
   SESIONES: ['token_hash', 'id_usuario', 'rol', 'creado_en', 'expira_en', 'activo'],
   ESTUDIANTES: ['id_estudiante', 'id_usuario', 'nombres', 'apellidos', 'cedula', 'email', 'telefono', 'comparte_contacto', 'carrera', 'semestre', 'turno', 'observaciones'],
+  CARRERAS: ['id_carrera', 'nombre_carrera', 'facultad', 'duracion_semestres', 'activo'],
   ASIGNATURAS: ['id_asignatura', 'codigo', 'nombre_asignatura', 'carrera', 'semestre', 'creditos', 'activo'],
   SECCIONES: ['id_seccion', 'id_asignatura', 'codigo_seccion', 'cupo', 'activo'],
   HORARIOS_ASIGNATURAS: ['id_horario', 'id_seccion', 'dia', 'hora_ini', 'hora_fin', 'id_aula'],
@@ -53,6 +55,9 @@ var SCHEMA = {
 var ROW_CACHE_ = {};
 var SHEET_CACHE_ = {};
 var HEADER_CACHE_ = {};
+var SHEET_ALIASES_ = {
+  HORARIOS_ASIGNATURAS: ['HORARIOS_ASIGNATURAS', 'HORARIOS']
+};
 
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('index')
@@ -119,7 +124,7 @@ function registrarEstudiante(datos) {
         email: trim_(datos.email),
         telefono: trim_(datos.telefono),
         comparte_contacto: datos.comparte_contacto ? 1 : 0,
-        carrera: trim_(datos.carrera),
+        carrera: canonicalCareerName_(datos.carrera),
         semestre: trim_(datos.semestre),
         turno: trim_(datos.turno),
         observaciones: ''
@@ -232,7 +237,7 @@ function obtenerDatosVista(token, vista) {
     var session = requireSession_(token);
     var perfil = getOrCreatePerfil_(session.id_usuario);
     vista = String(vista || '');
-    if (vista === 'catalogo') return { success: true, catalogo: obtenerCatalogoParaPerfil_(perfil, false) };
+    if (vista === 'catalogo') return { success: true, catalogo: obtenerCatalogoParaPerfil_(perfil, false), carreras: obtenerCarreras_() };
     if (vista === 'apuntes') return { success: true, apuntes: obtenerMisApuntes_(perfil.id_estudiante) };
     if (vista === 'eventos') return { success: true, eventos: obtenerMisEventos_(perfil.id_estudiante) };
     if (vista === 'lecturas') return { success: true, lecturas: obtenerMisLecturas_(perfil.id_estudiante) };
@@ -252,10 +257,19 @@ function obtenerCompaneros(token) {
   };
 }
 
+function obtenerCarreras() {
+  return { success: true, carreras: obtenerCarreras_() };
+}
+
 function obtenerCatalogo(token) {
   var session = requireSession_(token);
   var perfil = getOrCreatePerfil_(session.id_usuario);
-  return { success: true, catalogo: obtenerCatalogoParaPerfil_(perfil, false) };
+  return { success: true, catalogo: obtenerCatalogoParaPerfil_(perfil, false), carreras: obtenerCarreras_() };
+}
+
+function obtenerCatalogoCarrera(token, carrera) {
+  requireSession_(token);
+  return { success: true, catalogo: obtenerCatalogoPorCarrera_(carrera, false), carreras: obtenerCarreras_() };
 }
 
 function obtenerCatalogo_(useCache) {
@@ -267,6 +281,7 @@ function obtenerCatalogo_(useCache) {
     } catch (e) {}
   }
   ensureCatalogSeeded_();
+  var carreras = careerMap_();
   var aulas = indexBy_(getRows_(CONFIG.SHEETS.AULAS), 'id_aula');
   var horarios = getRows_(CONFIG.SHEETS.HORARIOS);
   var secciones = getRows_(CONFIG.SHEETS.SECCIONES).filter(function(s) { return isActive_(s.activo); });
@@ -281,14 +296,19 @@ function obtenerCatalogo_(useCache) {
     if (!seccionesByAsig[s.id_asignatura]) seccionesByAsig[s.id_asignatura] = [];
     seccionesByAsig[s.id_asignatura].push(s);
   });
-  var asignaturas = getRows_(CONFIG.SHEETS.ASIGNATURAS).filter(function(a) { return isActive_(a.activo); }).map(function(a) {
+  var asignaturas = getRows_(CONFIG.SHEETS.ASIGNATURAS).filter(function(a) {
+    return isActive_(a.activo) && isSelectableAsignatura_(a);
+  }).map(function(a) {
     a.codigo = a.codigo || ('ASIG-' + a.id_asignatura);
     a.nombre_asignatura = a.nombre_asignatura || a.nombre || 'Asignatura sin nombre';
-    a.carrera = a.carrera || 'FACEN';
+    a.carrera = carreras[normalize_(a.carrera)] || a.carrera || 'FACEN';
     a.semestre = a.semestre || '';
     a.creditos = a.creditos || '';
     a.secciones = seccionesByAsig[a.id_asignatura] || [];
     return a;
+  }).sort(function(a, b) {
+    return String(a.carrera || '').localeCompare(String(b.carrera || '')) ||
+      String(a.nombre_asignatura || '').localeCompare(String(b.nombre_asignatura || ''));
   });
   if (!asignaturas.length) asignaturas = defaultCatalogo_();
   try {
@@ -298,11 +318,66 @@ function obtenerCatalogo_(useCache) {
 }
 
 function obtenerCatalogoParaPerfil_(perfil, useCache) {
+  if (!perfil || !trim_(perfil.carrera)) return [];
+  return obtenerCatalogoPorCarrera_(perfil.carrera, useCache);
+}
+
+function obtenerCatalogoPorCarrera_(carrera, useCache) {
   var catalogo = obtenerCatalogo_(useCache);
-  var carrera = normalize_(perfil && perfil.carrera);
-  if (!carrera) return catalogo;
-  var filtrado = catalogo.filter(function(a) { return normalize_(a.carrera) === carrera; });
-  return filtrado.length ? filtrado : catalogo;
+  var normalized = normalize_(carrera);
+  if (!normalized) return [];
+  return catalogo.filter(function(a) { return normalize_(a.carrera) === normalized; });
+}
+
+function obtenerCarreras_() {
+  var map = {};
+  try {
+    getRows_(CONFIG.SHEETS.CARRERAS).forEach(function(c) {
+      var name = trim_(c.nombre_carrera || c.carrera || c.nombre);
+      if (name && isActive_(c.activo)) map[normalize_(name)] = {
+        id_carrera: c.id_carrera || '',
+        nombre_carrera: name,
+        facultad: c.facultad || '',
+        duracion_semestres: c.duracion_semestres || ''
+      };
+    });
+  } catch (e) {}
+  if (!Object.keys(map).length) {
+    getRows_(CONFIG.SHEETS.ASIGNATURAS).forEach(function(a) {
+      var name = trim_(a.carrera);
+      if (name) map[normalize_(name)] = {
+        id_carrera: '',
+        nombre_carrera: name,
+        facultad: 'FACEN',
+        duracion_semestres: ''
+      };
+    });
+  }
+  return Object.keys(map).map(function(k) { return map[k]; }).sort(function(a, b) {
+    return String(a.nombre_carrera || '').localeCompare(String(b.nombre_carrera || ''));
+  });
+}
+
+function careerMap_() {
+  var map = {};
+  obtenerCarreras_().forEach(function(c) {
+    map[normalize_(c.nombre_carrera)] = c.nombre_carrera;
+  });
+  return map;
+}
+
+function canonicalCareerName_(value) {
+  var raw = trim_(value);
+  if (!raw) return '';
+  var mapped = careerMap_()[normalize_(raw)];
+  return mapped || raw;
+}
+
+function isSelectableAsignatura_(asignatura) {
+  var name = normalize_(asignatura.nombre_asignatura || asignatura.nombre);
+  return name.indexOf('asueto') < 0 &&
+    name.indexOf('feriado') < 0 &&
+    name.indexOf('receso') < 0;
 }
 
 function ensureCatalogSeeded_() {
@@ -370,7 +445,7 @@ function guardarPerfil(token, datos) {
     email: trim_(datos.email),
     telefono: trim_(datos.telefono),
     comparte_contacto: datos.comparte_contacto ? 1 : 0,
-    carrera: trim_(datos.carrera),
+    carrera: canonicalCareerName_(datos.carrera),
     semestre: trim_(datos.semestre),
     turno: trim_(datos.turno),
     observaciones: trim_(datos.observaciones)
@@ -392,6 +467,7 @@ function guardarPerfil(token, datos) {
     perfil: perfil,
     user: publicUserFromPerfil_(session.id_usuario, session.rol, '', perfil),
     catalogo: obtenerCatalogoParaPerfil_(perfil, false),
+    carreras: obtenerCarreras_(),
     catalogoLoaded: true
   };
 }
@@ -849,6 +925,7 @@ function bootstrapResponse_(session, perfil, inscripciones, notas, agenda, prefe
     warning: warning || '',
     user: publicUserFromPerfil_(session.id_usuario, session.rol, '', perfil),
     perfil: perfil,
+    carreras: obtenerCarreras_(),
     catalogo: [],
     catalogoLoaded: false,
     inscripciones: inscripciones || [],
@@ -1142,9 +1219,10 @@ function getSpreadsheet_() {
 
 function getSheet_(name) {
   if (SHEET_CACHE_[name]) return SHEET_CACHE_[name];
-  var sheet = getSpreadsheet_().getSheetByName(name);
+  var ss = getSpreadsheet_();
+  var sheet = findSheetByName_(ss, name);
   if (!sheet && SCHEMA[name]) {
-    sheet = getSpreadsheet_().insertSheet(name);
+    sheet = ss.insertSheet(name);
     sheet.getRange(1, 1, 1, SCHEMA[name].length).setValues([SCHEMA[name]]);
     styleHeader_(sheet, SCHEMA[name].length);
   }
@@ -1155,6 +1233,15 @@ function getSheet_(name) {
   }
   SHEET_CACHE_[name] = sheet;
   return sheet;
+}
+
+function findSheetByName_(ss, name) {
+  var names = SHEET_ALIASES_[name] || [name];
+  for (var i = 0; i < names.length; i++) {
+    var sheet = ss.getSheetByName(names[i]);
+    if (sheet) return sheet;
+  }
+  return null;
 }
 
 function getRows_(name) {
@@ -1222,7 +1309,7 @@ function nextId_(sheetName) {
 
 function clearRows_(sheetName) {
   delete ROW_CACHE_[sheetName];
-  if ([CONFIG.SHEETS.ASIGNATURAS, CONFIG.SHEETS.SECCIONES, CONFIG.SHEETS.HORARIOS, CONFIG.SHEETS.AULAS].indexOf(sheetName) >= 0) {
+  if ([CONFIG.SHEETS.CARRERAS, CONFIG.SHEETS.ASIGNATURAS, CONFIG.SHEETS.SECCIONES, CONFIG.SHEETS.HORARIOS, CONFIG.SHEETS.AULAS].indexOf(sheetName) >= 0) {
     clearCatalogCache_();
   }
 }
@@ -1231,11 +1318,12 @@ function clearCatalogCache_() {
   try {
     CacheService.getScriptCache().remove(catalogCacheKey_());
     CacheService.getScriptCache().remove('facen_v4_catalogo');
+    CacheService.getScriptCache().remove('facen_v4_catalogo_real_xlsx_v2');
   } catch (e) {}
 }
 
 function catalogCacheKey_() {
-  return 'facen_v4_catalogo_real_xlsx_v2';
+  return 'facen_v4_catalogo_carreras_v3';
 }
 
 function isActive_(value) {
@@ -1278,6 +1366,24 @@ function ensureHeaders_(sheet, expected) {
 }
 
 function seedCatalog_() {
+  if (getRows_(CONFIG.SHEETS.CARRERAS).length === 0) {
+    [
+      [1, 'Licenciatura en Biotecnologia', 'FACEN', 10],
+      [2, 'Licenciatura en Ciencias Mencion Biologia', 'FACEN', 10],
+      [3, 'Licenciatura en Ciencias Mencion Fisica', 'FACEN', 10],
+      [4, 'Licenciatura en Ciencias Mencion Geologia', 'FACEN', 10],
+      [5, 'Licenciatura en Ciencias Mencion Matematica Estadistica', 'FACEN', 10],
+      [6, 'Licenciatura en Ciencias Mencion Matematica Pura', 'FACEN', 10],
+      [7, 'Licenciatura en Ciencias Mencion Quimica', 'FACEN', 10],
+      [8, 'Licenciatura en Educacion Matematica', 'FACEN', 10],
+      [9, 'Licenciatura en Fisica Medica', 'FACEN', 10],
+      [10, 'Licenciatura en Logistica y Gestion del Transporte', 'FACEN', 10],
+      [11, 'Licenciatura en Radiologia e Imagenologia', 'FACEN', 10],
+      [12, 'Licenciatura en Tecnologia de Produccion', 'FACEN', 10]
+    ].forEach(function(r) {
+      appendObject_(CONFIG.SHEETS.CARRERAS, { id_carrera: r[0], nombre_carrera: r[1], facultad: r[2], duracion_semestres: r[3], activo: 1 });
+    });
+  }
   if (getRows_(CONFIG.SHEETS.AULAS).length === 0) {
     [
       [1, 'Aula 101', 'Bloque A', 45],

@@ -338,7 +338,7 @@
         <div class="field"><label>Email</label><input class="input" name="email" type="email"></div>
         <div class="field"><label><input type="checkbox" name="comparte_contacto"> Compartir mi movil con companeros de mis asignaturas</label></div>
         <div class="grid grid-2">
-          <div class="field"><label>Carrera</label><input class="input" name="carrera"></div>
+          <div class="field"><label>Carrera</label><select class="select" name="carrera" id="register-carrera"><option value="">Seleccionar carrera</option></select></div>
           <div class="field"><label>Semestre</label><input class="input" name="semestre"></div>
         </div>
         <button class="btn btn-primary" type="submit">Crear y entrar</button>
@@ -394,6 +394,7 @@
       data: null,
       view: 'dashboard',
       alertTimers: [],
+      authCarrerasLoaded: false,
       nav: [
         ['dashboard', 'Inicio'],
         ['materias', 'Materias'],
@@ -539,6 +540,7 @@
       res.user.nombre = res.user.nombre || name || res.user.username || 'Estudiante';
       res.user.username = res.user.username || '';
       res.perfil = perfil;
+      res.carreras = res.carreras || [];
       res.catalogo = res.catalogo || [];
       res.inscripciones = res.inscripciones || [];
       res.notas = res.notas || [];
@@ -556,11 +558,24 @@
     function showAuth() {
       document.getElementById('auth').classList.remove('hidden');
       document.getElementById('app').classList.add('hidden');
+      loadAuthCarreras();
     }
 
     function showAppShell() {
       document.getElementById('auth').classList.add('hidden');
       document.getElementById('app').classList.remove('hidden');
+    }
+
+    function loadAuthCarreras() {
+      if (State.authCarrerasLoaded) return;
+      State.authCarrerasLoaded = true;
+      server('obtenerCarreras', [], function(res) {
+        var sel = document.getElementById('register-carrera');
+        if (!sel) return;
+        sel.innerHTML = careerOptionsFromList(res.carreras || [], '');
+      }, function() {
+        State.authCarrerasLoaded = false;
+      });
     }
 
     function buildNav() {
@@ -593,6 +608,7 @@
       State.data[loadingKey] = true;
       server('obtenerDatosVista', [State.token, vista], function(res) {
         State.data[key] = res[key] || [];
+        if (res.carreras) State.data.carreras = res.carreras;
         State.data[loadedKey] = true;
         State.data[loadingKey] = false;
         if (State.view === vista || (vista === 'catalogo' && State.view === 'materias') || (vista === 'eventos' && State.view === 'recordatorios')) render();
@@ -663,10 +679,16 @@
       State.data.catalogo = State.data.catalogo || [];
       var elegidas = {};
       (State.data.inscripciones || []).forEach(function(i) { elegidas[String(i.id_asignatura)] = true; });
+      var perfil = State.data.perfil || {};
       var actuales = (State.data.inscripciones || []).map(function(i) {
         var horarios = (i.horarios || []).map(function(h) { return h.dia + ' ' + h.hora_ini + '-' + h.hora_fin + ' - ' + h.aula; }).join('\n');
         return item(i.nombre_asignatura + ' - ' + i.codigo_seccion, horarios || 'Sin horario', '<button class="btn btn-danger btn-small" onclick="quitarMateria(' + i.id_inscripcion + ')">Quitar</button>');
       }).join('') || '<div class="empty">Todavia no seleccionaste asignaturas.</div>';
+      if (!perfil.carrera) {
+        return head('Materias', 'Selecciona las asignaturas y secciones que estas cursando.', '<button class="btn btn-outline" onclick="go(\'perfil\')">Elegir carrera</button>') +
+          '<section class="card card-pad"><h3>Mis asignaturas</h3><div class="list">' + actuales + '</div></section>' +
+          '<div style="height:18px"></div><div class="empty">Primero selecciona tu carrera en Perfil para cargar la lista correcta de asignaturas.</div>';
+      }
       var catalogo = !State.data.catalogoLoaded ? '<div class="empty">Cargando catalogo de tu carrera...</div>' : State.data.catalogo.map(function(a) {
         var secs = (a.secciones || []).map(function(s) {
           var hs = (s.horarios || []).map(function(h) { return h.dia + ' ' + h.hora_ini + '-' + h.hora_fin + ' - ' + h.aula; }).join(', ');
@@ -683,8 +705,46 @@
       var catalogoBody = catalogo || '<div class="empty">No hay asignaturas disponibles todavia. <button class="btn btn-outline btn-small" onclick="reloadCatalogo()">Recargar catalogo</button></div>';
       return head('Materias', 'Selecciona las asignaturas y secciones que estas cursando.', '<button class="btn btn-outline" onclick="loadApp()">Actualizar</button>') +
         '<section class="card card-pad"><h3>Mis asignaturas</h3><div class="list">' + actuales + '</div></section>' +
+        renderMateriaPicker(elegidas) +
         '<div class="toolbar" style="margin-top:18px;"><input class="input" placeholder="Buscar asignatura, codigo o carrera" oninput="filterSubjects(this.value)"></div>' +
         '<div class="grid grid-3" id="subject-grid">' + catalogoBody + '</div>';
+    }
+
+    function renderMateriaPicker(elegidas) {
+      if (!State.data.catalogoLoaded) return '<div style="height:18px"></div><section class="card card-pad"><div class="empty">Cargando selector de asignaturas...</div></section>';
+      var disponibles = (State.data.catalogo || []).filter(function(a) {
+        return !elegidas[String(a.id_asignatura)] && (a.secciones || []).length;
+      });
+      if (!disponibles.length) return '<div style="height:18px"></div><section class="card card-pad"><div class="empty">No quedan asignaturas disponibles para agregar en tu carrera.</div></section>';
+      var first = disponibles[0];
+      return '<div style="height:18px"></div><section class="card card-pad">' +
+        '<h3>Agregar asignatura</h3>' +
+        '<div class="grid grid-3">' +
+          '<div class="field"><label>Asignatura</label><select class="select" id="materia-select" onchange="refreshSectionSelect()">' + subjectCatalogOptions(disponibles, '') + '</select></div>' +
+          '<div class="field"><label>Seccion y horario</label><select class="select" id="section-select">' + sectionOptions(first) + '</select></div>' +
+          '<div class="field"><label>&nbsp;</label><button class="btn btn-primary" onclick="inscribirSeleccionada(event)">Agregar</button></div>' +
+        '</div></section>';
+    }
+
+    function subjectCatalogOptions(list, selected) {
+      return list.map(function(a) {
+        var label = (a.codigo ? a.codigo + ' - ' : '') + a.nombre_asignatura;
+        return '<option value="' + escAttr(a.id_asignatura) + '"' + (String(selected) === String(a.id_asignatura) ? ' selected' : '') + '>' + esc(label) + '</option>';
+      }).join('');
+    }
+
+    function sectionOptions(asignatura) {
+      asignatura = asignatura || {};
+      return (asignatura.secciones || []).map(function(s) {
+        return '<option value="' + escAttr(s.id_seccion) + '">' + esc(sectionLabel(s)) + '</option>';
+      }).join('');
+    }
+
+    function sectionLabel(s) {
+      var horarios = (s.horarios || []).map(function(h) {
+        return h.dia + ' ' + h.hora_ini + '-' + h.hora_fin + (h.aula ? ' ' + h.aula : '');
+      }).join(', ');
+      return 'Seccion ' + (s.codigo_seccion || s.id_seccion) + ' - ' + (horarios || 'Sin horario');
     }
 
     function renderHorario() {
@@ -802,15 +862,31 @@
 
     function renderPerfil() {
       var p = State.data.perfil || {};
+      var carreraControl = (State.data.carreras || []).length ?
+        '<select class="select" name="carrera">' + careerOptions(p.carrera) + '</select>' :
+        '<input class="input" name="carrera" value="' + escAttr(p.carrera) + '">';
       return head('Perfil', 'Datos academicos y personales.') +
         '<form class="card card-pad form" onsubmit="savePerfil(event)">' +
         '<div class="grid grid-2"><div class="field"><label>Nombres</label><input class="input" name="nombres" value="' + escAttr(p.nombres) + '"></div><div class="field"><label>Apellidos</label><input class="input" name="apellidos" value="' + escAttr(p.apellidos) + '"></div></div>' +
         '<div class="grid grid-3"><div class="field"><label>Cedula</label><input class="input" name="cedula" value="' + escAttr(p.cedula) + '"></div><div class="field"><label>Email</label><input class="input" name="email" value="' + escAttr(p.email) + '"></div><div class="field"><label>Telefono</label><input class="input" name="telefono" value="' + escAttr(p.telefono) + '"></div></div>' +
         '<div class="field"><label><input type="checkbox" name="comparte_contacto"' + (String(p.comparte_contacto) === '1' ? ' checked' : '') + '> Permitir que mis companeros vean mi movil y email</label></div>' +
-        '<div class="grid grid-3"><div class="field"><label>Carrera</label><input class="input" name="carrera" value="' + escAttr(p.carrera) + '"></div><div class="field"><label>Semestre</label><input class="input" name="semestre" value="' + escAttr(p.semestre) + '"></div><div class="field"><label>Turno</label><input class="input" name="turno" value="' + escAttr(p.turno) + '"></div></div>' +
+        '<div class="grid grid-3"><div class="field"><label>Carrera</label>' + carreraControl + '</div><div class="field"><label>Semestre</label><input class="input" name="semestre" value="' + escAttr(p.semestre) + '"></div><div class="field"><label>Turno</label><input class="input" name="turno" value="' + escAttr(p.turno) + '"></div></div>' +
         '<div class="field"><label>Nueva contrasena</label><input class="input" name="nueva_password" type="password" autocomplete="new-password" minlength="8" placeholder="Dejar vacio para no cambiar"></div>' +
         '<div class="field"><label>Observaciones</label><textarea class="textarea" name="observaciones">' + esc(p.observaciones) + '</textarea></div>' +
         '<button class="btn btn-primary">Guardar perfil</button></form>';
+    }
+
+    function careerOptions(selected) {
+      return careerOptionsFromList(State.data.carreras || [], selected);
+    }
+
+    function careerOptionsFromList(list, selected) {
+      var opts = '<option value="">Seleccionar carrera</option>';
+      (list || []).forEach(function(c) {
+        var name = c.nombre_carrera || c;
+        opts += '<option value="' + escAttr(name) + '"' + (norm(name) === norm(selected) ? ' selected' : '') + '>' + esc(name) + '</option>';
+      });
+      return opts;
     }
 
     function renderPrefsForm() {
@@ -856,6 +932,23 @@
       btn.disabled = false;
     }
 
+    function refreshSectionSelect() {
+      var materia = document.getElementById('materia-select');
+      var seccion = document.getElementById('section-select');
+      if (!materia || !seccion) return;
+      var asignatura = (State.data.catalogo || []).find(function(a) { return String(a.id_asignatura) === String(materia.value); });
+      seccion.innerHTML = sectionOptions(asignatura);
+    }
+
+    function inscribirSeleccionada(evt) {
+      var seccion = document.getElementById('section-select');
+      if (!seccion || !seccion.value) {
+        toast('Selecciona una seccion.', 'error');
+        return;
+      }
+      inscribir(evt, seccion.value);
+    }
+
     function inscribir(evt, id) {
       var btn = busyButton(evt, 'Agregando...');
       server('inscribirSeccion', [State.token, id], function(res) {
@@ -863,6 +956,7 @@
         if (res.notas) State.data.notas = res.notas;
         if (res.resumen) State.data.resumen = res.resumen;
         if (res.catalogo) State.data.catalogo = res.catalogo;
+        if (res.carreras) State.data.carreras = res.carreras;
         if (res.catalogoLoaded !== undefined) State.data.catalogoLoaded = res.catalogoLoaded;
         toast('Materia agregada', 'ok');
         render();
@@ -997,6 +1091,7 @@
           State.data.user = res.user;
         }
         if (res.catalogo) State.data.catalogo = res.catalogo;
+        if (res.carreras) State.data.carreras = res.carreras;
         if (res.catalogoLoaded !== undefined) State.data.catalogoLoaded = res.catalogoLoaded;
         toast('Perfil guardado', 'ok');
         render();
