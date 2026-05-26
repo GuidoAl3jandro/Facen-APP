@@ -326,7 +326,41 @@ function obtenerCatalogoPorCarrera_(carrera, useCache) {
   var catalogo = obtenerCatalogo_(useCache);
   var normalized = normalize_(carrera);
   if (!normalized) return [];
-  return catalogo.filter(function(a) { return normalize_(a.carrera) === normalized; });
+  var exact = catalogo.filter(function(a) { return normalize_(a.carrera) === normalized; });
+  if (exact.length) return exact;
+  var related = catalogo.filter(function(a) { return careerMatches_(a.carrera, carrera); });
+  if (related.length) return related;
+  return catalogo;
+}
+
+function careerMatches_(catalogCareer, profileCareer) {
+  var catalog = normalize_(catalogCareer);
+  var profile = normalize_(profileCareer);
+  if (!catalog || !profile) return false;
+  if (catalog === profile || catalog.indexOf(profile) >= 0 || profile.indexOf(catalog) >= 0) return true;
+  var catalogTokens = meaningfulCareerTokens_(catalog);
+  var profileTokens = meaningfulCareerTokens_(profile);
+  if (!catalogTokens.length || !profileTokens.length) return false;
+  var hits = profileTokens.filter(function(token) { return catalogTokens.indexOf(token) >= 0; }).length;
+  return hits >= Math.min(2, profileTokens.length);
+}
+
+function meaningfulCareerTokens_(value) {
+  var stop = {
+    licenciatura: true,
+    ciencias: true,
+    mencion: true,
+    facen: true,
+    en: true,
+    de: true,
+    del: true,
+    la: true,
+    el: true,
+    y: true
+  };
+  return String(value || '').split(/[^a-z0-9]+/).filter(function(token) {
+    return token.length > 2 && !stop[token];
+  });
 }
 
 function obtenerCarreras_() {
@@ -1328,7 +1362,7 @@ function clearCatalogCache_() {
 }
 
 function catalogCacheKey_() {
-  return 'facen_v4_catalogo_carreras_v3';
+  return 'facen_v4_catalogo_carreras_v4';
 }
 
 function isActive_(value) {
