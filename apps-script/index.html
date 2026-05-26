@@ -409,6 +409,20 @@
         ['perfil', 'Perfil']
       ]
     };
+    var DEFAULT_CARRERAS = [
+      'Licenciatura en Biotecnologia',
+      'Licenciatura en Ciencias Mencion Biologia',
+      'Licenciatura en Ciencias Mencion Fisica',
+      'Licenciatura en Ciencias Mencion Geologia',
+      'Licenciatura en Ciencias Mencion Matematica Estadistica',
+      'Licenciatura en Ciencias Mencion Matematica Pura',
+      'Licenciatura en Ciencias Mencion Quimica',
+      'Licenciatura en Educacion Matematica',
+      'Licenciatura en Fisica Medica',
+      'Licenciatura en Logistica y Gestion del Transporte',
+      'Licenciatura en Radiologia e Imagenologia',
+      'Licenciatura en Tecnologia de Produccion'
+    ];
 
     document.addEventListener('DOMContentLoaded', function() {
       window.onerror = function(message, source, lineno, colno, error) {
@@ -572,8 +586,10 @@
       server('obtenerCarreras', [], function(res) {
         var sel = document.getElementById('register-carrera');
         if (!sel) return;
-        sel.innerHTML = careerOptionsFromList(res.carreras || [], '');
+        sel.innerHTML = careerOptionsFromList(normalizeCarreras(res.carreras), '');
       }, function() {
+        var sel = document.getElementById('register-carrera');
+        if (sel) sel.innerHTML = careerOptionsFromList(normalizeCarreras([]), '');
         State.authCarrerasLoaded = false;
       });
     }
@@ -607,10 +623,11 @@
       if (!State.data || State.data.loading_carreras) return;
       State.data.loading_carreras = true;
       server('obtenerCarreras', [], function(res) {
-        State.data.carreras = res.carreras || [];
+        State.data.carreras = normalizeCarreras(res.carreras);
         State.data.loading_carreras = false;
         if (State.view === 'perfil') render();
       }, function() {
+        State.data.carreras = normalizeCarreras([]);
         State.data.loading_carreras = false;
         if (State.view === 'perfil') render();
       });
@@ -878,9 +895,7 @@
       var p = State.data.perfil || {};
       var carreraControl = State.data.loading_carreras ?
         '<select class="select" name="carrera" disabled><option>Cargando carreras...</option></select>' :
-        (State.data.carreras || []).length ?
-        '<select class="select" name="carrera">' + careerOptions(p.carrera) + '</select>' :
-        '<input class="input" name="carrera" value="' + escAttr(p.carrera) + '">';
+        '<select class="select" name="carrera">' + careerOptions(p.carrera) + '</select>';
       return head('Perfil', 'Datos academicos y personales.') +
         '<form class="card card-pad form" onsubmit="savePerfil(event)">' +
         '<div class="grid grid-2"><div class="field"><label>Nombres</label><input class="input" name="nombres" value="' + escAttr(p.nombres) + '"></div><div class="field"><label>Apellidos</label><input class="input" name="apellidos" value="' + escAttr(p.apellidos) + '"></div></div>' +
@@ -893,7 +908,7 @@
     }
 
     function careerOptions(selected) {
-      return careerOptionsFromList(State.data.carreras || [], selected);
+      return careerOptionsFromList(normalizeCarreras(State.data.carreras), selected);
     }
 
     function careerOptionsFromList(list, selected) {
@@ -903,6 +918,20 @@
         opts += '<option value="' + escAttr(name) + '"' + (norm(name) === norm(selected) ? ' selected' : '') + '>' + esc(name) + '</option>';
       });
       return opts;
+    }
+
+    function normalizeCarreras(list) {
+      var source = (list || []).length ? list : DEFAULT_CARRERAS;
+      var seen = {};
+      return source.map(function(c) {
+        return typeof c === 'string' ? { nombre_carrera: c } : c;
+      }).filter(function(c) {
+        var name = c && c.nombre_carrera;
+        var key = norm(name);
+        if (!name || seen[key]) return false;
+        seen[key] = true;
+        return true;
+      });
     }
 
     function renderPrefsForm() {

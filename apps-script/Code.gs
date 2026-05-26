@@ -401,8 +401,37 @@ function obtenerCarreras_() {
       };
     });
   }
+  if (!Object.keys(map).length) {
+    defaultCarreras_().forEach(function(c) {
+      map[normalize_(c.nombre_carrera)] = c;
+    });
+  }
   return Object.keys(map).map(function(k) { return map[k]; }).sort(function(a, b) {
     return String(a.nombre_carrera || '').localeCompare(String(b.nombre_carrera || ''));
+  });
+}
+
+function defaultCarreras_() {
+  return [
+    [1, 'Licenciatura en Biotecnologia', 'FACEN', 10],
+    [2, 'Licenciatura en Ciencias Mencion Biologia', 'FACEN', 10],
+    [3, 'Licenciatura en Ciencias Mencion Fisica', 'FACEN', 10],
+    [4, 'Licenciatura en Ciencias Mencion Geologia', 'FACEN', 10],
+    [5, 'Licenciatura en Ciencias Mencion Matematica Estadistica', 'FACEN', 10],
+    [6, 'Licenciatura en Ciencias Mencion Matematica Pura', 'FACEN', 10],
+    [7, 'Licenciatura en Ciencias Mencion Quimica', 'FACEN', 10],
+    [8, 'Licenciatura en Educacion Matematica', 'FACEN', 10],
+    [9, 'Licenciatura en Fisica Medica', 'FACEN', 10],
+    [10, 'Licenciatura en Logistica y Gestion del Transporte', 'FACEN', 10],
+    [11, 'Licenciatura en Radiologia e Imagenologia', 'FACEN', 10],
+    [12, 'Licenciatura en Tecnologia de Produccion', 'FACEN', 10]
+  ].map(function(r) {
+    return {
+      id_carrera: r[0],
+      nombre_carrera: r[1],
+      facultad: r[2],
+      duracion_semestres: r[3]
+    };
   });
 }
 
