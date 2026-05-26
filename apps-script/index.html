@@ -600,6 +600,20 @@
       if (view === 'recordatorios' && !State.data.eventosLoaded) return loadVista('eventos', 'eventos', 'eventosLoaded');
       if (view === 'lecturas' && !State.data.lecturasLoaded) return loadVista('lecturas', 'lecturas', 'lecturasLoaded');
       if (view === 'grupos' && !State.data.gruposLoaded) return loadVista('grupos', 'grupos', 'gruposLoaded');
+      if (view === 'perfil' && !(State.data.carreras || []).length) return loadCarreras();
+    }
+
+    function loadCarreras() {
+      if (!State.data || State.data.loading_carreras) return;
+      State.data.loading_carreras = true;
+      server('obtenerCarreras', [], function(res) {
+        State.data.carreras = res.carreras || [];
+        State.data.loading_carreras = false;
+        if (State.view === 'perfil') render();
+      }, function() {
+        State.data.loading_carreras = false;
+        if (State.view === 'perfil') render();
+      });
     }
 
     function loadVista(vista, key, loadedKey) {
@@ -862,7 +876,9 @@
 
     function renderPerfil() {
       var p = State.data.perfil || {};
-      var carreraControl = (State.data.carreras || []).length ?
+      var carreraControl = State.data.loading_carreras ?
+        '<select class="select" name="carrera" disabled><option>Cargando carreras...</option></select>' :
+        (State.data.carreras || []).length ?
         '<select class="select" name="carrera">' + careerOptions(p.carrera) + '</select>' :
         '<input class="input" name="carrera" value="' + escAttr(p.carrera) + '">';
       return head('Perfil', 'Datos academicos y personales.') +

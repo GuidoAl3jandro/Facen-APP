@@ -377,6 +377,20 @@ function obtenerCarreras_() {
     });
   } catch (e) {}
   if (!Object.keys(map).length) {
+    try {
+      seedCatalog_();
+      getRows_(CONFIG.SHEETS.CARRERAS).forEach(function(c) {
+        var name = trim_(c.nombre_carrera || c.carrera || c.nombre);
+        if (name && isActive_(c.activo)) map[normalize_(name)] = {
+          id_carrera: c.id_carrera || '',
+          nombre_carrera: name,
+          facultad: c.facultad || '',
+          duracion_semestres: c.duracion_semestres || ''
+        };
+      });
+    } catch (e) {}
+  }
+  if (!Object.keys(map).length) {
     getRows_(CONFIG.SHEETS.ASIGNATURAS).forEach(function(a) {
       var name = trim_(a.carrera);
       if (name) map[normalize_(name)] = {
