@@ -498,7 +498,7 @@ function guardarPerfil(token, datos) {
     turno: trim_(datos.turno),
     observaciones: trim_(datos.observaciones)
   };
-  updateProfilesByUser_(session.id_usuario, values);
+  updateRowById_(CONFIG.SHEETS.ESTUDIANTES, 'id_estudiante', perfil.id_estudiante, values);
   if (datos.nueva_password) {
     if (String(datos.nueva_password).length < 8) return fail_('La nueva contrasena debe tener al menos 8 caracteres.');
     var salt = makeSalt_();
@@ -507,7 +507,9 @@ function guardarPerfil(token, datos) {
       salt: salt
     });
   }
-  perfil = getPerfilByUser_(session.id_usuario);
+  Object.keys(values).forEach(function(key) {
+    perfil[key] = values[key];
+  });
   log_(session.id_usuario, 'PERFIL', 'Actualizado');
   return {
     success: true,

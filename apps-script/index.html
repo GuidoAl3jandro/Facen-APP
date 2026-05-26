@@ -1101,8 +1101,10 @@
 
     function savePerfil(e) {
       e.preventDefault();
-      server('guardarPerfil', [State.token, formData(e.target)], function(res) {
-        if (res.perfil) State.data.perfil = res.perfil;
+      var data = formData(e.target);
+      data.comparte_contacto = data.comparte_contacto ? 1 : 0;
+      server('guardarPerfil', [State.token, data], function(res) {
+        State.data.perfil = Object.assign({}, State.data.perfil || {}, res.perfil || {}, data);
         if (res.user) {
           State.user = res.user;
           State.data.user = res.user;
