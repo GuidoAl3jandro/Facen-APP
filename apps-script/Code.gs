@@ -29,6 +29,19 @@ var CONFIG = {
   ROLES: {
     ESTUDIANTE: 'estudiante',
     ADMIN: 'admin'
+  },
+  CANONICAL_URL: 'https://appfacen.github.io/Facen-APP/',
+  EMBEDDED_CATALOG: {
+    FILE: 'catalogo_csv',
+    SCRIPT_ID: 'facen-catalogo-horarios-csv',
+    CAREER: 'Licenciatura en Ciencias Mencion Matematica Estadistica',
+    FACULTY: 'FACEN',
+    VERSION: '2026-2-csv-20260616'
+  },
+  CATALOG_SNAPSHOT: {
+    PREFIX: 'FACEN_CATALOG_SNAPSHOT_',
+    CHUNK_SIZE: 7500,
+    VERSION_PREFIX: 'sheet-csv-'
   }
 };
 
@@ -41,7 +54,7 @@ var SCHEMA = {
   SECCIONES: ['id_seccion', 'id_asignatura', 'codigo_seccion', 'cupo', 'activo'],
   HORARIOS_ASIGNATURAS: ['id_horario', 'id_seccion', 'dia', 'hora_ini', 'hora_fin', 'id_aula'],
   AULAS: ['id_aula', 'nombre_aula', 'edificio', 'capacidad'],
-  INSCRIPCIONES: ['id_inscripcion', 'id_estudiante', 'id_seccion', 'semestre_anho', 'fecha_inscripcion', 'activo', 'periodo'],
+  INSCRIPCIONES: ['id_inscripcion', 'id_estudiante', 'id_seccion', 'semestre_anho', 'fecha_inscripcion', 'activo', 'periodo', 'id_asignatura_snapshot', 'codigo_asignatura_snapshot', 'nombre_asignatura_snapshot', 'codigo_seccion_snapshot', 'horarios_snapshot', 'fuente_catalogo', 'version_catalogo'],
   NOTAS: ['id_nota', 'id_inscripcion', 'parcial1', 'parcial2', 'trabajos', 'final', 'promedio', 'estado', 'observaciones', 'fecha_modificacion'],
   APUNTES: ['id_apunte', 'id_estudiante', 'id_asignatura', 'tipo', 'titulo', 'contenido', 'fecha_creacion', 'fecha_modificacion'],
   EVENTOS_PERSONALES: ['id_evento', 'id_estudiante', 'id_asignatura', 'titulo', 'descripcion', 'fecha', 'hora', 'tipo', 'completado'],
@@ -55,6 +68,9 @@ var SCHEMA = {
 var ROW_CACHE_ = {};
 var SHEET_CACHE_ = {};
 var HEADER_CACHE_ = {};
+var EMBEDDED_CATALOG_CACHE_ = null;
+var SNAPSHOT_CATALOG_CACHE_ = null;
+var CATALOG_LOOKUP_CACHE_ = null;
 var SHEET_ALIASES_ = {
   HORARIOS_ASIGNATURAS: ['HORARIOS_ASIGNATURAS', 'HORARIOS']
 };
@@ -222,8 +238,17 @@ function obtenerBootstrap(token) {
     var inscripciones = safeCall_(function() { return obtenerMisInscripciones_(perfil.id_estudiante); }, []);
     var notas = safeCall_(function() { return obtenerMisNotas_(perfil.id_estudiante, inscripciones); }, []);
     var agenda = safeCall_(function() { return obtenerMiAgenda_(perfil.id_estudiante); }, []);
+    var apuntes = safeCall_(function() { return obtenerMisApuntes_(perfil.id_estudiante); }, []);
+    var eventos = safeCall_(function() { return obtenerMisEventos_(perfil.id_estudiante); }, []);
+    var lecturas = safeCall_(function() { return obtenerMisLecturas_(perfil.id_estudiante); }, []);
+    var grupos = safeCall_(function() { return obtenerMisGrupos_(perfil.id_estudiante); }, []);
     var preferencias = safeCall_(function() { return obtenerPreferencias_(perfil.id_estudiante); }, obtenerPreferenciasDefault_());
-    return bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, '');
+    return bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, '', {
+      apuntes: apuntes,
+      eventos: eventos,
+      lecturas: lecturas,
+      grupos: grupos
+    });
   } catch (e) {
     return {
       success: false,
@@ -261,6 +286,62 @@ function obtenerCarreras() {
   return { success: true, carreras: obtenerCarreras_() };
 }
 
+function diagnosticoCatalogoRapido() {
+  var catalogo = obtenerCatalogo_(false);
+  var counts = catalogCounts_(catalogo);
+  var meta = catalogSnapshotMeta_();
+  return {
+    success: true,
+    fuente: meta.version ? 'snapshot_hoja_calculo' : 'csv_embebido_gas',
+    version: meta.version || CONFIG.EMBEDDED_CATALOG.VERSION,
+    actualizado_en: meta.updated_at || '',
+    actualizado_por: meta.updated_by || '',
+    asignaturas: counts.asignaturas,
+    secciones: counts.secciones,
+    horarios: counts.horarios,
+    url_canonica: CONFIG.CANONICAL_URL
+  };
+}
+
+function actualizarCatalogoDesdeHoja(token) {
+  var session = requireSession_(token);
+  var perfil = getOrCreatePerfil_(session.id_usuario);
+  return withLock_(function() {
+    var catalogo = buildSheetCatalog_();
+    if (!catalogo.length) {
+      return fail_('No hay asignaturas activas en la hoja de calculo para actualizar el catalogo.');
+    }
+    var csv = catalogToCsv_(catalogo);
+    var counts = catalogCounts_(catalogo);
+    var version = CONFIG.CATALOG_SNAPSHOT.VERSION_PREFIX + Utilities.formatDate(new Date(), 'America/Asuncion', 'yyyyMMdd-HHmmss');
+    saveCatalogSnapshotCsv_(csv, {
+      version: version,
+      updated_at: now_(),
+      updated_by: session.id_usuario,
+      asignaturas: counts.asignaturas,
+      secciones: counts.secciones,
+      horarios: counts.horarios
+    });
+    clearCatalogCache_();
+    log_(session.id_usuario, 'CATALOGO_ACTUALIZAR', counts.asignaturas + ' asignaturas, ' + counts.secciones + ' secciones, ' + counts.horarios + ' horarios');
+    var inscripciones = obtenerMisInscripciones_(perfil.id_estudiante);
+    var notas = obtenerMisNotas_(perfil.id_estudiante, inscripciones);
+    var agenda = obtenerMiAgenda_(perfil.id_estudiante);
+    return {
+      success: true,
+      message: 'Catalogo actualizado desde la hoja de calculo.',
+      catalogo: obtenerCatalogoParaPerfil_(perfil, false),
+      carreras: obtenerCarreras_(),
+      catalogoLoaded: true,
+      inscripciones: inscripciones,
+      notas: notas,
+      agenda: agenda,
+      resumen: resumen_(perfil.id_estudiante, inscripciones, notas, obtenerMisApuntes_(perfil.id_estudiante), obtenerMisEventos_(perfil.id_estudiante), obtenerMisLecturas_(perfil.id_estudiante), obtenerMisGrupos_(perfil.id_estudiante), agenda),
+      diagnostico: diagnosticoCatalogoRapido()
+    };
+  });
+}
+
 function obtenerCatalogo(token) {
   var session = requireSession_(token);
   var perfil = getOrCreatePerfil_(session.id_usuario);
@@ -280,7 +361,30 @@ function obtenerCatalogo_(useCache) {
       if (cached) return JSON.parse(cached);
     } catch (e) {}
   }
+  var snapshot = snapshotCatalogo_();
+  if (snapshot.length) {
+    cacheCatalog_(cacheKey, snapshot);
+    return snapshot;
+  }
+  var embedded = embeddedCatalogo_();
+  if (embedded.length) {
+    cacheCatalog_(cacheKey, embedded);
+    return embedded;
+  }
   ensureCatalogSeeded_();
+  var asignaturas = buildSheetCatalog_();
+  if (!asignaturas.length) asignaturas = defaultCatalogo_();
+  cacheCatalog_(cacheKey, asignaturas);
+  return asignaturas;
+}
+
+function cacheCatalog_(cacheKey, catalogo) {
+  try {
+    CacheService.getScriptCache().put(cacheKey, JSON.stringify(catalogo), 600);
+  } catch (e) {}
+}
+
+function buildSheetCatalog_() {
   var carreras = careerMap_();
   var aulas = indexBy_(getRows_(CONFIG.SHEETS.AULAS), 'id_aula');
   var horarios = getRows_(CONFIG.SHEETS.HORARIOS);
@@ -310,10 +414,6 @@ function obtenerCatalogo_(useCache) {
     return String(a.carrera || '').localeCompare(String(b.carrera || '')) ||
       String(a.nombre_asignatura || '').localeCompare(String(b.nombre_asignatura || ''));
   });
-  if (!asignaturas.length) asignaturas = defaultCatalogo_();
-  try {
-    CacheService.getScriptCache().put(cacheKey, JSON.stringify(asignaturas), 600);
-  } catch (e) {}
   return asignaturas;
 }
 
@@ -390,6 +490,9 @@ function obtenerCarreras_() {
       });
     } catch (e) {}
   }
+  embeddedCarreras_().forEach(function(c) {
+    if (c.nombre_carrera) map[normalize_(c.nombre_carrera)] = c;
+  });
   if (!Object.keys(map).length) {
     getRows_(CONFIG.SHEETS.ASIGNATURAS).forEach(function(a) {
       var name = trim_(a.carrera);
@@ -458,8 +561,324 @@ function isSelectableAsignatura_(asignatura) {
 }
 
 function ensureCatalogSeeded_() {
+  if (embeddedCatalogo_().length) return;
   if (getRows_(CONFIG.SHEETS.ASIGNATURAS).length && getRows_(CONFIG.SHEETS.SECCIONES).length) return;
   seedCatalog_();
+}
+
+function snapshotCatalogo_() {
+  if (SNAPSHOT_CATALOG_CACHE_) return SNAPSHOT_CATALOG_CACHE_;
+  var meta = catalogSnapshotMeta_();
+  SNAPSHOT_CATALOG_CACHE_ = catalogoFromCsv_(catalogSnapshotCsv_(), {
+    source: 'snapshot_hoja_calculo',
+    version: meta.version || '',
+    legacySequentialIds: false
+  });
+  return SNAPSHOT_CATALOG_CACHE_;
+}
+
+function embeddedCatalogo_() {
+  if (EMBEDDED_CATALOG_CACHE_) return EMBEDDED_CATALOG_CACHE_;
+  EMBEDDED_CATALOG_CACHE_ = catalogoFromCsv_(embeddedCatalogCsv_(), {
+    source: 'csv_embebido_gas',
+    version: CONFIG.EMBEDDED_CATALOG.VERSION,
+    legacySequentialIds: true,
+    defaultCareer: CONFIG.EMBEDDED_CATALOG.CAREER
+  });
+  return EMBEDDED_CATALOG_CACHE_;
+}
+
+function catalogoFromCsv_(csv, options) {
+  options = options || {};
+  csv = trim_(csv);
+  if (!csv) return [];
+  var rows;
+  try {
+    rows = Utilities.parseCsv(csv);
+  } catch (e) {
+    return [];
+  }
+  if (!rows || rows.length < 2) {
+    return [];
+  }
+  var headers = rows.shift().map(normalizeCsvHeader_);
+  var subjects = {};
+  var subjectOrder = [];
+  var sectionOrder = 0;
+  rows.forEach(function(row) {
+    var item = {};
+    headers.forEach(function(header, index) {
+      item[header] = trim_(row[index]);
+    });
+    var name = item.nombre_asignatura || item.asignatura || item.nombre;
+    if (!name || !isSelectableAsignatura_({ nombre_asignatura: name })) return;
+    var code = item.codigo_asignatura || item.codigo || '';
+    var career = item.carrera || options.defaultCareer || CONFIG.EMBEDDED_CATALOG.CAREER;
+    var subjectId = item.id_asignatura || item.id_materia || '';
+    var subjectKey = subjectId ? ('id|' + subjectId) : normalize_([code, name, career].join('|'));
+    if (!subjects[subjectKey]) {
+      if (!subjectId) {
+        subjectId = options.legacySequentialIds ? 1000 + subjectOrder.length + 1 : stableCatalogId_('ASIG', [code, name, career]);
+      }
+      subjects[subjectKey] = {
+        id_asignatura: subjectId,
+        codigo: code || 'S/C',
+        nombre_asignatura: name,
+        carrera: career,
+        semestre: item.semestre || '',
+        periodo: item.semestre || '',
+        creditos: '',
+        activo: 1,
+        fuente: options.source || 'csv',
+        version_catalogo: options.version || '',
+        secciones: [],
+        _sectionMap: {}
+      };
+      subjectOrder.push(subjects[subjectKey]);
+    }
+    var subject = subjects[subjectKey];
+    var sectionCode = item.seccion || 'Unica';
+    var sectionId = item.id_seccion || '';
+    var sectionKey = sectionId ? ('id|' + sectionId) : normalize_(sectionCode);
+    if (!subject._sectionMap[sectionKey]) {
+      sectionOrder++;
+      if (!sectionId) {
+        sectionId = options.legacySequentialIds ? 2000 + sectionOrder : stableCatalogId_('SEC', [subject.id_asignatura, sectionCode]);
+      }
+      subject._sectionMap[sectionKey] = {
+        id_seccion: sectionId,
+        id_asignatura: subject.id_asignatura,
+        codigo_seccion: sectionCode,
+        cupo: '',
+        activo: 1,
+        fuente: options.source || 'csv',
+        version_catalogo: options.version || '',
+        horarios: []
+      };
+      subject.secciones.push(subject._sectionMap[sectionKey]);
+    }
+    subject._sectionMap[sectionKey].horarios.push({
+      dia: item.dia || '',
+      hora_ini: item.hora_inicio || item.hora_ini || '',
+      hora_fin: item.hora_fin || '',
+      aula: item.aula || 'Sin aula',
+      edificio: item.edificio || '',
+      docente: item.docente || '',
+      periodo: item.semestre || ''
+    });
+  });
+  return subjectOrder.map(function(subject) {
+    delete subject._sectionMap;
+    subject.secciones.sort(function(a, b) {
+      return String(a.codigo_seccion || '').localeCompare(String(b.codigo_seccion || ''));
+    });
+    return subject;
+  }).sort(function(a, b) {
+    return String(a.nombre_asignatura || '').localeCompare(String(b.nombre_asignatura || ''));
+  });
+}
+
+function stableCatalogId_(prefix, parts) {
+  return prefix + '-' + digestHex_(parts.map(function(v) { return normalize_(v); }).join('|')).slice(0, 12);
+}
+
+function embeddedCatalogCsv_() {
+  try {
+    var html = HtmlService.createHtmlOutputFromFile(CONFIG.EMBEDDED_CATALOG.FILE).getContent();
+    var pattern = new RegExp("<script\\b[^>]*id=[\"']" + CONFIG.EMBEDDED_CATALOG.SCRIPT_ID + "[\"'][^>]*>([\\s\\S]*?)<\\/script>", 'i');
+    var match = html.match(pattern);
+    return trim_((match ? match[1] : html).replace(/^\uFEFF/, ''));
+  } catch (e) {
+    return '';
+  }
+}
+
+function normalizeCsvHeader_(value) {
+  return normalize_(value).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+function catalogToCsv_(catalogo) {
+  var headers = ['id_asignatura', 'codigo_asignatura', 'nombre_asignatura', 'id_seccion', 'seccion', 'dia', 'hora_inicio', 'hora_fin', 'aula', 'edificio', 'docente', 'semestre', 'carrera'];
+  var rows = [headers];
+  (catalogo || []).forEach(function(asignatura) {
+    (asignatura.secciones || []).forEach(function(seccion) {
+      var horarios = seccion.horarios && seccion.horarios.length ? seccion.horarios : [{}];
+      horarios.forEach(function(horario) {
+        rows.push([
+          asignatura.id_asignatura,
+          asignatura.codigo,
+          asignatura.nombre_asignatura,
+          seccion.id_seccion,
+          seccion.codigo_seccion,
+          horario.dia || '',
+          horario.hora_ini || '',
+          horario.hora_fin || '',
+          horario.aula || '',
+          horario.edificio || '',
+          horario.docente || '',
+          asignatura.semestre || asignatura.periodo || '',
+          asignatura.carrera || ''
+        ]);
+      });
+    });
+  });
+  return rows.map(function(row) {
+    return row.map(csvCell_).join(',');
+  }).join('\n');
+}
+
+function csvCell_(value) {
+  value = String(value === null || value === undefined ? '' : value);
+  if (/[",\n\r]/.test(value)) return '"' + value.replace(/"/g, '""') + '"';
+  return value;
+}
+
+function saveCatalogSnapshotCsv_(csv, meta) {
+  var props = PropertiesService.getScriptProperties();
+  var prefix = CONFIG.CATALOG_SNAPSHOT.PREFIX;
+  clearCatalogSnapshot_(props);
+  var chunkSize = CONFIG.CATALOG_SNAPSHOT.CHUNK_SIZE;
+  var chunks = [];
+  for (var i = 0; i < csv.length; i += chunkSize) {
+    chunks.push(csv.slice(i, i + chunkSize));
+  }
+  props.setProperty(prefix + 'chunks', String(chunks.length));
+  chunks.forEach(function(chunk, index) {
+    props.setProperty(prefix + 'csv_' + index, chunk);
+  });
+  Object.keys(meta || {}).forEach(function(key) {
+    props.setProperty(prefix + key, String(meta[key]));
+  });
+}
+
+function clearCatalogSnapshot_(props) {
+  props = props || PropertiesService.getScriptProperties();
+  var prefix = CONFIG.CATALOG_SNAPSHOT.PREFIX;
+  var count = Number(props.getProperty(prefix + 'chunks') || 0);
+  for (var i = 0; i < count; i++) props.deleteProperty(prefix + 'csv_' + i);
+  ['chunks', 'version', 'updated_at', 'updated_by', 'asignaturas', 'secciones', 'horarios'].forEach(function(key) {
+    props.deleteProperty(prefix + key);
+  });
+}
+
+function catalogSnapshotCsv_() {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var prefix = CONFIG.CATALOG_SNAPSHOT.PREFIX;
+    var count = Number(props.getProperty(prefix + 'chunks') || 0);
+    if (!count) return '';
+    var parts = [];
+    for (var i = 0; i < count; i++) parts.push(props.getProperty(prefix + 'csv_' + i) || '');
+    return parts.join('');
+  } catch (e) {
+    return '';
+  }
+}
+
+function catalogSnapshotMeta_() {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var prefix = CONFIG.CATALOG_SNAPSHOT.PREFIX;
+    return {
+      version: props.getProperty(prefix + 'version') || '',
+      updated_at: props.getProperty(prefix + 'updated_at') || '',
+      updated_by: props.getProperty(prefix + 'updated_by') || '',
+      asignaturas: props.getProperty(prefix + 'asignaturas') || '',
+      secciones: props.getProperty(prefix + 'secciones') || '',
+      horarios: props.getProperty(prefix + 'horarios') || ''
+    };
+  } catch (e) {
+    return {};
+  }
+}
+
+function catalogCounts_(catalogo) {
+  var counts = { asignaturas: (catalogo || []).length, secciones: 0, horarios: 0 };
+  (catalogo || []).forEach(function(asignatura) {
+    counts.secciones += (asignatura.secciones || []).length;
+    (asignatura.secciones || []).forEach(function(seccion) {
+      counts.horarios += (seccion.horarios || []).length;
+    });
+  });
+  return counts;
+}
+
+function embeddedCarreras_() {
+  var map = {};
+  snapshotCatalogo_().concat(embeddedCatalogo_()).forEach(function(asignatura) {
+    var name = trim_(asignatura.carrera);
+    if (name) map[normalize_(name)] = {
+      id_carrera: asignatura.id_carrera || 'CSV-2026-2',
+      nombre_carrera: name,
+      facultad: CONFIG.EMBEDDED_CATALOG.FACULTY,
+      duracion_semestres: ''
+    };
+  });
+  return Object.keys(map).map(function(key) { return map[key]; });
+}
+
+function catalogLookups_() {
+  if (CATALOG_LOOKUP_CACHE_) return CATALOG_LOOKUP_CACHE_;
+  var lookups = {
+    asignaturas: {},
+    secciones: {}
+  };
+  obtenerCatalogo_(true).forEach(function(asignatura) {
+    lookups.asignaturas[String(asignatura.id_asignatura)] = asignatura;
+    (asignatura.secciones || []).forEach(function(seccion) {
+      lookups.secciones[String(seccion.id_seccion)] = seccion;
+    });
+  });
+  CATALOG_LOOKUP_CACHE_ = lookups;
+  return CATALOG_LOOKUP_CACHE_;
+}
+
+function mergedAsignaturasIndex_() {
+  var map = {};
+  var embedded = catalogLookups_().asignaturas;
+  Object.keys(embedded).forEach(function(key) { map[key] = embedded[key]; });
+  try {
+    getRows_(CONFIG.SHEETS.ASIGNATURAS).forEach(function(row) {
+      if (!map[row.id_asignatura]) map[row.id_asignatura] = row;
+    });
+  } catch (e) {}
+  return map;
+}
+
+function mergedSeccionesIndex_() {
+  var map = {};
+  var embedded = catalogLookups_().secciones;
+  Object.keys(embedded).forEach(function(key) { map[key] = embedded[key]; });
+  try {
+    getRows_(CONFIG.SHEETS.SECCIONES).forEach(function(row) {
+      if (!map[row.id_seccion]) map[row.id_seccion] = row;
+    });
+  } catch (e) {}
+  return map;
+}
+
+function findCatalogSeccion_(idSeccion) {
+  var seccion = catalogLookups_().secciones[String(idSeccion)];
+  if (seccion && isActive_(seccion.activo)) return seccion;
+  try {
+    return getRows_(CONFIG.SHEETS.SECCIONES).find(function(s) {
+      return s.id_seccion == idSeccion && isActive_(s.activo);
+    }) || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function findCatalogAsignatura_(idAsignatura) {
+  var asignatura = catalogLookups_().asignaturas[String(idAsignatura)];
+  if (asignatura && isActive_(asignatura.activo)) return asignatura;
+  try {
+    return getRows_(CONFIG.SHEETS.ASIGNATURAS).find(function(a) {
+      return a.id_asignatura == idAsignatura && isActive_(a.activo);
+    }) || null;
+  } catch (e) {
+    return null;
+  }
 }
 
 function defaultCatalogo_() {
@@ -527,14 +946,18 @@ function guardarPerfil(token, datos) {
     turno: trim_(datos.turno),
     observaciones: trim_(datos.observaciones)
   };
-  updateRowById_(CONFIG.SHEETS.ESTUDIANTES, 'id_estudiante', perfil.id_estudiante, values);
+  if (!updateRowById_(CONFIG.SHEETS.ESTUDIANTES, 'id_estudiante', perfil.id_estudiante, values)) {
+    return fail_('No se encontro la fila de perfil para actualizar. Reintenta iniciar sesion.');
+  }
   if (datos.nueva_password) {
     if (String(datos.nueva_password).length < 8) return fail_('La nueva contrasena debe tener al menos 8 caracteres.');
     var salt = makeSalt_();
-    updateRowById_(CONFIG.SHEETS.USUARIOS, 'id_usuario', session.id_usuario, {
+    if (!updateRowById_(CONFIG.SHEETS.USUARIOS, 'id_usuario', session.id_usuario, {
       password_hash: hashPassword_(datos.nueva_password, salt),
       salt: salt
-    });
+    })) {
+      return fail_('No se pudo actualizar la contrasena.');
+    }
   }
   Object.keys(values).forEach(function(key) {
     perfil[key] = values[key];
@@ -554,11 +977,11 @@ function guardarPerfil(token, datos) {
 function inscribirSeccion(token, idSeccion) {
   var session = requireSession_(token);
   var perfil = getPerfilByUser_(session.id_usuario);
-  ensureCatalogSeeded_();
-  var seccion = getRows_(CONFIG.SHEETS.SECCIONES).find(function(s) { return s.id_seccion == idSeccion && isActive_(s.activo); });
+  var seccion = findCatalogSeccion_(idSeccion);
   if (!seccion) return fail_('La seccion no existe.');
+  var asignatura = findCatalogAsignatura_(seccion.id_asignatura) || {};
   return withLock_(function() {
-    var secciones = indexBy_(getRows_(CONFIG.SHEETS.SECCIONES), 'id_seccion');
+    var secciones = mergedSeccionesIndex_();
     var existentes = getRows_(CONFIG.SHEETS.INSCRIPCIONES).filter(function(i) {
       return i.id_estudiante == perfil.id_estudiante && isActive_(i.activo);
     });
@@ -573,11 +996,18 @@ function inscribirSeccion(token, idSeccion) {
     appendObject_(CONFIG.SHEETS.INSCRIPCIONES, {
       id_inscripcion: idInscripcion,
       id_estudiante: perfil.id_estudiante,
-      id_seccion: Number(idSeccion),
+      id_seccion: idSeccion,
       semestre_anho: periodo,
       fecha_inscripcion: now_(),
       activo: 1,
-      periodo: periodo
+      periodo: periodo,
+      id_asignatura_snapshot: seccion.id_asignatura || '',
+      codigo_asignatura_snapshot: asignatura.codigo || '',
+      nombre_asignatura_snapshot: asignatura.nombre_asignatura || '',
+      codigo_seccion_snapshot: seccion.codigo_seccion || '',
+      horarios_snapshot: JSON.stringify(seccion.horarios || []),
+      fuente_catalogo: seccion.fuente || asignatura.fuente || '',
+      version_catalogo: seccion.version_catalogo || asignatura.version_catalogo || ''
     });
     appendObject_(CONFIG.SHEETS.NOTAS, {
       id_nota: nextId_(CONFIG.SHEETS.NOTAS),
@@ -612,7 +1042,9 @@ function quitarInscripcion(token, idInscripcion) {
   var session = requireSession_(token);
   var perfil = getPerfilByUser_(session.id_usuario);
   if (!getOwnedInscripcion_(perfil.id_estudiante, idInscripcion)) return fail_('Inscripcion no encontrada.');
-  updateRowById_(CONFIG.SHEETS.INSCRIPCIONES, 'id_inscripcion', idInscripcion, { activo: 0 });
+  if (!updateRowById_(CONFIG.SHEETS.INSCRIPCIONES, 'id_inscripcion', idInscripcion, { activo: 0 })) {
+    return fail_('No se pudo quitar la asignatura.');
+  }
   log_(session.id_usuario, 'DESINSCRIPCION', String(idInscripcion));
   var inscripciones = obtenerMisInscripciones_(perfil.id_estudiante);
   var agenda = obtenerMiAgenda_(perfil.id_estudiante);
@@ -642,7 +1074,9 @@ function guardarNota(token, idInscripcion, datos) {
   };
   values.promedio = promedio_([values.parcial1, values.parcial2, values.trabajos, values.final]);
   values.estado = values.final !== '' && values.promedio !== '' ? (Number(values.promedio) >= 3 ? 'Aprobada' : 'Reprobada') : 'En curso';
-  updateRowById_(CONFIG.SHEETS.NOTAS, 'id_nota', nota.id_nota, values);
+  if (!updateRowById_(CONFIG.SHEETS.NOTAS, 'id_nota', nota.id_nota, values)) {
+    return fail_('No se pudo guardar la nota.');
+  }
   log_(session.id_usuario, 'NOTA', String(idInscripcion));
   return { success: true, message: 'Nota guardada.' };
 }
@@ -652,20 +1086,22 @@ function guardarApunte(token, datos) {
   var perfil = getPerfilByUser_(session.id_usuario);
   datos = normalizePayload_(datos);
   if (!datos.titulo) return fail_('Agrega un titulo.');
-  var idAsignatura = datos.id_asignatura ? Number(datos.id_asignatura) : '';
+  var idAsignatura = datos.id_asignatura ? trim_(datos.id_asignatura) : '';
   if (idAsignatura && !estudianteCursaAsignatura_(perfil.id_estudiante, idAsignatura)) return fail_('Solo podes asociar apuntes a tus asignaturas.');
   if (datos.id_apunte) {
     var apunte = getRows_(CONFIG.SHEETS.APUNTES).find(function(a) {
       return a.id_apunte == datos.id_apunte && a.id_estudiante == perfil.id_estudiante;
     });
     if (!apunte) return fail_('Apunte no encontrado.');
-    updateRowById_(CONFIG.SHEETS.APUNTES, 'id_apunte', datos.id_apunte, {
+    if (!updateRowById_(CONFIG.SHEETS.APUNTES, 'id_apunte', datos.id_apunte, {
       id_asignatura: idAsignatura,
       tipo: trim_(datos.tipo || 'apunte'),
       titulo: trim_(datos.titulo),
       contenido: trim_(datos.contenido),
       fecha_modificacion: now_()
-    });
+    })) {
+      return fail_('No se pudo actualizar el apunte.');
+    }
   } else {
     appendObject_(CONFIG.SHEETS.APUNTES, {
       id_apunte: nextId_(CONFIG.SHEETS.APUNTES),
@@ -688,6 +1124,7 @@ function eliminarApunte(token, idApunte) {
   var row = findRow_(CONFIG.SHEETS.APUNTES, function(a) { return a.id_apunte == idApunte && a.id_estudiante == perfil.id_estudiante; });
   if (row < 0) return fail_('Apunte no encontrado.');
   getSheet_(CONFIG.SHEETS.APUNTES).deleteRow(row);
+  SpreadsheetApp.flush();
   clearRows_(CONFIG.SHEETS.APUNTES);
   log_(session.id_usuario, 'APUNTE_DELETE', String(idApunte));
   return { success: true };
@@ -698,12 +1135,12 @@ function guardarEvento(token, datos) {
   var perfil = getPerfilByUser_(session.id_usuario);
   datos = normalizePayload_(datos);
   if (!datos.titulo || !datos.fecha) return fail_('Agrega titulo y fecha.');
-  var idAsignatura = datos.id_asignatura ? Number(datos.id_asignatura) : '';
+  var idAsignatura = datos.id_asignatura ? trim_(datos.id_asignatura) : '';
   if (idAsignatura && !estudianteCursaAsignatura_(perfil.id_estudiante, idAsignatura)) return fail_('Evento fuera de tus asignaturas.');
   if (datos.id_evento) {
     var row = findRow_(CONFIG.SHEETS.EVENTOS, function(e) { return e.id_evento == datos.id_evento && e.id_estudiante == perfil.id_estudiante; });
     if (row < 0) return fail_('Evento no encontrado.');
-    updateRowById_(CONFIG.SHEETS.EVENTOS, 'id_evento', datos.id_evento, {
+    if (!updateRowById_(CONFIG.SHEETS.EVENTOS, 'id_evento', datos.id_evento, {
       id_asignatura: idAsignatura,
       titulo: trim_(datos.titulo),
       descripcion: trim_(datos.descripcion),
@@ -711,7 +1148,9 @@ function guardarEvento(token, datos) {
       hora: trim_(datos.hora),
       tipo: trim_(datos.tipo || 'recordatorio'),
       completado: datos.completado ? 1 : 0
-    });
+    })) {
+      return fail_('No se pudo actualizar el recordatorio.');
+    }
   } else {
     appendObject_(CONFIG.SHEETS.EVENTOS, {
       id_evento: nextId_(CONFIG.SHEETS.EVENTOS),
@@ -735,6 +1174,7 @@ function eliminarEvento(token, idEvento) {
   var row = findRow_(CONFIG.SHEETS.EVENTOS, function(e) { return e.id_evento == idEvento && e.id_estudiante == perfil.id_estudiante; });
   if (row < 0) return fail_('Evento no encontrado.');
   getSheet_(CONFIG.SHEETS.EVENTOS).deleteRow(row);
+  SpreadsheetApp.flush();
   clearRows_(CONFIG.SHEETS.EVENTOS);
   log_(session.id_usuario, 'EVENTO_DELETE', String(idEvento));
   return { success: true };
@@ -745,7 +1185,7 @@ function guardarLectura(token, datos) {
   var perfil = getPerfilByUser_(session.id_usuario);
   datos = normalizePayload_(datos);
   if (!datos.titulo) return fail_('Agrega un titulo para la lectura.');
-  var idAsignatura = datos.id_asignatura ? Number(datos.id_asignatura) : '';
+  var idAsignatura = datos.id_asignatura ? trim_(datos.id_asignatura) : '';
   if (idAsignatura && !estudianteCursaAsignatura_(perfil.id_estudiante, idAsignatura)) return fail_('Solo podes asociar lecturas a tus asignaturas.');
   var values = {
     id_asignatura: idAsignatura,
@@ -761,7 +1201,9 @@ function guardarLectura(token, datos) {
   if (datos.id_lectura) {
     var row = findRow_(CONFIG.SHEETS.LECTURAS, function(l) { return l.id_lectura == datos.id_lectura && l.id_estudiante == perfil.id_estudiante; });
     if (row < 0) return fail_('Lectura no encontrada.');
-    updateRowById_(CONFIG.SHEETS.LECTURAS, 'id_lectura', datos.id_lectura, values);
+    if (!updateRowById_(CONFIG.SHEETS.LECTURAS, 'id_lectura', datos.id_lectura, values)) {
+      return fail_('No se pudo actualizar la lectura.');
+    }
   } else {
     values.id_lectura = nextId_(CONFIG.SHEETS.LECTURAS);
     values.id_estudiante = perfil.id_estudiante;
@@ -778,6 +1220,7 @@ function eliminarLectura(token, idLectura) {
   var row = findRow_(CONFIG.SHEETS.LECTURAS, function(l) { return l.id_lectura == idLectura && l.id_estudiante == perfil.id_estudiante; });
   if (row < 0) return fail_('Lectura no encontrada.');
   getSheet_(CONFIG.SHEETS.LECTURAS).deleteRow(row);
+  SpreadsheetApp.flush();
   clearRows_(CONFIG.SHEETS.LECTURAS);
   log_(session.id_usuario, 'LECTURA_DELETE', String(idLectura));
   return { success: true };
@@ -788,7 +1231,7 @@ function guardarGrupo(token, datos) {
   var perfil = getPerfilByUser_(session.id_usuario);
   datos = normalizePayload_(datos);
   if (!datos.nombre) return fail_('Agrega un nombre para el grupo.');
-  var idAsignatura = datos.id_asignatura ? Number(datos.id_asignatura) : '';
+  var idAsignatura = datos.id_asignatura ? trim_(datos.id_asignatura) : '';
   if (idAsignatura && !estudianteCursaAsignatura_(perfil.id_estudiante, idAsignatura)) return fail_('Solo podes asociar grupos a tus asignaturas.');
   var values = {
     id_asignatura: idAsignatura,
@@ -805,7 +1248,9 @@ function guardarGrupo(token, datos) {
   if (datos.id_grupo) {
     var row = findRow_(CONFIG.SHEETS.GRUPOS, function(g) { return g.id_grupo == datos.id_grupo && g.id_estudiante == perfil.id_estudiante; });
     if (row < 0) return fail_('Grupo no encontrado.');
-    updateRowById_(CONFIG.SHEETS.GRUPOS, 'id_grupo', datos.id_grupo, values);
+    if (!updateRowById_(CONFIG.SHEETS.GRUPOS, 'id_grupo', datos.id_grupo, values)) {
+      return fail_('No se pudo actualizar el grupo.');
+    }
   } else {
     values.id_grupo = nextId_(CONFIG.SHEETS.GRUPOS);
     values.id_estudiante = perfil.id_estudiante;
@@ -822,6 +1267,7 @@ function eliminarGrupo(token, idGrupo) {
   var row = findRow_(CONFIG.SHEETS.GRUPOS, function(g) { return g.id_grupo == idGrupo && g.id_estudiante == perfil.id_estudiante; });
   if (row < 0) return fail_('Grupo no encontrado.');
   getSheet_(CONFIG.SHEETS.GRUPOS).deleteRow(row);
+  SpreadsheetApp.flush();
   clearRows_(CONFIG.SHEETS.GRUPOS);
   log_(session.id_usuario, 'GRUPO_DELETE', String(idGrupo));
   return { success: true };
@@ -833,7 +1279,7 @@ function guardarAgenda(token, datos) {
   datos = normalizePayload_(datos);
   if (!datos.titulo || !datos.tipo) return fail_('Agrega tipo y titulo.');
   if (!datos.dia && !datos.fecha) return fail_('Agrega un dia recurrente o una fecha.');
-  var idAsignatura = datos.id_asignatura ? Number(datos.id_asignatura) : '';
+  var idAsignatura = datos.id_asignatura ? trim_(datos.id_asignatura) : '';
   if (idAsignatura && !estudianteCursaAsignatura_(perfil.id_estudiante, idAsignatura)) return fail_('Solo podes asociar agenda a tus asignaturas.');
   var values = {
     id_asignatura: idAsignatura,
@@ -855,7 +1301,9 @@ function guardarAgenda(token, datos) {
   if (datos.id_agenda) {
     var row = findRow_(CONFIG.SHEETS.AGENDA, function(a) { return a.id_agenda == datos.id_agenda && a.id_estudiante == perfil.id_estudiante && a.activo != 0; });
     if (row < 0) return fail_('Entrada de agenda no encontrada.');
-    updateRowById_(CONFIG.SHEETS.AGENDA, 'id_agenda', datos.id_agenda, values);
+    if (!updateRowById_(CONFIG.SHEETS.AGENDA, 'id_agenda', datos.id_agenda, values)) {
+      return fail_('No se pudo actualizar la agenda.');
+    }
   } else {
     values.id_agenda = nextId_(CONFIG.SHEETS.AGENDA);
     values.id_estudiante = perfil.id_estudiante;
@@ -871,7 +1319,9 @@ function eliminarAgenda(token, idAgenda) {
   var perfil = getPerfilByUser_(session.id_usuario);
   var row = findRow_(CONFIG.SHEETS.AGENDA, function(a) { return a.id_agenda == idAgenda && a.id_estudiante == perfil.id_estudiante && a.activo != 0; });
   if (row < 0) return fail_('Entrada no encontrada.');
-  updateRowById_(CONFIG.SHEETS.AGENDA, 'id_agenda', idAgenda, { activo: 0, fecha_modificacion: now_() });
+  if (!updateRowById_(CONFIG.SHEETS.AGENDA, 'id_agenda', idAgenda, { activo: 0, fecha_modificacion: now_() })) {
+    return fail_('No se pudo eliminar la entrada.');
+  }
   log_(session.id_usuario, 'AGENDA_DELETE', String(idAgenda));
   return { success: true };
 }
@@ -894,7 +1344,9 @@ function guardarPreferencias(token, datos) {
   };
   var pref = getRows_(CONFIG.SHEETS.PREFERENCIAS).find(function(p) { return p.id_estudiante == perfil.id_estudiante; });
   if (pref) {
-    updateRowById_(CONFIG.SHEETS.PREFERENCIAS, 'id_preferencia', pref.id_preferencia, values);
+    if (!updateRowById_(CONFIG.SHEETS.PREFERENCIAS, 'id_preferencia', pref.id_preferencia, values)) {
+      return fail_('No se pudieron actualizar las preferencias.');
+    }
   } else {
     values.id_preferencia = nextId_(CONFIG.SHEETS.PREFERENCIAS);
     values.id_estudiante = perfil.id_estudiante;
@@ -905,26 +1357,39 @@ function guardarPreferencias(token, datos) {
 }
 
 function obtenerMisInscripciones_(idEstudiante) {
-  var secciones = indexBy_(getRows_(CONFIG.SHEETS.SECCIONES), 'id_seccion');
-  var asignaturas = indexBy_(getRows_(CONFIG.SHEETS.ASIGNATURAS), 'id_asignatura');
+  var secciones = mergedSeccionesIndex_();
+  var asignaturas = mergedAsignaturasIndex_();
   var aulas = indexBy_(getRows_(CONFIG.SHEETS.AULAS), 'id_aula');
   var horarios = getRows_(CONFIG.SHEETS.HORARIOS);
   return getRows_(CONFIG.SHEETS.INSCRIPCIONES).filter(function(i) {
     return i.id_estudiante == idEstudiante && isActive_(i.activo);
   }).map(function(i) {
     var sec = secciones[i.id_seccion] || {};
-    var asig = asignaturas[sec.id_asignatura] || {};
-    i.id_asignatura = sec.id_asignatura || '';
-    i.codigo_seccion = sec.codigo_seccion || '';
-    i.nombre_asignatura = asig.nombre_asignatura || '';
-    i.codigo = asig.codigo || '';
+    var idAsignatura = sec.id_asignatura || i.id_asignatura_snapshot || '';
+    var asig = asignaturas[idAsignatura] || {};
+    i.id_asignatura = idAsignatura;
+    i.codigo_seccion = sec.codigo_seccion || i.codigo_seccion_snapshot || '';
+    i.nombre_asignatura = asig.nombre_asignatura || i.nombre_asignatura_snapshot || '';
+    i.codigo = asig.codigo || i.codigo_asignatura_snapshot || '';
     i.carrera = asig.carrera || '';
-    i.horarios = horarios.filter(function(h) { return h.id_seccion == i.id_seccion; }).map(function(h) {
+    var embeddedHorarios = sec.horarios || [];
+    var snapshotHorarios = parseHorariosSnapshot_(i.horarios_snapshot);
+    i.horarios = embeddedHorarios.length ? embeddedHorarios : (snapshotHorarios.length ? snapshotHorarios : horarios.filter(function(h) { return h.id_seccion == i.id_seccion; }).map(function(h) {
       var aula = aulas[h.id_aula] || {};
       return { dia: h.dia, hora_ini: h.hora_ini, hora_fin: h.hora_fin, aula: aula.nombre_aula || 'Sin aula', edificio: aula.edificio || '' };
-    });
+    }));
     return i;
   });
+}
+
+function parseHorariosSnapshot_(value) {
+  if (!value) return [];
+  try {
+    var parsed = JSON.parse(String(value));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
 }
 
 function obtenerMisNotas_(idEstudiante, inscripciones) {
@@ -942,7 +1407,7 @@ function obtenerMisNotas_(idEstudiante, inscripciones) {
 }
 
 function obtenerMisLecturas_(idEstudiante) {
-  var asignaturas = indexBy_(getRows_(CONFIG.SHEETS.ASIGNATURAS), 'id_asignatura');
+  var asignaturas = mergedAsignaturasIndex_();
   return getRows_(CONFIG.SHEETS.LECTURAS).filter(function(l) {
     return l.id_estudiante == idEstudiante;
   }).map(function(l) {
@@ -957,7 +1422,7 @@ function obtenerMisLecturas_(idEstudiante) {
 }
 
 function obtenerMisGrupos_(idEstudiante) {
-  var asignaturas = indexBy_(getRows_(CONFIG.SHEETS.ASIGNATURAS), 'id_asignatura');
+  var asignaturas = mergedAsignaturasIndex_();
   return getRows_(CONFIG.SHEETS.GRUPOS).filter(function(g) {
     return g.id_estudiante == idEstudiante;
   }).map(function(g) {
@@ -970,7 +1435,7 @@ function obtenerMisGrupos_(idEstudiante) {
 }
 
 function obtenerMiAgenda_(idEstudiante) {
-  var asignaturas = indexBy_(getRows_(CONFIG.SHEETS.ASIGNATURAS), 'id_asignatura');
+  var asignaturas = mergedAsignaturasIndex_();
   return getRows_(CONFIG.SHEETS.AGENDA).filter(function(a) {
     return a.id_estudiante == idEstudiante && a.activo != 0;
   }).map(function(a) {
@@ -1002,8 +1467,13 @@ function obtenerPreferenciasDefault_() {
   };
 }
 
-function bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, warning) {
+function bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, warning, extra) {
   perfil = perfil || {};
+  extra = extra || {};
+  var apuntes = extra.apuntes || [];
+  var eventos = extra.eventos || [];
+  var lecturas = extra.lecturas || [];
+  var grupos = extra.grupos || [];
   return {
     success: true,
     warning: warning || '',
@@ -1014,19 +1484,19 @@ function bootstrapResponse_(session, perfil, inscripciones, notas, agenda, prefe
     catalogoLoaded: false,
     inscripciones: inscripciones || [],
     notas: notas || [],
-    apuntes: [],
-    apuntesLoaded: false,
-    eventos: [],
-    eventosLoaded: false,
-    lecturas: [],
-    lecturasLoaded: false,
-    grupos: [],
-    gruposLoaded: false,
+    apuntes: apuntes,
+    apuntesLoaded: true,
+    eventos: eventos,
+    eventosLoaded: true,
+    lecturas: lecturas,
+    lecturasLoaded: true,
+    grupos: grupos,
+    gruposLoaded: true,
     agenda: agenda || [],
     preferencias: preferencias || obtenerPreferenciasDefault_(),
     companeros: [],
     companerosLoaded: false,
-    resumen: resumen_(perfil.id_estudiante, inscripciones || [], notas || [], [], [], [], [], agenda || [])
+    resumen: resumen_(perfil.id_estudiante, inscripciones || [], notas || [], apuntes, eventos, lecturas, grupos, agenda || [])
   };
 }
 
@@ -1047,8 +1517,8 @@ function obtenerMisCompaneros_(idEstudiante, inscripciones) {
     misAsignaturas[String(i.id_asignatura)] = i;
   });
   var estudiantes = indexBy_(getRows_(CONFIG.SHEETS.ESTUDIANTES), 'id_estudiante');
-  var secciones = indexBy_(getRows_(CONFIG.SHEETS.SECCIONES), 'id_seccion');
-  var asignaturas = indexBy_(getRows_(CONFIG.SHEETS.ASIGNATURAS), 'id_asignatura');
+  var secciones = mergedSeccionesIndex_();
+  var asignaturas = mergedAsignaturasIndex_();
   var map = {};
   getRows_(CONFIG.SHEETS.INSCRIPCIONES).forEach(function(i) {
     if (i.activo == 0 || i.id_estudiante == idEstudiante) return;
@@ -1082,7 +1552,7 @@ function obtenerMisCompaneros_(idEstudiante, inscripciones) {
 }
 
 function obtenerMisApuntes_(idEstudiante) {
-  var asignaturas = indexBy_(getRows_(CONFIG.SHEETS.ASIGNATURAS), 'id_asignatura');
+  var asignaturas = mergedAsignaturasIndex_();
   return getRows_(CONFIG.SHEETS.APUNTES).filter(function(a) {
     return a.id_estudiante == idEstudiante;
   }).map(function(a) {
@@ -1094,7 +1564,7 @@ function obtenerMisApuntes_(idEstudiante) {
 }
 
 function obtenerMisEventos_(idEstudiante) {
-  var asignaturas = indexBy_(getRows_(CONFIG.SHEETS.ASIGNATURAS), 'id_asignatura');
+  var asignaturas = mergedAsignaturasIndex_();
   return getRows_(CONFIG.SHEETS.EVENTOS).filter(function(e) {
     return e.id_estudiante == idEstudiante;
   }).map(function(e) {
@@ -1351,6 +1821,7 @@ function appendObject_(sheetName, obj) {
   var sheet = getSheet_(sheetName);
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   sheet.appendRow(headers.map(function(h) { return obj[h] === undefined ? '' : obj[h]; }));
+  SpreadsheetApp.flush();
   clearRows_(sheetName);
 }
 
@@ -1363,12 +1834,14 @@ function updateRowByKey_(sheetName, keyColumn, keyValue, values) {
   var data = sheet.getDataRange().getValues();
   var headers = data[0];
   var keyIndex = headers.indexOf(keyColumn);
+  if (keyIndex < 0) return false;
   for (var r = 1; r < data.length; r++) {
     if (String(data[r][keyIndex]) === String(keyValue)) {
       Object.keys(values).forEach(function(k) {
         var c = headers.indexOf(k);
         if (c >= 0) sheet.getRange(r + 1, c + 1).setValue(values[k]);
       });
+      SpreadsheetApp.flush();
       clearRows_(sheetName);
       return true;
     }
@@ -1399,15 +1872,21 @@ function clearRows_(sheetName) {
 }
 
 function clearCatalogCache_() {
+  EMBEDDED_CATALOG_CACHE_ = null;
+  SNAPSHOT_CATALOG_CACHE_ = null;
+  CATALOG_LOOKUP_CACHE_ = null;
   try {
     CacheService.getScriptCache().remove(catalogCacheKey_());
+    CacheService.getScriptCache().remove('facen_v5_catalogo_csv_' + CONFIG.EMBEDDED_CATALOG.VERSION);
     CacheService.getScriptCache().remove('facen_v4_catalogo');
     CacheService.getScriptCache().remove('facen_v4_catalogo_real_xlsx_v2');
+    CacheService.getScriptCache().remove('facen_v4_catalogo_carreras_v4');
   } catch (e) {}
 }
 
 function catalogCacheKey_() {
-  return 'facen_v4_catalogo_carreras_v4';
+  var snapshotVersion = catalogSnapshotMeta_().version;
+  return 'facen_v6_catalogo_' + (snapshotVersion || CONFIG.EMBEDDED_CATALOG.VERSION);
 }
 
 function isActive_(value) {

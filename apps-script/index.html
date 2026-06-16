@@ -529,6 +529,7 @@
         document.getElementById('user-name').textContent = State.user.nombre || State.user.username || 'Estudiante';
         document.getElementById('top-user').textContent = State.user.nombre || State.user.username || 'Estudiante';
         if (res.warning) toast(res.warning, 'error');
+        ensureViewData(State.view);
         render();
         scheduleLocalAlerts();
       }, function() {
@@ -544,6 +545,25 @@
       State.data.loading_catalogo = false;
       loadVista('catalogo', 'catalogo', 'catalogoLoaded');
       render();
+    }
+
+    function refreshCatalogFromSheet() {
+      if (!State.token || !State.data) return;
+      if (!confirm('Actualizar asignaturas y horarios desde la hoja de calculo?')) return;
+      toast('Actualizando asignaturas y horarios...', 'ok');
+      server('actualizarCatalogoDesdeHoja', [State.token], function(res) {
+        if (res.catalogo) State.data.catalogo = res.catalogo;
+        if (res.carreras) State.data.carreras = res.carreras;
+        if (res.inscripciones) State.data.inscripciones = res.inscripciones;
+        if (res.notas) State.data.notas = res.notas;
+        if (res.agenda) State.data.agenda = res.agenda;
+        if (res.resumen) State.data.resumen = res.resumen;
+        if (res.catalogoLoaded !== undefined) State.data.catalogoLoaded = res.catalogoLoaded;
+        var d = res.diagnostico || {};
+        var msg = d.asignaturas ? ('Catalogo actualizado: ' + d.asignaturas + ' asignaturas, ' + d.horarios + ' horarios') : 'Catalogo actualizado';
+        toast(msg, 'ok');
+        render();
+      });
     }
 
     function normalizeBootstrap(res) {
@@ -644,7 +664,7 @@
         State.data[loadingKey] = false;
         if (State.view === vista || (vista === 'catalogo' && State.view === 'materias') || (vista === 'eventos' && State.view === 'recordatorios')) render();
       }, function() {
-        State.data[loadedKey] = true;
+        State.data[loadedKey] = false;
         State.data[loadingKey] = false;
         if (State.view === vista || (vista === 'catalogo' && State.view === 'materias') || (vista === 'eventos' && State.view === 'recordatorios')) render();
       });
@@ -725,7 +745,7 @@
           var hs = (s.horarios || []).map(function(h) { return h.dia + ' ' + h.hora_ini + '-' + h.hora_fin + ' - ' + h.aula; }).join(', ');
           var disabled = elegidas[String(a.id_asignatura)] ? ' disabled' : '';
           var text = elegidas[String(a.id_asignatura)] ? 'Ya seleccionada' : 'Elegir seccion ' + esc(s.codigo_seccion);
-          return '<button class="btn btn-outline btn-small" onclick="inscribir(event,' + s.id_seccion + ')"' + disabled + '>' + text + '</button><div class="sub">' + esc(hs || 'Sin horario') + '</div>';
+          return '<button class="btn btn-outline btn-small" onclick="inscribir(event,\'' + escAttr(s.id_seccion) + '\')"' + disabled + '>' + text + '</button><div class="sub">' + esc(hs || 'Sin horario') + '</div>';
         }).join('<div style="height:8px"></div>');
         var meta = [a.carrera, a.semestre ? 'Semestre ' + a.semestre : '', a.creditos ? a.creditos + ' creditos' : ''].filter(Boolean).join(' - ');
         return '<article class="card card-pad subject" data-search="' + esc((a.codigo + ' ' + a.nombre_asignatura + ' ' + a.carrera).toLowerCase()) + '">' +
@@ -734,7 +754,7 @@
           '<div style="margin-top:12px;">' + secs + '</div></article>';
       }).join('');
       var catalogoBody = catalogo || '<div class="empty">No hay asignaturas disponibles todavia. <button class="btn btn-outline btn-small" onclick="reloadCatalogo()">Recargar catalogo</button></div>';
-      return head('Materias', 'Selecciona las asignaturas y secciones que estas cursando.', '<button class="btn btn-outline" onclick="loadApp()">Actualizar</button>') +
+      return head('Materias', 'Selecciona las asignaturas y secciones que estas cursando.', '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;"><button class="btn btn-primary" onclick="refreshCatalogFromSheet()">Actualizar registros</button><button class="btn btn-outline" onclick="loadApp()">Recargar</button></div>') +
         '<section class="card card-pad"><h3>Mis asignaturas</h3><div class="list">' + actuales + '</div></section>' +
         renderMateriaPicker(elegidas) +
         '<div class="toolbar" style="margin-top:18px;"><input class="input" placeholder="Buscar asignatura, codigo o carrera" oninput="filterSubjects(this.value)"></div>' +
@@ -1005,7 +1025,6 @@
         if (res.catalogoLoaded !== undefined) State.data.catalogoLoaded = res.catalogoLoaded;
         toast('Materia agregada', 'ok');
         render();
-        setTimeout(loadApp, 250);
       }, function() { releaseButton(btn); });
     }
     function quitarMateria(id) {
@@ -1251,7 +1270,7 @@
         return Promise.all(regs.map(function(reg) { return reg.update().then(function() { return reg.unregister(); }).catch(function() { return reg.unregister(); }); }));
       }).catch(function() {});
       try { sessionStorage.setItem('facen_updated_at', String(stamp)); } catch (e) {}
-      window.open('https://guidoal3jandro.github.io/Facen-APP/?v=' + stamp, '_top');
+      window.open('https://appfacen.github.io/Facen-APP/?v=' + stamp, '_top');
     }
     function logout() {
       server('cerrarSesion', [State.token], function() {});

@@ -1,0 +1,621 @@
+# BITACORA_FACEN_DAPP_APPWEB_FACEN_APP
+
+## 2026-06-16 18:24
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Cliente o institucion: FACEN
+* Ruta local: `/Users/diegobernardomezabogado/Library/CloudStorage/GoogleDrive-dmeza.py@gmail.com/.shortcut-targets-by-id/1-jhsoiMXD4UATf27FUyUqMq-V04yUD58/facen_app/facen_app_v3`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica solicitada: `https://appfacen.github.io/Facen-DAPP/`
+* URL publica operativa encontrada: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version local revisada: `main` en `c06a4f5` (`Add default career dropdown fallback`)
+
+### Objetivo de la intervencion
+
+* Estudiar la situacion actual de la appweb indicada por el usuario en `appfacen.github.io/Facen-DAPP/`.
+* Diferenciar URL solicitada, repositorio real, GitHub Pages publicado, backend Apps Script y evidencia visual de carga.
+
+### Diagnostico inicial
+
+* La carpeta maestra `MANUAL_MAESTRO_FORMATOS_FUNCIONES_APPWEB` esta disponible localmente y fue consultada.
+* El directorio raiz `facen_app` no es un repositorio Git; el repositorio Git activo esta en `facen_app_v3`.
+* No existia bitacora local especifica para FACEN DAPP/FACEN App en `facen_app_v3`.
+* La URL solicitada `https://appfacen.github.io/Facen-DAPP/` responde 404 de GitHub Pages.
+* El repositorio publico real detectado es `appfacen/Facen-APP`; `appfacen/Facen-DAPP` no existe publicamente.
+* El remoto local sigue apuntando a `https://github.com/GuidoAl3jandro/Facen-APP`, pero GitHub lo redirige al repositorio `appfacen/Facen-APP`.
+
+### Acciones realizadas
+
+* Se verifico el estado Git local y remoto con `git fetch --all --prune`, `git status`, `git log`, `git branch -a` y `git ls-remote`.
+* Se verificaron URLs publicas con `curl`:
+  * `https://appfacen.github.io/Facen-DAPP/` -> 404.
+  * `https://appfacen.github.io/Facen-APP/` -> 200.
+  * `https://github.com/appfacen/Facen-DAPP` -> 404.
+  * `https://github.com/appfacen/Facen-APP` -> repositorio publico existente.
+* Se comparo el `index.html` publicado en GitHub Pages con el `index.html` local; ambos tienen el mismo SHA-256.
+* Se verifico el backend Apps Script configurado en el shell:
+  * GET a `/exec` responde 200 y entrega HTML de la app.
+  * HEAD a `/exec` devuelve 403, comportamiento no concluyente para operacion de navegador.
+* Se generaron capturas con Chrome headless:
+  * GitHub Pages `Facen-APP`: muestra la barra superior del shell, pero el area del iframe queda en blanco.
+  * Apps Script directo `/exec`: muestra login FACEN App correctamente.
+  * Vista movil de GitHub Pages: la barra superior recorta botones de accion.
+
+### Archivos revisados
+
+* `index.html`
+* `sw.js`
+* `manifest.webmanifest`
+* `README.md`
+* `.clasp.json`
+* `apps-script/Code.gs`
+* `apps-script/index.html`
+* `apps-script/appsscript.json`
+
+### Archivos modificados
+
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* Copia central en `MANUAL_MAESTRO_FORMATOS_FUNCIONES_APPWEB/BITACORAS_PROYECTOS/BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* Indice central de bitacoras.
+
+### Comandos o scripts ejecutados
+
+* `rg -n "FACEN|Facen|DAPP|Facen-DAPP|appfacen|bitacora|BITACORA" /Users/diegobernardomezabogado/.codex/memories/MEMORY.md`
+* `ls -la`
+* `find . -maxdepth 3 -name .git -type d -print`
+* `rg --files -g '*BITACORA*' -g '*bitacora*' -g '*.md'`
+* `git status --short --branch`
+* `git fetch --all --prune`
+* `git remote -v`
+* `git log --oneline --decorate -8`
+* `curl -I -L https://appfacen.github.io/Facen-DAPP/`
+* `curl -I -L https://appfacen.github.io/Facen-APP/`
+* `curl -L https://appfacen.github.io/Facen-APP/`
+* `curl -L https://script.google.com/macros/s/AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg/exec`
+* `git ls-remote --heads https://github.com/appfacen/Facen-APP.git`
+* `git ls-remote --heads https://github.com/appfacen/Facen-DAPP.git`
+* Chrome headless para capturas desktop, movil y Apps Script directo.
+
+### Resultados verificados
+
+* La URL exacta solicitada no esta operativa: `Facen-DAPP` devuelve 404.
+* La URL correcta publicada es `https://appfacen.github.io/Facen-APP/`.
+* El shell PWA de GitHub Pages se publica desde contenido equivalente al `index.html` local.
+* El backend Apps Script directo esta activo y renderiza login.
+* El embebido de Apps Script dentro del iframe de GitHub Pages no quedo visualmente operativo en la prueba automatizada: el area principal aparece en blanco.
+* El boton interno `Actualizar app` en `apps-script/index.html` apunta a `https://guidoal3jandro.github.io/Facen-APP/`, URL que hoy responde 404.
+* El `README.md` tambien documenta la URL antigua `https://guidoal3jandro.github.io/Facen-APP/`.
+* La vista movil del shell GitHub Pages presenta recorte horizontal de botones en la barra superior.
+
+### Pruebas realizadas
+
+* Prueba HTTP de GitHub Pages para URL solicitada y URL real.
+* Prueba HTTP de repositorios GitHub relacionados.
+* Prueba de integridad entre `index.html` local y `index.html` publico mediante SHA-256.
+* Prueba HTTP GET del Apps Script `/exec`.
+* Prueba visual con Chrome headless en escritorio y movil.
+* Prueba visual con Chrome headless del Apps Script directo.
+
+### Errores o incidentes
+
+* `https://appfacen.github.io/Facen-DAPP/` no existe o no tiene GitHub Pages configurado.
+* `appfacen/Facen-DAPP` no existe publicamente.
+* El shell GitHub Pages carga, pero no se observo contenido renderizado dentro del iframe.
+* La documentacion y una funcion de actualizacion mantienen URL antigua de GitHub Pages.
+* Chrome headless dejo procesos auxiliares activos; fueron cerrados por `user-data-dir=/tmp/facen-chrome`.
+
+### Soluciones aplicadas
+
+* No se modifico codigo de la app ni se desplego.
+* Se documento la situacion real en bitacora local y central.
+
+### Pendientes
+
+* Decidir si la URL oficial debe ser `Facen-APP` o si hay que crear/configurar `Facen-DAPP`.
+* Corregir referencias antiguas a `guidoal3jandro.github.io/Facen-APP/` en `README.md` y `apps-script/index.html`.
+* Actualizar el remoto local a `https://github.com/appfacen/Facen-APP.git` para evitar confusion operativa.
+* Resolver el problema del iframe en GitHub Pages o reemplazar el shell por una redireccion/boton principal hacia Apps Script directo.
+* Ajustar la barra movil para que `Actualizar`, `Instalar` y `Abrir` no se recorten.
+* Validar flujo real con usuario de prueba: registro, login, seleccion de carrera, guardado en Google Sheets, lectura posterior, cierre de sesion y recuperacion.
+* Verificar Apps Script desde la cuenta propietaria/institucional antes de declarar produccion.
+
+### Riesgos
+
+* Usuarios que reciban `Facen-DAPP` veran 404 y no accederan a la app.
+* Usuarios que entren a `Facen-APP` pueden ver solo el shell y un area vacia si el iframe no carga en su navegador.
+* El boton interno de actualizacion puede enviar a una URL rota.
+* La app no tiene evidencia actual de escritura/lectura real en Google Sheets en esta intervencion.
+* La PWA actual cachea el shell, pero la app funcional depende de Apps Script y red; no debe presentarse como offline completo.
+
+### Recomendaciones
+
+* Definir una unica URL canonica y documentarla en README, app, bitacora y mensajes a usuarios.
+* Si la prioridad es operacion inmediata, publicar `https://appfacen.github.io/Facen-APP/` con apertura directa del Apps Script o reemplazar el iframe por redireccion clara.
+* Si debe existir `Facen-DAPP`, crear el repositorio o configurar redireccion desde GitHub Pages hacia `Facen-APP`.
+* Para futuras apps GAS + GitHub Pages, agregar al checklist maestro: probar iframe visualmente en Chrome/Safari movil y escritorio; si falla, usar redireccion controlada o app servida directamente desde Apps Script.
+* Registrar evidencia de la proxima validacion con capturas, usuario de prueba, filas creadas en Sheets y version/deployment Apps Script.
+
+## 2026-06-16 18:38
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Cliente o institucion: FACEN
+* Ruta local: `/Users/diegobernardomezabogado/Library/CloudStorage/GoogleDrive-dmeza.py@gmail.com/.shortcut-targets-by-id/1-jhsoiMXD4UATf27FUyUqMq-V04yUD58/facen_app/facen_app_v3`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+
+### Objetivo de la intervencion
+
+* Incorporar asignaturas y horarios 2026-2 como CSV embebido dentro del proyecto Apps Script para mejorar velocidad y robustez de carga.
+* Corregir referencias antiguas para considerar como enlace correcto `https://appfacen.github.io/Facen-APP/`.
+
+### Diagnostico inicial
+
+* El archivo fuente activo `estadistica_horarios_2026_2.csv` contiene 57 filas de horarios.
+* El catalogo anterior dependia de lecturas a hojas `ASIGNATURAS`, `SECCIONES`, `HORARIOS_ASIGNATURAS` y `AULAS`.
+* `.claspignore` no incluia archivos HTML adicionales; por eso un nuevo archivo de catalogo no hubiera viajado al proyecto GAS sin actualizar esa regla.
+
+### Acciones realizadas
+
+* Se creo `apps-script/catalogo_csv.html` con el CSV embebido como `script type="text/csv"`.
+* Se agrego parser server-side en `Code.gs` usando `HtmlService.createHtmlOutputFromFile()` y `Utilities.parseCsv()`.
+* Se priorizo el catalogo embebido en `obtenerCatalogo_()` y se invalido la clave de cache anterior.
+* Se agregaron helpers de indices para que inscripciones, horarios, notas, apuntes, eventos, lecturas, grupos y companeros puedan resolver asignaturas/secciones provenientes del CSV embebido.
+* Se agrego `diagnosticoCatalogoRapido()` para que la cuenta propietaria pueda validar conteos desde Apps Script.
+* Se actualizo `.claspignore` para subir `catalogo_csv.html`.
+* Se corrigio `README.md` y `apps-script/index.html` para usar `https://appfacen.github.io/Facen-APP/`.
+* Se actualizo el remoto local Git de `https://github.com/GuidoAl3jandro/Facen-APP` a `https://github.com/appfacen/Facen-APP`.
+* Se ejecuto `clasp push -f`; el proyecto GAS recibio `appsscript.json`, `catalogo_csv.html`, `Code.gs` e `index.html`.
+
+### Archivos modificados
+
+* `.claspignore`
+* `README.md`
+* `apps-script/Code.gs`
+* `apps-script/index.html`
+* `apps-script/catalogo_csv.html`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* `node --check --input-type=commonjs - < apps-script/Code.gs`
+* `node --check --input-type=commonjs - < <(awk '/<script>/{flag=1;next}/<\\/script>/{flag=0}flag' apps-script/index.html)`
+* `git diff --check`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp status`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp push -f`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp deployments`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp deploy -i AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg -d "FACEN App v5 catalogo CSV embebido GAS 2026-2"`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp redeploy AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg -V 33 -d "RESTORE public app v33 pending owner authorization"`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp show-authorized-user`
+* `curl -L https://script.google.com/macros/s/AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg/exec`
+
+### Resultados verificados
+
+* Validacion local del CSV embebido: 29 asignaturas, 29 secciones y 57 horarios.
+* `node --check` no reporto errores de sintaxis en `Code.gs` ni en el JavaScript de `apps-script/index.html`.
+* `git diff --check` no reporto errores de espacios.
+* `clasp status` confirma que el proyecto GAS rastrea `catalogo_csv.html`.
+* `clasp push -f` subio correctamente 4 archivos al proyecto Apps Script.
+* El deployment `AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg` fue actualizado temporalmente a `@34`, pero el `/exec` devolvio 403.
+* Se intento restaurar el mismo deployment a `@33`; el `/exec` continuo devolviendo 403.
+* `clasp show-authorized-user` indica que la cuenta CLI activa es `monitorimpactosocial@gmail.com`, no necesariamente la cuenta propietaria institucional del Apps Script.
+
+### Pruebas realizadas
+
+* Parseo local del HTML CSV embebido.
+* Validacion de sintaxis local.
+* Push real a Apps Script HEAD.
+* Intento de deploy versionado `@34`.
+* Intento de restauracion a version `@33`.
+* Verificacion HTTP posterior del endpoint `/exec`.
+
+### Errores o incidentes
+
+* El redeploy desde `monitorimpactosocial@gmail.com` dejo el Web App publico respondiendo `403 Acceso denegado / Necesitas acceso`.
+* `clasp run obtenerCarreras` fallo con falta de permiso para ejecutar funcion.
+* No hay credencial local configurada para otra cuenta (`dmeza`, `diego`) que permita redeploy como propietario.
+* La app publica no debe considerarse operativa hasta que la cuenta propietaria reautorice o redepliegue el Web App con acceso anonimo.
+
+### Soluciones aplicadas
+
+* Codigo optimizado con catalogo CSV embebido queda cargado en HEAD del proyecto GAS.
+* Se intento restaurar deployment a version anterior, pero el bloqueo persistio.
+* Se dejo funcion `diagnosticoCatalogoRapido()` para validar desde editor Apps Script con cuenta propietaria.
+
+### Pendientes
+
+* Abrir Apps Script desde la cuenta propietaria del proyecto.
+* Ejecutar/autorizar el proyecto si Apps Script lo solicita.
+* Ejecutar `diagnosticoCatalogoRapido()` y confirmar respuesta esperada: 29 asignaturas, 29 secciones, 57 horarios.
+* Crear nueva version o actualizar deployment web desde la cuenta propietaria.
+* Confirmar que el Web App quede con acceso `Anyone` / anonimo segun politica institucional.
+* Verificar `https://appfacen.github.io/Facen-APP/` y el `/exec` con navegador anonimo.
+* Validar flujo real: crear/usar usuario de prueba, seleccionar carrera Matematica Estadistica, agregar materia del CSV, ver horario y confirmar persistencia de inscripcion en Sheets.
+
+### Riesgos
+
+* Mientras el Web App siga en 403, GitHub Pages no podra cargar la app en el iframe.
+* El codigo esta en HEAD, pero no debe marcarse como productivo hasta redeploy autorizado por propietario.
+* El CSV embebido mejora velocidad del catalogo, pero los datos personales y transaccionales siguen dependiendo de Google Sheets.
+
+### Recomendaciones
+
+* Para futuros cambios GAS, evitar redeploy del Web App desde una cuenta no propietaria aunque tenga permiso de push.
+* Registrar en manual maestro el patron: CSV embebido en HTML + parser server-side + diagnostico de conteos + redeploy solo desde cuenta propietaria.
+* Mantener `https://appfacen.github.io/Facen-APP/` como URL canonica y no volver a usar `Facen-DAPP` salvo que se cree una redireccion explicita.
+
+## 2026-06-16 18:42
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Ruta local: `/Users/diegobernardomezabogado/Library/CloudStorage/GoogleDrive-dmeza.py@gmail.com/.shortcut-targets-by-id/1-jhsoiMXD4UATf27FUyUqMq-V04yUD58/facen_app/facen_app_v3`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+
+### Objetivo de la intervencion
+
+* Registrar verificacion posterior al incidente de permisos del Web App.
+
+### Diagnostico inicial
+
+* Durante el redeploy previo el endpoint `/exec` respondio temporalmente `403 Acceso denegado`.
+* La verificacion final debia diferenciar ese incidente de la situacion publica actual.
+
+### Acciones realizadas
+
+* Se consulto el deployment activo de Apps Script.
+* Se verifico por HTTP la URL canonica de GitHub Pages.
+* Se verifico por HTTP el endpoint Apps Script utilizado por el iframe.
+* Se inspecciono el HTML servido para confirmar presencia de `diagnosticoCatalogoRapido` y uso de `https://appfacen.github.io/Facen-APP/` en la actualizacion interna.
+
+### Archivos modificados
+
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp deployments`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp versions`
+* `curl -L -s -o /tmp/facen_github_final.html -w 'GitHub Pages HTTP %{http_code} %{content_type} %{time_total}s\n' --max-time 20 'https://appfacen.github.io/Facen-APP/'`
+* `curl -L -s -o /tmp/facen_gas_final.html -w 'Apps Script HTTP %{http_code} %{content_type} %{time_total}s\n' --max-time 20 'https://script.google.com/macros/s/AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg/exec'`
+* `rg -n "diagnosticoCatalogoRapido|Facen-APP|Acceso denegado|Necesitas acceso|functionNames" /tmp/facen_gas_final.html`
+
+### Resultados verificados
+
+* `clasp deployments` muestra el deployment publico `AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg @35`.
+* `clasp versions` muestra `34 - FACEN App v5 catalogo CSV embebido GAS 2026-2` y `35 - No description`.
+* `https://appfacen.github.io/Facen-APP/` responde `HTTP 200 text/html`.
+* El endpoint Apps Script `/exec` responde `HTTP 200 text/html`.
+* El HTML servido por Apps Script incluye `diagnosticoCatalogoRapido` dentro de `functionNames`.
+* El HTML servido por Apps Script incluye la URL canonica `https://appfacen.github.io/Facen-APP/` en `updateAppVersion()`.
+
+### Pruebas realizadas
+
+* Verificacion HTTP anonima con `curl` de GitHub Pages y Apps Script.
+* Inspeccion textual del HTML publico servido.
+
+### Errores o incidentes
+
+* El incidente 403 queda registrado como ocurrido durante el redeploy, pero no se reprodujo en la verificacion final de las 18:42.
+* `clasp run` sigue sin poder usarse desde la cuenta CLI activa para validar funciones server-side.
+
+### Soluciones aplicadas
+
+* Se dejo asentada la evidencia actualizada para evitar tratar la URL publica como caida cuando ya responde 200.
+
+### Pendientes
+
+* Ejecutar `diagnosticoCatalogoRapido()` desde la cuenta propietaria o desde una sesion autorizada y confirmar conteos 29 asignaturas, 29 secciones, 57 horarios.
+* Validar flujo real con usuario de prueba: registro/login, seleccion de carrera, carga de catalogo, inscripcion a seccion CSV, agenda/horario visible y persistencia en Sheets.
+* Hacer commit y push de los cambios locales al repositorio GitHub si se aprueba la publicacion del codigo fuente.
+
+### Riesgos
+
+* La respuesta HTTP 200 prueba disponibilidad publica del shell y del Web App, pero no equivale a validacion funcional completa con datos transaccionales.
+* El deployment `@35` no tiene descripcion; conviene nombrar explicitamente versiones futuras para trazabilidad.
+
+### Recomendaciones
+
+* Para el cierre operativo, ejecutar la validacion funcional completa con cuenta de prueba y registrar evidencia de filas creadas o actualizadas en Sheets.
+* En el proximo deployment, usar descripcion institucional clara y cuenta propietaria/autorizada.
+
+## 2026-06-16 19:37
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Cliente o institucion: FACEN
+* Ruta local: `/Users/diegobernardomezabogado/Library/CloudStorage/GoogleDrive-dmeza.py@gmail.com/.shortcut-targets-by-id/1-jhsoiMXD4UATf27FUyUqMq-V04yUD58/facen_app/facen_app_v3`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+
+### Objetivo de la intervencion
+
+* Corregir desaparicion visual o real de datos personales despues de guardar.
+* Permitir que asignaturas y horarios se actualicen desde Google Sheets mediante boton en la app web, manteniendo CSV rapido como snapshot.
+
+### Diagnostico inicial
+
+* El bootstrap devolvia vacias las tablas personales de `apuntes`, `eventos`, `lecturas` y `grupos`; despues de guardar y recargar, algunas vistas podian parecer sin datos aunque la hoja tuviera registros.
+* Las fallas de carga diferida marcaban una vista como cargada, lo que podia convertir un error transitorio en una pantalla vacia.
+* El catalogo embebido en `catalogo_csv.html` tenia prioridad absoluta sobre Sheets; por tanto los cambios en la hoja no se reflejaban hasta editar codigo/redeploy.
+* Las inscripciones dependian solo del catalogo vigente para resolver nombre, seccion y horarios; un cambio anual de catalogo podia dejar selecciones previas sin datos visibles.
+
+### Acciones realizadas
+
+* Se modifico `obtenerBootstrap()` para cargar datos personales reales de apuntes, eventos, lecturas y grupos en el arranque.
+* Se agrego `SpreadsheetApp.flush()` en escrituras base y eliminaciones fisicas.
+* Se agregaron validaciones para que actualizaciones de perfil, notas, apuntes, eventos, lecturas, grupos, agenda y preferencias fallen si no actualizan una fila real.
+* Se ampliaron columnas de `INSCRIPCIONES` con snapshots de asignatura, seccion, horarios, fuente y version de catalogo.
+* Se agrego parser unico para CSV embebido y snapshot CSV generado desde Sheets.
+* Se agrego `actualizarCatalogoDesdeHoja(token)`, que genera un snapshot CSV persistente desde `ASIGNATURAS`, `SECCIONES`, `HORARIOS_ASIGNATURAS` y `AULAS`.
+* Se agrego boton `Actualizar registros` en la vista Materias.
+* Se ajusto la recarga de vistas para no marcar como cargada una vista que fallo.
+* Se actualizo `README.md` con el flujo: snapshot desde Sheets, CSV embebido como respaldo y lectura directa de hojas como ultimo recurso.
+* Se ejecuto `clasp push -f` y se subieron 4 archivos a Apps Script HEAD.
+
+### Archivos modificados
+
+* `apps-script/Code.gs`
+* `apps-script/index.html`
+* `README.md`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* `node --check --input-type=commonjs - < apps-script/Code.gs`
+* `node --check --input-type=commonjs - < <(awk '/<script>/{flag=1;next}/<\\/script>/{flag=0}flag' apps-script/index.html)`
+* `git diff --check`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp status`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp push -f`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp deploy -i AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg -d "FACEN App persistencia y catalogo snapshot Sheets 2026-06-16"`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp redeploy AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg -V 35 -d "RESTORE public app v35 pending owner deployment of persistence fix"`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp redeploy AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg -V 33 -d "RESTORE public app v33 after owner-permission 403"`
+* `curl -L https://appfacen.github.io/Facen-APP/`
+* `curl -L https://script.google.com/macros/s/AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg/exec`
+
+### Resultados verificados
+
+* Validacion local del CSV embebido: 29 asignaturas, 29 secciones y 57 horarios.
+* `node --check` no reporto errores de sintaxis en `Code.gs` ni en el JavaScript de `index.html`.
+* `git diff --check` no reporto errores.
+* `clasp status` confirma archivos GAS rastreados: `appsscript.json`, `catalogo_csv.html`, `Code.gs`, `index.html`.
+* `clasp push -f` subio correctamente los 4 archivos a Apps Script HEAD a las 19:33.
+* GitHub Pages respondio `HTTP 200`.
+
+### Pruebas realizadas
+
+* Validacion sintactica local.
+* Validacion de conteos del CSV embebido.
+* Push real a Apps Script HEAD.
+* Intento de deploy publico version `@36`.
+* Intentos de restauracion del deployment a `@35` y `@33`.
+* Verificacion HTTP anonima del Web App tras cada cambio de deployment.
+
+### Errores o incidentes
+
+* El deployment `@36` respondio `HTTP 403 Acceso denegado / Necesitas acceso`.
+* Las restauraciones a `@35` y `@33` tambien siguieron respondiendo `HTTP 403`.
+* `clasp show-authorized-user` confirma que la cuenta CLI activa es `monitorimpactosocial@gmail.com`.
+* `clasp` no expone una opcion para configurar acceso publico del Web App; solo cambia version y descripcion del deployment.
+* El codigo corregido esta en HEAD del proyecto GAS, pero no quedo publicamente operativo en `/exec` por bloqueo de permisos del deployment.
+
+### Soluciones aplicadas
+
+* Se dejo el codigo corregido subido a Apps Script HEAD.
+* Se intento restaurar a versiones previas para recuperar disponibilidad publica, sin exito por persistencia del 403.
+* Se documento que el redeploy debe realizarse desde la cuenta propietaria/autorizada del Apps Script configurando acceso publico del Web App.
+
+### Pendientes
+
+* Abrir Apps Script con la cuenta propietaria del proyecto.
+* Crear nueva version desde HEAD o seleccionar la version con estos cambios.
+* Editar deployment del Web App y configurar acceso segun politica institucional, idealmente `Anyone` si debe seguir embebido en GitHub Pages.
+* Verificar que `/exec` vuelva a responder `HTTP 200`.
+* Ejecutar flujo funcional con usuario de prueba: login, guardar perfil, recargar, confirmar persistencia, agregar materia, guardar nota/apunte/evento/lectura/grupo y confirmar que no desaparecen.
+* En Materias, ejecutar `Actualizar registros` despues de actualizar hojas de catalogo y confirmar conteos.
+
+### Riesgos
+
+* Mientras el Web App siga en `403`, `https://appfacen.github.io/Facen-APP/` carga el shell pero no la app funcional del iframe.
+* La correccion esta en HEAD, pero no se debe considerar desplegada ni validada publicamente hasta que la cuenta propietaria publique el Web App.
+* Si la hoja de catalogo contiene datos antiguos o de prueba, el boton `Actualizar registros` generara snapshot de esos datos; antes de usarlo se debe validar la hoja fuente.
+
+### Recomendaciones
+
+* Registrar en el manual maestro que cambios de Web App GAS deben desplegarse desde cuenta propietaria o cuenta con control real de acceso publico.
+* Para actualizaciones anuales, primero actualizar/validar las hojas `ASIGNATURAS`, `SECCIONES`, `HORARIOS_ASIGNATURAS` y `AULAS`; luego usar el boton `Actualizar registros`.
+* Mantener el CSV embebido como respaldo rapido versionado, pero operar el catalogo anual desde Sheets mediante snapshot.
+
+## 2026-06-16 19:53
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Ruta local: `/Users/diegobernardomezabogado/Library/CloudStorage/GoogleDrive-dmeza.py@gmail.com/.shortcut-targets-by-id/1-jhsoiMXD4UATf27FUyUqMq-V04yUD58/facen_app/facen_app_v3`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+
+### Objetivo de la intervencion
+
+* Recuperar acceso publico inmediato tras reporte de pantalla `Necesitas acceso`.
+
+### Diagnostico inicial
+
+* El deployment usado por GitHub Pages `AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg` respondia `HTTP 403`.
+* El manifest local declara `webapp.access = ANYONE_ANONYMOUS`, por lo que el bloqueo no esta en `appsscript.json`.
+* El redeploy desde la cuenta CLI `monitorimpactosocial@gmail.com` no permite corregir el acceso publico desde `clasp`.
+
+### Acciones realizadas
+
+* Se probaron deployments historicos del mismo proyecto Apps Script.
+* Se identifico el deployment `AKfycbzM0NMEZ57YImDz3puF5Ma4YT-tvwcZtjugGNuVWPsphnLWcddw6L_Snv_Vr6eSba7HyQ` como publico y funcional (`HTTP 200`).
+* Se actualizo el shell `index.html` para apuntar temporalmente a ese deployment publico.
+
+### Archivos modificados
+
+* `index.html`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp deployments`
+* `curl -L https://script.google.com/macros/s/AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg/exec`
+* `curl -L https://script.google.com/macros/s/AKfycbzM0NMEZ57YImDz3puF5Ma4YT-tvwcZtjugGNuVWPsphnLWcddw6L_Snv_Vr6eSba7HyQ/exec`
+
+### Resultados verificados
+
+* Deployment restringido: `HTTP 403`.
+* Deployment alternativo: `HTTP 200 text/html`.
+* `index.html` local apunta al deployment alternativo.
+* Se creo commit local `765eb87` con el cambio minimo en `index.html`.
+* `git push origin main` fallo con `Permission to appfacen/Facen-APP.git denied to investigapyrm`.
+* El conector GitHub pudo leer `index.html`, pero fallo al actualizarlo con `Resource not accessible by integration`.
+
+### Pendientes
+
+* Empujar el commit local `765eb87` desde una cuenta GitHub con permiso sobre `appfacen/Facen-APP`.
+* Una vez que la cuenta propietaria publique correctamente la version corregida de HEAD, volver a apuntar `index.html` al deployment definitivo.
+
+### Riesgos
+
+* El deployment alternativo es una recuperacion operativa temporal y no contiene necesariamente las correcciones nuevas de persistencia y snapshot de catalogo.
+* La solucion definitiva sigue siendo redeployar la version corregida desde la cuenta propietaria con acceso publico.
+
+### Recomendaciones
+
+* Mantener este fallback solo hasta que el Web App corregido sea publicado por la cuenta propietaria.
+
+## 2026-06-16 20:14
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex / usuario con credencial GitHub autorizada
+
+### Objetivo de la intervencion
+
+* Verificar publicacion del commit de recuperacion del shell GitHub Pages.
+
+### Diagnostico inicial
+
+* El commit local `765eb87` no habia podido subirse por credenciales GitHub sin permiso.
+* El usuario limpio la credencial macOS y ejecuto `git push origin main` correctamente.
+
+### Acciones realizadas
+
+* Se verifico que `origin/main` ya apunta a `765eb87`.
+* Se verifico por HTTP la URL GitHub Pages.
+* Se verifico que el shell publico apunta al deployment alternativo `AKfycbzM0NMEZ57YImDz3puF5Ma4YT-tvwcZtjugGNuVWPsphnLWcddw6L_Snv_Vr6eSba7HyQ`.
+* Se verifico que ese deployment alternativo responde `HTTP 200`.
+
+### Resultados verificados
+
+* `https://appfacen.github.io/Facen-APP/?v=20260616-pushed` responde `HTTP 200`.
+* El HTML publico contiene `APP_URL = 'https://script.google.com/macros/s/AKfycbzM0NMEZ57YImDz3puF5Ma4YT-tvwcZtjugGNuVWPsphnLWcddw6L_Snv_Vr6eSba7HyQ/exec'`.
+* El deployment alternativo responde `HTTP 200 text/html`.
+* `git status` muestra `main...origin/main` sin commits pendientes, aunque permanecen cambios locales de GAS no commiteados.
+
+### Pendientes
+
+* Validar en navegador que el login y la carga inicial funcionen desde `https://appfacen.github.io/Facen-APP/`.
+* Publicar la version corregida de HEAD de Apps Script desde la cuenta propietaria y luego volver a apuntar el shell al deployment definitivo.
+
+### Riesgos
+
+* La app volvio a cargar mediante deployment alternativo, pero las correcciones nuevas de persistencia y snapshot de catalogo siguen pendientes de publicacion GAS con cuenta propietaria.
+
+## 2026-06-16 20:25
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Ruta local: `/Users/diegobernardomezabogado/Library/CloudStorage/GoogleDrive-dmeza.py@gmail.com/.shortcut-targets-by-id/1-jhsoiMXD4UATf27FUyUqMq-V04yUD58/facen_app/facen_app_v3`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex / usuario con credencial GitHub y Apps Script propietaria
+* Version: fuente local posterior a `765eb87`, pendiente de commit y publicacion GAS
+
+### Objetivo de la intervencion
+
+* Atender el incidente reportado por usuario: puede iniciar sesion, cargar y guardar perfil, pero al agregar una asignatura al perfil desaparecen los datos.
+
+### Diagnostico inicial
+
+* La URL publica esta operando mediante el deployment alternativo `AKfycbzM0NMEZ57YImDz3puF5Ma4YT-tvwcZtjugGNuVWPsphnLWcddw6L_Snv_Vr6eSba7HyQ`, que carga pero corresponde a una version anterior.
+* El despliegue definitivo `AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg` continua con `HTTP 403`.
+* Se identifico una causa consistente con el sintoma: despues de `inscribirSeccion`, el frontend ejecutaba `setTimeout(loadApp, 250)`, provocando una recarga completa inmediata y posible reconstruccion con datos incompletos o cacheados del despliegue anterior.
+* En backend se verifico que `clearRows_` no borra filas de la hoja; invalida cache interna de lectura. No se detecto borrado masivo intencional en `inscribirSeccion`.
+
+### Acciones realizadas
+
+* Se elimino la recarga completa posterior a la inscripcion de asignatura.
+* Se dejo `inscribir()` actualizando `State.data.inscripciones`, `State.data.notas`, `State.data.resumen`, `State.data.catalogo`, `State.data.carreras` y `State.data.catalogoLoaded` desde la respuesta del servidor antes de renderizar.
+* Se verifico que el backend `inscribirSeccion` persiste snapshot de asignatura, seccion, horarios, fuente y version de catalogo.
+* Se probo un redeploy del deployment historico `AKfycbwsQLtuk7ERRJxmjvTqPD6L65bQaGAIVqiWZFvlnOX0OEnZr3CxX_x2aLrWqVrXms2i3A` con version `@38`, pero la URL resultante tambien devolvio `HTTP 403`.
+* Se decidio no redeployar el fallback publico `AKfycbzM0NMEZ57YImDz3puF5Ma4YT-tvwcZtjugGNuVWPsphnLWcddw6L_Snv_Vr6eSba7HyQ` desde la cuenta actual para evitar perder el unico acceso publico operativo.
+
+### Archivos modificados
+
+* `apps-script/index.html`
+* `apps-script/Code.gs`
+* `apps-script/catalogo_csv.html`
+* `.claspignore`
+* `README.md`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* `rg -n "function inscribir|setTimeout\\(loadApp|actualizarCatalogoDesdeHoja|diagnosticoCatalogoRapido|catalogo_csv|obtenerBootstrap|inscribirSeccion" apps-script README.md .claspignore`
+* `sed -n '1000,1045p' apps-script/index.html`
+* `sed -n '960,1035p' apps-script/Code.gs`
+* `rg -n "function clearRows_|clearRows_\\(|function appendObject_|function updateRowByKey_|function getRows_" apps-script/Code.gs`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp deploy -i AKfycbwsQLtuk7ERRJxmjvTqPD6L65bQaGAIVqiWZFvlnOX0OEnZr3CxX_x2aLrWqVrXms2i3A -d "FACEN App persistencia al agregar asignatura 2026-06-16"`
+
+### Resultados verificados
+
+* En fuente local `apps-script/index.html`, `inscribir()` ya no contiene `setTimeout(loadApp, 250)`.
+* `clearRows_` solo elimina cache en memoria y cache de catalogo, no elimina datos de Google Sheets.
+* `clasp push -f` habia enviado la version fuente a Apps Script HEAD, pero los deployments creados o actualizados desde la cuenta actual siguen respondiendo `HTTP 403`.
+
+### Pruebas realizadas
+
+* Verificacion estatica del flujo frontend de inscripcion.
+* Verificacion estatica del flujo backend de persistencia de inscripcion y nota.
+* Verificacion HTTP de deployments disponibles.
+
+### Errores o incidentes
+
+* El deployment corregido no puede validarse publicamente porque los redeploys hechos desde la cuenta Apps Script actual quedan restringidos con `HTTP 403`.
+* La app publica actual puede seguir reproduciendo el fallo porque usa un deployment alternativo anterior.
+
+### Soluciones aplicadas
+
+* Correccion en codigo fuente para evitar recarga destructiva despues de agregar asignatura.
+* Endurecimiento previo del backend con snapshot de catalogo embebido y persistencia de datos de inscripcion.
+
+### Pendientes
+
+* Publicar la version corregida desde la cuenta propietaria del proyecto Apps Script, con acceso Web App `Anyone`.
+* Ejecutar prueba real: login, cargar perfil, guardar perfil, agregar asignatura, cerrar sesion, volver a ingresar y verificar que perfil e inscripcion persisten.
+* Confirmar en la hoja de calculo si los datos se borraban fisicamente o si el problema era visual/carga de estado.
+
+### Riesgos
+
+* Mientras se use el deployment alternativo antiguo, el usuario puede seguir viendo desaparicion de datos.
+* Si se redeploya el fallback publico desde una cuenta sin permisos correctos, se puede perder el acceso publico operativo.
+
+### Recomendaciones
+
+* No considerar resuelto el incidente hasta validar con URL publica corregida y lectura posterior desde Google Sheets.
+* Redeployar solo desde la cuenta propietaria o con permisos completos del proyecto Apps Script.
+* Registrar como patron maestro: evitar recargas completas inmediatamente despues de escrituras criticas; preferir actualizar estado local con la respuesta atomica del servidor.
