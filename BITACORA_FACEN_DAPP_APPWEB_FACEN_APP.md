@@ -619,3 +619,81 @@
 * No considerar resuelto el incidente hasta validar con URL publica corregida y lectura posterior desde Google Sheets.
 * Redeployar solo desde la cuenta propietaria o con permisos completos del proyecto Apps Script.
 * Registrar como patron maestro: evitar recargas completas inmediatamente despues de escrituras criticas; preferir actualizar estado local con la respuesta atomica del servidor.
+
+## 2026-06-16 20:32
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex / usuario con cuenta propietaria pendiente para Apps Script
+* Version fuente Git: `ca12f34`
+
+### Objetivo de la intervencion
+
+* Confirmar si la correccion ya podia publicarse en el deployment definitivo y dejar la app publica apuntando a la version corregida.
+
+### Diagnostico inicial
+
+* El commit `ca12f34` fue creado y subido a `origin/main`.
+* `https://appfacen.github.io/Facen-APP/?v=20260616-ca12f34` responde `HTTP 200`, pero el shell publico sigue apuntando al fallback `AKfycbzM0NMEZ57YImDz3puF5Ma4YT-tvwcZtjugGNuVWPsphnLWcddw6L_Snv_Vr6eSba7HyQ`.
+* El fallback `@22` no contiene las funciones nuevas de actualizacion de catalogo ni el bootstrap endurecido.
+
+### Acciones realizadas
+
+* Se hizo `git commit` y `git push` de la fuente corregida.
+* Se ejecuto `clasp push -f` para enviar `appsscript.json`, `catalogo_csv.html`, `Code.gs` e `index.html` a Apps Script HEAD.
+* Se actualizo el deployment definitivo `AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg` a version `@39`.
+* Se intento ejecutar `diagnosticoCatalogoRapido` con `clasp run` para verificar acceso operativo a la hoja.
+
+### Archivos modificados
+
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* `git commit -m "Fix enrollment persistence and embed catalog snapshot"`
+* `git push origin main`
+* `curl -L -s -o /tmp/facen_app_public.html -w '%{http_code} %{content_type}\\n' 'https://appfacen.github.io/Facen-APP/?v=20260616-ca12f34'`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp push -f`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp deploy -i AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg -d "FACEN App persistencia sin recarga post inscripcion 2026-06-16"`
+* `PATH="$PWD/.tools/node/bin:$PATH" npx clasp run diagnosticoCatalogoRapido`
+
+### Resultados verificados
+
+* GitHub remoto quedo en `ca12f34`.
+* La URL GitHub Pages responde `HTTP 200`.
+* El deployment definitivo actualizado a `@39` responde `HTTP 403` con contenido de `Acceso denegado / Necesitas acceso`.
+* `clasp run diagnosticoCatalogoRapido` devuelve: `Unable to run script function. Please make sure you have permission to run the script function.`
+
+### Pruebas realizadas
+
+* Verificacion HTTP de GitHub Pages.
+* Verificacion HTTP de Apps Script definitivo `@39`.
+* Verificacion comparativa del HTML servido por fallback `@22` y fuente local.
+
+### Errores o incidentes
+
+* Redeployar desde `monitorimpactosocial@gmail.com` vuelve privado/restringido el deployment corregido.
+* La cuenta actual puede hacer `clasp push`, pero no puede ejecutar funciones ni dejar publico el Web App corregido.
+
+### Soluciones aplicadas
+
+* El codigo corregido quedo versionado en GitHub y cargado en Apps Script HEAD.
+* No se cambio el shell publico a `AKfycbyr...@39` porque actualmente responde `403`.
+
+### Pendientes
+
+* Ingresar con la cuenta propietaria/autorizada del Apps Script y redeployar la version actual con acceso publico `Anyone`.
+* Luego actualizar el shell GitHub Pages para apuntar al deployment corregido si el ID cambia.
+* Validar flujo real completo con usuario: login, perfil, guardar perfil, agregar asignatura, cerrar y reingresar.
+
+### Riesgos
+
+* El fallback operativo actual permite cargar la app, pero no contiene todas las correcciones nuevas y puede seguir reproduciendo el incidente.
+* Crear un clon Apps Script con la cuenta actual no se considera seguro sin confirmar acceso real a la hoja de calculo.
+
+### Recomendaciones
+
+* Publicar desde la cuenta propietaria del Apps Script o transferir/compartir permisos completos de ejecucion y despliegue.
+* No redeployar el fallback publico hasta tener una alternativa publica validada.
