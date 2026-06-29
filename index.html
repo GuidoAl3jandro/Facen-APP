@@ -77,7 +77,7 @@
     <header class="bar">
       <div class="brand">
         <div class="mark">F</div>
-        <div><strong>FACEN App</strong><span>Instalable para estudiantes</span></div>
+        <div><strong>FACEN App</strong><span id="shell-version">Actualizada</span></div>
       </div>
       <div class="actions">
         <button id="refresh" title="Actualizar a la version mas reciente">Actualizar</button>
@@ -89,18 +89,22 @@
   </main>
   <script>
     var APP_URL = 'https://script.google.com/macros/s/AKfycbzM0NMEZ57YImDz3puF5Ma4YT-tvwcZtjugGNuVWPsphnLWcddw6L_Snv_Vr6eSba7HyQ/exec';
+    var APP_BUILD = '2026.06.29.2';
     var deferredPrompt = null;
     function versionedAppUrl() {
       var params = new URLSearchParams(window.location.search);
-      var v = params.get('v') || '';
+      var v = params.get('v') || APP_BUILD;
       return APP_URL + (v ? '?v=' + encodeURIComponent(v) : '');
     }
 
+    document.getElementById('shell-version').textContent = 'v' + APP_BUILD;
     document.getElementById('app').src = versionedAppUrl();
     document.getElementById('open-direct').href = APP_URL;
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(function() {});
+      navigator.serviceWorker.register('./sw.js').then(function(registration) {
+        registration.update().catch(function() {});
+      }).catch(function() {});
     }
 
     document.getElementById('refresh').addEventListener('click', function() {
@@ -112,7 +116,7 @@
         return Promise.all(regs.map(function(reg) { return reg.update().then(function() { return reg.unregister(); }).catch(function() { return reg.unregister(); }); }));
       }) : Promise.resolve();
       Promise.all([clearCaches, clearWorkers]).finally(function() {
-        window.location.replace('./?v=' + stamp);
+        window.location.replace('./?v=' + APP_BUILD + '-' + stamp);
       });
     });
 

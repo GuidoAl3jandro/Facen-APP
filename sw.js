@@ -1,4 +1,4 @@
-const CACHE_NAME = 'facen-app-v5-shell';
+const CACHE_NAME = 'facen-app-v6-shell-20260629';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -23,7 +23,7 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) return;
   if (event.request.mode === 'navigate' || url.pathname.endsWith('/index.html') || url.pathname.endsWith('/')) {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request, { cache: 'no-store' })
         .then(response => {
           const copy = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
@@ -34,6 +34,6 @@ self.addEventListener('fetch', event => {
     return;
   }
   event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request))
+    caches.match(event.request).then(cached => cached || fetch(event.request, { cache: 'no-store' }))
   );
 });

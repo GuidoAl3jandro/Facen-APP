@@ -928,3 +928,68 @@
 
 * Para desbloqueo urgente: restablecer manualmente la cuenta confirmada en `USUARIOS` mediante conector Sheets.
 * Para solucion permanente: publicar `apps-script-recovery/` o la version principal actual desde una cuenta propietaria/autorizada que pueda dejar Web Apps anonimos realmente accesibles.
+
+## 2026-06-29 19:28
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version Git inicial: `90730ffaec1f7270ed03f5db9ec402a4b5af4651`
+
+### Objetivo de la intervencion
+
+* Corregir que la appweb publica no evidenciara cambios despues del commit anterior.
+* Forzar actualizacion del shell GitHub Pages y del service worker.
+
+### Diagnostico inicial
+
+* GitHub Pages estaba en estado `built` y apuntaba a `main`.
+* El HTML publico seguia con longitud `4662` y no contenia referencias a `apps-script-recovery` porque el commit anterior no habia modificado la raiz visible.
+* El service worker publico seguia usando `facen-app-v5-shell`, por lo que los navegadores/PWA podian mantener cache anterior.
+
+### Acciones realizadas
+
+* Se agrego version visible del shell `APP_BUILD = 2026.06.29.2` en `index.html`.
+* Se hizo que el iframe reciba un parametro `v` por defecto basado en `APP_BUILD`.
+* Se ajusto el boton `Actualizar` para usar `APP_BUILD` junto con timestamp.
+* Se cambio el cache del service worker a `facen-app-v6-shell-20260629`.
+* Se ajusto fetch del service worker con `cache: 'no-store'` para navegacion y recursos no cacheados.
+
+### Archivos modificados
+
+* `index.html`
+* `sw.js`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* `Invoke-WebRequest https://appfacen.github.io/Facen-APP/?cb=...`
+* `Invoke-WebRequest https://appfacen.github.io/Facen-APP/sw.js?cb=...`
+* `node --check` sobre el JavaScript del shell `index.html`
+* `node --check sw.js`
+* `git diff --check`
+
+### Resultados verificados
+
+* Antes del cambio, Pages estaba publicado pero la superficie visible no habia cambiado porque `index.html` y `sw.js` no se habian modificado.
+* La fuente local ahora muestra `v2026.06.29.2` en la barra superior del shell y usa cache `facen-app-v6-shell-20260629`.
+
+### Pruebas realizadas
+
+* Validacion sintactica del JS embebido en `index.html`.
+* Validacion sintactica de `sw.js`.
+* Revision de diff de `index.html` y `sw.js`.
+
+### Pendientes
+
+* Commit, push y verificacion publica con cache-busting.
+* Si el usuario ya tenia la PWA instalada, pulsar `Actualizar` una vez o abrir `https://appfacen.github.io/Facen-APP/?v=2026.06.29.2`.
+
+### Riesgos
+
+* Esto actualiza el shell GitHub Pages, pero no publica la version nueva del backend Apps Script porque ese bloqueo sigue dependiendo de permisos de deployment.
