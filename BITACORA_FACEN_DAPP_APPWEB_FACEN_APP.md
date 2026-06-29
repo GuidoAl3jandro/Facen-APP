@@ -823,3 +823,108 @@
 * Usar una cuenta propietaria/autorizada para el cierre definitivo de Apps Script.
 * Mantener en README y bitacora la diferencia entre GitHub Pages operativo, Apps Script fallback operativo y version corregida desplegada.
 * Agregar al manual maestro el aprendizaje: `ANYONE_ANONYMOUS` en el entry point no basta como evidencia; siempre verificar `/exec` anonimo despues de cada redeploy.
+
+## 2026-06-29 19:21
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version Git inicial: `38eadc58d328a0f55b07ea12a481300518231ffd`
+
+### Objetivo de la intervencion
+
+* Atender el bloqueo reportado por usuario: no puede recuperar contrasena y no logra acceder.
+* Preparar una via de recuperacion compatible con el fallback publico actual sin romper el deployment productivo.
+* Commit y push de los archivos preparados.
+
+### Diagnostico inicial
+
+* La fuente actual de `apps-script/index.html` ya contiene la pestana `Recuperar` y llama correctamente a `recuperarContrasena`.
+* El backend actual `apps-script/Code.gs` contiene `recuperarContrasena(datos)`.
+* La URL publica sigue sirviendo el fallback Apps Script `AKfycbzM0...@22`, que no contiene la funcion ni la UI de recuperacion.
+* El deployment corregido principal `AKfycbyr...@39` sigue en `HTTP 403 / Necesitas acceso`.
+* `clasp` continua autenticado como `apoyomedicoips@gmail.com`.
+
+### Acciones realizadas
+
+* Se confirmo por busqueda de fuente que la recuperacion existe en la version actual del codigo, pero no en el fallback publico.
+* Se consulto metadata y cabeceras de Google Sheets `FACEN_APP` mediante conector Google Sheets:
+  * `USUARIOS!A1:H1`
+  * `ESTUDIANTES!A1:L1`
+* Se verifico que el conector puede leer la hoja nativa `FACEN_APP`, aunque la Sheets API del OAuth de `clasp` esta deshabilitada.
+* Se preparo un microservicio Apps Script separado en `apps-script-recovery/` para recuperar contrasena temporal contra la misma hoja `USUARIOS`.
+* Se copio el mismo algoritmo de hash de la app actual (`HASH_ITERATIONS = 6000`) para mantener compatibilidad con el login del fallback publico.
+* Se creo un proyecto Apps Script separado `FACEN App Recovery` desde un directorio temporal y se subieron los archivos.
+* Se creo un deployment de prueba `AKfycbxLO...@2`.
+* Se verifico anonimamente el deployment de prueba y tambien devolvio `HTTP 403 / Acceso denegado`, pese a que su metadata indica `ANYONE_ANONYMOUS`.
+* Se mantuvo intacto el fallback productivo usado por GitHub Pages.
+
+### Archivos modificados
+
+* `apps-script-recovery/Code.gs`
+* `apps-script-recovery/index.html`
+* `apps-script-recovery/appsscript.json`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* `git status --branch --short`
+* `rg -n "recover|Recuperar|password|contrasena|contraseña|temporal|reset|olvid" ...`
+* `npx clasp show-authorized-user`
+* `npx clasp deployments`
+* `npx clasp create --type standalone --title "FACEN App Recovery" --rootDir .`
+* `npx clasp push -f`
+* `npx clasp version "FACEN App Recovery inicial 2026-06-29"`
+* `npx clasp deploy -d "FACEN App Recovery publica 2026-06-29"`
+* `Invoke-WebRequest https://script.google.com/macros/s/AKfycbxLOP0lz2OforvTs04cJreIw6ejkrwiYQd8COx99Zu7GuN_D3cSOOWeA2rTfTtgDah4_Q/exec?...`
+
+### Resultados verificados
+
+* Codigo de recuperacion preparado en repo con validacion por usuario y email o cedula del perfil.
+* El microservicio no expone recuperacion anonima todavia porque el deployment nuevo tambien queda restringido con `HTTP 403`.
+* El conector Google Sheets puede leer la hoja, por lo que existe una via operativa para restablecimiento controlado si se identifica con precision la cuenta del usuario.
+* No se modifico ninguna contrasena durante esta intervencion.
+
+### Pruebas realizadas
+
+* Validacion sintactica de `apps-script-recovery/Code.gs` como JavaScript temporal.
+* Validacion sintactica del bloque `<script>` de `apps-script-recovery/index.html`.
+* `git diff --check`.
+* Verificacion HTTP anonima del deployment separado de recuperacion.
+* Lectura de metadata y cabeceras de la hoja `FACEN_APP`.
+
+### Errores o incidentes
+
+* `npx clasp create --type webapp` fallo con `Invalid container file type`; se uso `--type standalone`.
+* El deployment separado de recuperacion quedo en `HTTP 403 / Acceso denegado`, confirmando que la restriccion de publicacion anonima afecta tambien proyectos nuevos creados desde la cuenta actual.
+* `npx clasp enable-api sheets.googleapis.com` no pudo ejecutarse porque no hay GCP project ID configurado.
+* El intento directo por Service Usage para habilitar Sheets API devolvio `PERMISSION_DENIED`.
+
+### Soluciones aplicadas
+
+* Se agrego al repo un microservicio de recuperacion listo para desplegar desde una cuenta que pueda publicar Web Apps anonimos.
+* Se mantuvo el fallback publico sin tocar para no agravar el bloqueo de acceso.
+* Se dejo trazado que la solucion inmediata, si el usuario confirma cuenta exacta, puede hacerse con una escritura controlada en `USUARIOS` mediante el conector de Google Sheets.
+
+### Pendientes
+
+* Confirmar cuenta exacta a restablecer antes de modificar `USUARIOS`.
+* Generar contrasena temporal y escribir `password_hash`, `salt` y `ultimo_acceso` en la fila correcta.
+* Probar login con esa contrasena temporal y luego cambiarla desde Perfil.
+* Publicar la recuperacion en la app publica solo cuando un deployment anonimo responda `HTTP 200`.
+
+### Riesgos
+
+* No se debe restablecer una cuenta sin confirmacion precisa del usuario afectado.
+* Un deployment nuevo creado desde la cuenta actual no queda publico, aunque la metadata indique `ANYONE_ANONYMOUS`.
+* Incluir un enlace de recuperacion en GitHub Pages hacia un endpoint `403` empeoraria la experiencia de usuario; por eso no se cambio `index.html`.
+
+### Recomendaciones
+
+* Para desbloqueo urgente: restablecer manualmente la cuenta confirmada en `USUARIOS` mediante conector Sheets.
+* Para solucion permanente: publicar `apps-script-recovery/` o la version principal actual desde una cuenta propietaria/autorizada que pueda dejar Web Apps anonimos realmente accesibles.

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recuperar acceso - FACEN App</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --ink: #14212e;
+      --muted: #647586;
+      --line: #d9e3eb;
+      --primary: #166c70;
+      --primary-2: #0f4e52;
+      --accent: #d69f30;
+      --danger: #b23b3b;
+      --ok: #2f7d55;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    main {
+      width: min(460px, 100%);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 28px;
+      box-shadow: 0 18px 50px rgba(25, 46, 70, .11);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 900;
+    }
+    h1 {
+      font-size: 22px;
+      margin: 0;
+      letter-spacing: 0;
+    }
+    p {
+      margin: 8px 0 20px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    form {
+      display: grid;
+      gap: 14px;
+    }
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--ink);
+      font: inherit;
+    }
+    input:focus {
+      outline: 0;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(22, 108, 112, .14);
+    }
+    button, a.button {
+      border: 0;
+      border-radius: 8px;
+      min-height: 44px;
+      padding: 11px 14px;
+      font: inherit;
+      font-weight: 900;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    button {
+      background: var(--primary);
+      color: #fff;
+    }
+    button:hover { background: var(--primary-2); }
+    button:disabled {
+      opacity: .62;
+      cursor: wait;
+    }
+    a.button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      color: var(--ink);
+      background: #fff;
+    }
+    .result {
+      display: none;
+      margin-top: 16px;
+      border-radius: 8px;
+      padding: 14px;
+      line-height: 1.5;
+      border: 1px solid var(--line);
+      background: #f8fbfd;
+    }
+    .result.show { display: block; }
+    .result.ok {
+      border-color: rgba(47, 125, 85, .25);
+      background: #e7f4ee;
+      color: var(--ok);
+    }
+    .result.error {
+      border-color: rgba(178, 59, 59, .25);
+      background: #fdeaea;
+      color: var(--danger);
+    }
+    .temp {
+      display: block;
+      margin-top: 10px;
+      font-size: 22px;
+      color: var(--ink);
+      word-break: break-word;
+    }
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    @media (max-width: 480px) {
+      body { padding: 14px; }
+      main { padding: 22px; }
+      .actions { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand">
+      <div class="mark">F</div>
+      <div>
+        <h1>Recuperar acceso</h1>
+        <p>FACEN App</p>
+      </div>
+    </div>
+    <p>Ingresa tu usuario y confirma tu identidad con el email o la cedula guardada en tu perfil.</p>
+    <form id="form">
+      <label>Usuario
+        <input name="username" autocomplete="username" required>
+      </label>
+      <label>Email del perfil
+        <input name="email" type="email" autocomplete="email">
+      </label>
+      <label>Cedula del perfil
+        <input name="cedula" inputmode="numeric" autocomplete="off">
+      </label>
+      <button id="submit" type="submit">Generar contrasena temporal</button>
+    </form>
+    <div id="result" class="result"></div>
+    <div class="actions">
+      <a class="button" href="https://appfacen.github.io/Facen-APP/" target="_top" rel="noopener">Volver a FACEN App</a>
+      <button id="clear" type="button">Limpiar</button>
+    </div>
+  </main>
+  <script>
+    var form = document.getElementById('form');
+    var result = document.getElementById('result');
+    var submit = document.getElementById('submit');
+    var clear = document.getElementById('clear');
+
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+      var data = formData(form);
+      result.className = 'result';
+      result.textContent = '';
+      submit.disabled = true;
+      google.script.run
+        .withSuccessHandler(function(res) {
+          submit.disabled = false;
+          if (!res || res.success === false) {
+            showResult((res && res.message) || 'No se pudo recuperar el acceso.', true);
+            return;
+          }
+          showResult('Contrasena temporal generada:', false, res.temporaryPassword || '');
+        })
+        .withFailureHandler(function(err) {
+          submit.disabled = false;
+          showResult((err && err.message) || 'Error de conexion.', true);
+        })
+        .recuperarContrasena(data);
+    });
+
+    clear.addEventListener('click', function() {
+      form.reset();
+      result.className = 'result';
+      result.textContent = '';
+    });
+
+    function showResult(message, isError, tempPassword) {
+      result.className = 'result show ' + (isError ? 'error' : 'ok');
+      result.innerHTML = esc(message) + (tempPassword ? '<strong class="temp">' + esc(tempPassword) + '</strong><br>Usala para ingresar y luego cambiala desde tu perfil.' : '');
+    }
+
+    function formData(formEl) {
+      var data = {};
+      Array.prototype.forEach.call(formEl.elements, function(el) {
+        if (el.name) data[el.name] = el.value;
+      });
+      return data;
+    }
+
+    function esc(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, function(char) {
+        return {'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char];
+      });
+    }
+  </script>
+</body>
+</html>
