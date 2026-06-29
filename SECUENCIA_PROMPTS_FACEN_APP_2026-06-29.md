@@ -96,3 +96,26 @@ Resultado resumido:
 * Se publico `APP_BUILD = 2026.06.29.3` y se mantuvo visible `#shell-version` tambien en movil.
 * Se renovo el service worker a `facen-app-v7-shell-20260629`.
 * GitHub Pages quedo `built` y la URL publica respondio `HTTP 200` con el build nuevo y el service worker nuevo.
+
+### 2026-06-29 - Solo se ve la version del shell
+
+Texto del usuario:
+
+```text
+solo puedo ver sesta version ACEN App
+v2026.06.29.3
+```
+
+Interpretacion operativa:
+
+* GitHub Pages ya actualizo, pero el usuario no esta llegando de forma usable al Apps Script embebido.
+* Reforzar la entrada directa al backend publico.
+* Restablecer la cuenta `dmeza.py` como desbloqueo inmediato, sin documentar la clave temporal.
+
+Resultado resumido:
+
+* Se verifico que Pages y el Apps Script publico responden `HTTP 200`.
+* Se confirmo que el Apps Script publico trae login pero no recuperacion de contrasena.
+* Se restablecio `USUARIOS!A5:H5` para `dmeza.py` con hash moderno y salt nuevo.
+* Se agrego log tecnico `RESET_CONTRASENA_ASISTIDO` sin clave temporal.
+* Se preparo `APP_BUILD = 2026.06.29.4`, boton `Entrar` y fallback de acceso directo.

@@ -1088,3 +1088,97 @@
 ### Riesgos
 
 * La recuperacion de contrasena dentro del backend principal sigue dependiendo del deployment Apps Script anonimo, que permanece bloqueado por permisos.
+
+## 2026-06-29 19:53
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version Git inicial: `87fb703`
+
+### Objetivo de la intervencion
+
+* Atender el reporte de que el usuario solo veia la barra `FACEN App v2026.06.29.3`.
+* Dejar una via clara de entrada directa al Apps Script publico si el iframe no se renderiza.
+* Restablecer de forma controlada la cuenta `dmeza.py`, sin registrar la clave temporal en documentos.
+
+### Diagnostico inicial
+
+* GitHub Pages respondia `HTTP 200` y mostraba el shell `v2026.06.29.3`.
+* El Apps Script publico usado por el shell respondia `HTTP 200`, tenia login, pero no contenia recuperacion de contrasena.
+* La version actual del codigo Apps Script en repo si contiene `recuperarContrasena`, pero ese backend no esta publicado anonimamente por el bloqueo de permisos ya documentado.
+* En `FACEN_APP`, `USUARIOS!A5:H5` corresponde a `id_usuario = 4`, `username = dmeza.py`, `rol = estudiante`, `activo = 1`.
+* En `ESTUDIANTES`, el `id_usuario = 4` corresponde a Diego Meza con email `dmeza.py@gmail.com`.
+
+### Acciones realizadas
+
+* Se cambio el boton de acceso directo del shell de `Abrir` a `Entrar`.
+* Se hizo que el enlace directo use la URL versionada del Apps Script, no solo la URL base.
+* Se agrego un fallback visual inferior con boton `Entrar` si el iframe no dispara carga en 3,5 segundos.
+* Se actualizo `APP_BUILD` a `2026.06.29.4`.
+* Se cambio el cache del service worker a `facen-app-v8-shell-20260629`.
+* Se genero una clave temporal con el patron `Facen-xxxxxxxx`.
+* Se calculo `password_hash` con SHA-256, salt nuevo y 6000 iteraciones, igual que `hashPassword_` del backend.
+* Se actualizaron solo `password_hash`, `salt` y `ultimo_acceso` de `USUARIOS!C5:D5,H5`.
+* Se agrego un log tecnico en `LOGS` con accion `RESET_CONTRASENA_ASISTIDO`, sin incluir la clave temporal.
+
+### Archivos modificados
+
+* `index.html`
+* `sw.js`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+
+### Comandos o scripts ejecutados
+
+* `Invoke-WebRequest https://appfacen.github.io/Facen-APP/?v=2026.06.29.3`
+* `Invoke-WebRequest https://script.google.com/macros/s/.../exec?v=2026.06.29.3`
+* `rg -n "hash|salt|password|contrasena|recuperar|login" apps-script`
+* Lectura de metadata de Google Sheets `FACEN_APP`.
+* Lectura de filas acotadas en `USUARIOS`, `ESTUDIANTES` y `LOGS`.
+* Batch update de Google Sheets sobre `USUARIOS` y `LOGS`.
+* `node --check .\sw.js`
+* Validacion con `node --check` del script embebido en `index.html`.
+* `git diff --check`
+
+### Resultados verificados
+
+* El Apps Script publico trae login pero no recuperacion de contrasena.
+* La cuenta `dmeza.py` quedo con nueva clave temporal y `ultimo_acceso` vacio.
+* Se verifico despues de escribir que `USUARIOS!A5:H5` mantiene `id_usuario = 4`, `username = dmeza.py`, `rol = estudiante`, `activo = 1`.
+* No se registro la clave temporal en bitacora, Git ni carpeta maestra.
+* `index.html` queda preparado para mostrar `v2026.06.29.4`, boton `Entrar` y fallback de acceso directo.
+* `sw.js` queda preparado con cache `facen-app-v8-shell-20260629`.
+
+### Pruebas realizadas
+
+* Verificacion HTTP anonima de GitHub Pages y Apps Script.
+* Validacion del algoritmo de hash contra el codigo fuente del backend.
+* Relectura de la fila modificada en `USUARIOS`.
+* Validacion sintactica de `sw.js` y del script embebido en `index.html`.
+* Revision de diff sin errores de whitespace, salvo advertencias LF/CRLF esperadas del entorno Windows.
+
+### Errores o incidentes
+
+* El endpoint Apps Script publico no contiene la funcion de recuperacion de contrasena en la UI desplegada.
+
+### Soluciones aplicadas
+
+* Se restablecio la cuenta `dmeza.py` con clave temporal.
+* Se reforzo el shell de Pages para entrada directa al Apps Script cuando el iframe no se vea.
+
+### Pendientes
+
+* Commit, push y verificacion publica de `v2026.06.29.4`.
+* El usuario debe ingresar con la clave temporal y cambiarla desde Perfil.
+* Publicar la recuperacion permanente cuando se resuelva el permiso del deployment anonimo Apps Script.
+
+### Riesgos
+
+* Si el usuario intenta ingresar con `diego.meza` o `dmeza.py@gmail.com`, esas cuentas no fueron modificadas en esta intervencion.
+* El fallback de Pages mejora el acceso visual, pero no reemplaza la publicacion correcta del backend Apps Script con recuperacion de contrasena.
