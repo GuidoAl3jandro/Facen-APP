@@ -1042,24 +1042,38 @@
 * Extraccion temporal del script embebido de `index.html` y `node --check`
 * `git diff --check`
 * Intento de prueba visual con Playwright sobre `file:///.../index.html`
+* `git add -- index.html sw.js BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+* `git commit -m "Show FACEN Pages refresh version on mobile"`
+* `git push origin main`
+* `gh api repos/appfacen/Facen-APP/pages`
+* `Invoke-WebRequest https://appfacen.github.io/Facen-APP/?cb=...`
+* `Invoke-WebRequest https://appfacen.github.io/Facen-APP/sw.js?cb=...`
 
 ### Resultados verificados
 
 * La causa de la falta de evidencia visual fue identificada en CSS responsive.
-* La version del shell queda preparada como `v2026.06.29.3` para verificacion publica.
+* La version del shell quedo publicada como `v2026.06.29.3`.
 * `sw.js` y el JavaScript embebido en `index.html` pasan validacion sintactica con Node.
 * `git diff --check` no reporta errores de espacios; solo advertencias esperadas LF/CRLF por el entorno Windows.
+* GitHub Pages paso de `building` a `built` despues del push.
+* La URL publica `https://appfacen.github.io/Facen-APP/?cb=...` respondio `HTTP 200`, longitud `5205`, con `APP_BUILD = '2026.06.29.3'`.
+* El HTML publico contiene la regla movil para `#shell-version` y ya no contiene `.brand span { display: none; }`.
+* `https://appfacen.github.io/Facen-APP/sw.js?cb=...` respondio `HTTP 200`, longitud `1283`, con `facen-app-v7-shell-20260629`.
+* `HEAD` local y `origin/main` quedaron en `5668c298b4dd3d328a74a2feb42b6bc95f64ff76`.
 
 ### Pruebas realizadas
 
 * Validacion sintactica de `sw.js`.
 * Validacion sintactica del script embebido en `index.html`.
 * Revision de diff.
+* Verificacion de estado GitHub Pages via API.
+* Verificacion HTTP anonima con cache-busting sobre `index.html` y `sw.js`.
 * La prueba visual automatizada local no pudo completarse porque el paquete `playwright` no esta instalado en el checkout y no se agrego como dependencia del proyecto.
 
 ### Errores o incidentes
 
 * `node -e "require('playwright')"` devolvio `MODULE_NOT_FOUND`; se deja como limitacion de verificacion local, no como error de la app.
+* Durante `git commit`, Git advirtio que no podia crear `.git/packed-refs.lock` porque ya existia; el commit se genero correctamente. El lock queda como residuo a limpiar en una intervencion separada si no hay procesos Git activos.
 
 ### Soluciones aplicadas
 
@@ -1067,8 +1081,9 @@
 
 ### Pendientes
 
-* Commit y push.
-* Verificar `https://appfacen.github.io/Facen-APP/?v=2026.06.29.3`.
+* Si un usuario ya tiene instalada la PWA o una pestana antigua, abrir `https://appfacen.github.io/Facen-APP/?v=2026.06.29.3` o pulsar `Actualizar`.
+* Resolver el acceso del usuario mediante restablecimiento controlado en la hoja `USUARIOS` cuando confirme la cuenta exacta.
+* Publicar la recuperacion de contrasena en Apps Script solo cuando el deployment anonimo responda `HTTP 200`.
 
 ### Riesgos
 

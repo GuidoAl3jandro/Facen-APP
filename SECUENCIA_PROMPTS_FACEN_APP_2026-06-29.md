@@ -89,3 +89,10 @@ Interpretacion operativa:
 * Verificar si GitHub Pages sirve la nueva version.
 * Corregir cache/service worker y evidencia visual en movil.
 * Confirmar con cache-busting que la URL publica entrega el build nuevo.
+
+Resultado resumido:
+
+* Se detecto que el build `2026.06.29.2` estaba publicado, pero la version quedaba oculta en movil por `.brand span { display: none; }`.
+* Se publico `APP_BUILD = 2026.06.29.3` y se mantuvo visible `#shell-version` tambien en movil.
+* Se renovo el service worker a `facen-app-v7-shell-20260629`.
+* GitHub Pages quedo `built` y la URL publica respondio `HTTP 200` con el build nuevo y el service worker nuevo.
