@@ -697,3 +697,129 @@
 
 * Publicar desde la cuenta propietaria del Apps Script o transferir/compartir permisos completos de ejecucion y despliegue.
 * No redeployar el fallback publico hasta tener una alternativa publica validada.
+
+## 2026-06-29 18:52
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version Git revisada: `99bd4f52ef859bbcf250d01f50aea13579abcff8`
+
+### Objetivo de la intervencion
+
+* Revisar o crear bitacora del proyecto.
+* Verificar si la cuenta `diegomezapy` permite destrabar la publicacion GitHub Pages.
+* Intentar dejar operativa la app publica sin romper el fallback que actualmente carga.
+
+### Diagnostico inicial
+
+* La carpeta inicial `G:\Mi unidad\FACENapp` no era repositorio Git; se clono el repositorio real en `G:\Mi unidad\FACENapp\Facen-APP`.
+* La bitacora del proyecto ya existia: `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`.
+* La carpeta maestra `G:\Mi unidad\MANUAL_MAESTRO_FORMATOS_FUNCIONES_APPWEB` estaba disponible y fue consultada.
+* GitHub Pages esta configurado desde `main` raiz y responde `HTTP 200`.
+* `gh` esta autenticado como `diegomezapy` con permiso `WRITE` sobre `appfacen/Facen-APP`.
+* `clasp` esta autenticado como `apoyomedicoips@gmail.com`, no como `dmeza.py@gmail.com`.
+* La pagina publica usa el fallback Apps Script `AKfycbzM0NMEZ57YImDz3puF5Ma4YT-tvwcZtjugGNuVWPsphnLWcddw6L_Snv_Vr6eSba7HyQ`, que responde `HTTP 200`.
+* El deployment corregido `AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg @39` sigue respondiendo `HTTP 403 / Necesitas acceso`.
+
+### Acciones realizadas
+
+* Se verifico estado Git, ramas remotas, GitHub Pages y permisos GitHub.
+* Se leyo README, bitacora, shell GitHub Pages, service worker, Apps Script y catalogo embebido.
+* Se verifico que el catalogo embebido local esta guardado con caracteres UTF-8 correctos; el mojibake observado provenia de salida de consola, no del archivo.
+* Se valido sintaxis local de `apps-script/Code.gs` como `.js` temporal y del JavaScript embebido en `apps-script/index.html`.
+* Se ejecuto `npx clasp push -f` y se subieron 4 archivos a Apps Script HEAD.
+* Se creo Apps Script version `40` desde HEAD.
+* Se probo redeployar un deployment historico no usado por GitHub Pages (`AKfycbzudNRV-hvyTKHCcnVsqfKKJmzj_hgpbzGZU09w1sB0ahu61XlKyhzUOiNmFzA51sm31A`) a version `40` para validar si conservaba acceso publico.
+* Al quedar restringido con `HTTP 403`, se intento restaurarlo a version `3`; siguio respondiendo `HTTP 403`.
+* Se consulto la API de Apps Script para confirmar que los entry points figuran como `access = ANYONE_ANONYMOUS` y `executeAs = USER_DEPLOYING`.
+* Se consulto metadata Drive del script y spreadsheet: propietario `ga.noguerajoel@gmail.com`, `dmeza.py@gmail.com` figura como editor, y ambos archivos tienen permiso amplio por enlace.
+* Se intento agregar `apoyomedicoips@gmail.com` como editor explicito por Drive API, pero la API respondio `appNotAuthorizedToFile`; no se aplicaron cambios de permisos.
+* Se generaron capturas Playwright de GitHub Pages en escritorio y movil.
+* Se actualizo README con el estado operativo real y el bloqueo de despliegue.
+
+### Archivos modificados
+
+* `README.md`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+* Copia central sincronizada en `MANUAL_MAESTRO_FORMATOS_FUNCIONES_APPWEB/BITACORAS_PROYECTOS/`
+
+### Comandos o scripts ejecutados
+
+* `git clone https://github.com/appfacen/Facen-APP.git "Facen-APP"`
+* `git status --branch --short`
+* `gh repo view appfacen/Facen-APP --json name,owner,viewerPermission,defaultBranchRef,url`
+* `gh api repos/appfacen/Facen-APP/pages`
+* `Invoke-WebRequest https://appfacen.github.io/Facen-APP/?cb=...`
+* `npx clasp show-authorized-user`
+* `npx clasp deployments`
+* `npx clasp versions`
+* `npx clasp push -f`
+* `npx clasp version "FACEN App fuente HEAD verificada 2026-06-29"`
+* `npx clasp deploy -i AKfycbzudNRV-hvyTKHCcnVsqfKKJmzj_hgpbzGZU09w1sB0ahu61XlKyhzUOiNmFzA51sm31A -V 40 -d "FACEN App version corregida publica 2026-06-29"`
+* `npx clasp deploy -i AKfycbzudNRV-hvyTKHCcnVsqfKKJmzj_hgpbzGZU09w1sB0ahu61XlKyhzUOiNmFzA51sm31A -V 3 -d "RESTORE FACEN App historical public deployment v3 after permission test 2026-06-29"`
+* `npx playwright screenshot --block-service-workers --viewport-size "1366,768" ...`
+* `npx playwright screenshot --block-service-workers --viewport-size "390,844" ...`
+
+### Resultados verificados
+
+* GitHub Pages: `HTTP 200`, fuente `main` raiz, sitio publico `https://appfacen.github.io/Facen-APP/`.
+* GitHub Pages muestra login de FACEN App en escritorio y movil mediante el fallback publico.
+* Fallback usado por Pages: `AKfycbzM0...@22`, `HTTP 200`, login visible, pero no contiene funciones nuevas como `diagnosticoCatalogoRapido` ni `actualizarCatalogoDesdeHoja`.
+* Deployment corregido `AKfycbyr...@39`: `HTTP 403 / Necesitas acceso`.
+* Deployment historico de prueba redeployado desde cuenta actual: quedo `HTTP 403` incluso tras restaurarlo a version `3`.
+* Apps Script version `40` fue creada, pero no quedo expuesta publicamente por un Web App anonimo funcional.
+* El usuario GitHub `diegomezapy` puede empujar al repo, pero eso no resuelve por si solo el permiso del Web App Apps Script.
+
+### Pruebas realizadas
+
+* Verificacion HTTP anonima de GitHub Pages, fallback Apps Script y deployment corregido.
+* Verificacion API de GitHub Pages.
+* Verificacion API de Apps Script deployments y entry points.
+* Verificacion Drive metadata de script y spreadsheet.
+* Captura Playwright desktop: login visible.
+* Captura Playwright movil: login visible y barra superior usable.
+* Validacion sintactica local de Apps Script y JavaScript frontend.
+* `git diff --check`.
+
+### Errores o incidentes
+
+* `node --check apps-script\Code.gs` falla en Node 22 por extension `.gs`; se valido como archivo temporal `.js`.
+* `npx playwright test` no pudo ejecutarse porque `@playwright/test` no esta instalado localmente; se usaron capturas Playwright CLI.
+* Redeployar desde `apoyomedicoips@gmail.com` mantiene o provoca `HTTP 403` en deployments versionados.
+* La API Drive no permitio agregar permisos por `appNotAuthorizedToFile`.
+
+### Soluciones aplicadas
+
+* Se mantuvo intacto el fallback publico que usa la app publicada.
+* Se confirmo que la URL publica carga visualmente y es usable para login en desktop y movil.
+* Se dejo documentado que la version corregida no puede marcarse como productiva hasta redeploy publico desde cuenta propietaria/autorizada.
+* Se actualizo README para diferenciar fallback operativo y deployment corregido pendiente.
+
+### Pendientes
+
+* Ingresar a Apps Script con `ga.noguerajoel@gmail.com` o con una cuenta explicitamente autorizada para desplegar Web Apps publicos.
+* Alternativamente, autenticar `clasp` con `dmeza.py@gmail.com` y confirmar que esa cuenta puede crear deployments publicos anonimos.
+* Publicar la version `40` o una version nueva desde la cuenta correcta con acceso `Anyone`.
+* Verificar anonimamente que el `/exec` del nuevo deployment responda `HTTP 200` y contenga `diagnosticoCatalogoRapido` y `actualizarCatalogoDesdeHoja`.
+* Actualizar `APP_URL` en `index.html` solo despues de esa verificacion.
+* Ejecutar prueba funcional completa con usuario tecnico: crear/entrar, guardar perfil, agregar materia, recargar, cerrar sesion, volver a entrar y confirmar persistencia en Sheets.
+
+### Riesgos
+
+* La app publica carga, pero sigue usando fallback antiguo; no debe declararse como version corregida completa.
+* Tocar o redeployar el fallback `AKfycbzM0...@22` desde la cuenta actual puede romper el unico acceso publico operativo.
+* Los archivos Drive tienen permisos amplios por enlace; conviene revisar el modelo de seguridad antes de produccion institucional.
+
+### Recomendaciones
+
+* No redeployar deployments historicos publicos desde cuentas sin control real de Web App publico.
+* Usar una cuenta propietaria/autorizada para el cierre definitivo de Apps Script.
+* Mantener en README y bitacora la diferencia entre GitHub Pages operativo, Apps Script fallback operativo y version corregida desplegada.
+* Agregar al manual maestro el aprendizaje: `ANYONE_ANONYMOUS` en el entry point no basta como evidencia; siempre verificar `/exec` anonimo despues de cada redeploy.
