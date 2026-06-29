@@ -1151,17 +1151,26 @@
 * El Apps Script publico trae login pero no recuperacion de contrasena.
 * La cuenta `dmeza.py` quedo con nueva clave temporal y `ultimo_acceso` vacio.
 * Se verifico despues de escribir que `USUARIOS!A5:H5` mantiene `id_usuario = 4`, `username = dmeza.py`, `rol = estudiante`, `activo = 1`.
+* El log tecnico quedo ubicado en `LOGS!A42:E42`, `id_log = 40`, accion `RESET_CONTRASENA_ASISTIDO`.
 * No se registro la clave temporal en bitacora, Git ni carpeta maestra.
-* `index.html` queda preparado para mostrar `v2026.06.29.4`, boton `Entrar` y fallback de acceso directo.
-* `sw.js` queda preparado con cache `facen-app-v8-shell-20260629`.
+* `index.html` quedo publicado con `v2026.06.29.4`, boton `Entrar` y fallback de acceso directo.
+* `sw.js` quedo publicado con cache `facen-app-v8-shell-20260629`.
+* GitHub Pages paso a estado `built` despues del push.
+* La URL publica `https://appfacen.github.io/Facen-APP/?cb=...` respondio `HTTP 200`, longitud `6444`, con `APP_BUILD = '2026.06.29.4'`, boton `Entrar` y fallback `app-fallback`.
+* `https://appfacen.github.io/Facen-APP/sw.js?cb=...` respondio `HTTP 200` con `facen-app-v8-shell-20260629`.
+* El Apps Script directo `.../exec?v=2026.06.29.4` respondio `HTTP 200`, con login y sin recuperacion de contrasena en esa version desplegada.
+* `HEAD` local y `origin/main` quedaron en `6c7d291ef19cca133806e5ba0d4e499a52cc182b`.
 
 ### Pruebas realizadas
 
 * Verificacion HTTP anonima de GitHub Pages y Apps Script.
 * Validacion del algoritmo de hash contra el codigo fuente del backend.
 * Relectura de la fila modificada en `USUARIOS`.
+* Busqueda de la fila de log `RESET_CONTRASENA_ASISTIDO`.
 * Validacion sintactica de `sw.js` y del script embebido en `index.html`.
 * Revision de diff sin errores de whitespace, salvo advertencias LF/CRLF esperadas del entorno Windows.
+* Verificacion de GitHub Pages `built` via API.
+* Verificacion HTTP anonima con cache-busting de `index.html` y `sw.js`.
 
 ### Errores o incidentes
 
@@ -1174,7 +1183,6 @@
 
 ### Pendientes
 
-* Commit, push y verificacion publica de `v2026.06.29.4`.
 * El usuario debe ingresar con la clave temporal y cambiarla desde Perfil.
 * Publicar la recuperacion permanente cuando se resuelva el permiso del deployment anonimo Apps Script.
 

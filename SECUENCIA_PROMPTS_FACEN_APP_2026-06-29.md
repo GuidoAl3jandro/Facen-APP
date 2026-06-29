@@ -117,5 +117,6 @@ Resultado resumido:
 * Se verifico que Pages y el Apps Script publico responden `HTTP 200`.
 * Se confirmo que el Apps Script publico trae login pero no recuperacion de contrasena.
 * Se restablecio `USUARIOS!A5:H5` para `dmeza.py` con hash moderno y salt nuevo.
-* Se agrego log tecnico `RESET_CONTRASENA_ASISTIDO` sin clave temporal.
-* Se preparo `APP_BUILD = 2026.06.29.4`, boton `Entrar` y fallback de acceso directo.
+* Se agrego log tecnico `RESET_CONTRASENA_ASISTIDO` sin clave temporal en `LOGS!A42:E42`.
+* Se publico `APP_BUILD = 2026.06.29.4`, boton `Entrar` y fallback de acceso directo.
+* GitHub Pages quedo `built`; el HTML publico y `sw.js` respondieron `HTTP 200` con el build y cache nuevos.
