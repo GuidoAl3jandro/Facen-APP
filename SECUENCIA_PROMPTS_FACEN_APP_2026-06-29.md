@@ -1,6 +1,6 @@
 # SECUENCIA_PROMPTS_FACEN_APP_2026-06-29
 
-Ultima edicion: 2026-06-29 18:52 America/Asuncion
+Ultima edicion: 2026-06-29 19:33 America/Asuncion
 
 ## Proyecto
 
@@ -50,3 +50,42 @@ puedes lograr que funcione
 * Se confirmo que la version corregida de Apps Script sigue bloqueada con `HTTP 403 / Necesitas acceso` si se despliega desde la cuenta `apoyomedicoips@gmail.com`.
 * Se mantuvo intacto el fallback publico usado por produccion.
 * Se documento que la publicacion definitiva requiere redeploy desde la cuenta propietaria/autorizada del Apps Script.
+
+### 2026-06-29 - Recuperacion de contrasena y publicacion
+
+Texto del usuario:
+
+```text
+la app no permite recuperar contraseña si se ha perdido, no logro acceder
+```
+
+```text
+OCUPATE DEL CONMIT AND PUSH
+```
+
+Interpretacion operativa:
+
+* Preparar solucion de recuperacion sin romper el fallback publico actual.
+* Confirmar por GitHub Pages que la app publica realmente se actualiza.
+* Registrar bitacora, commit y push.
+
+Resultado resumido:
+
+* Se agrego codigo de recuperacion en `apps-script/` y un microservicio separado en `apps-script-recovery/`.
+* Los despliegues Apps Script creados desde la cuenta actual quedaron en `HTTP 403`; no se cambio el fallback publico para evitar empeorar el acceso.
+* Se identifico que la via inmediata es restablecer una cuenta confirmada en la hoja `USUARIOS`.
+* Se hicieron commits y push al repositorio `appfacen/Facen-APP`.
+
+### 2026-06-29 - Appweb no se actualiza
+
+Texto del usuario:
+
+```text
+la appwen no se actualiza https://appfacen.github.io/Facen-APP/
+```
+
+Interpretacion operativa:
+
+* Verificar si GitHub Pages sirve la nueva version.
+* Corregir cache/service worker y evidencia visual en movil.
+* Confirmar con cache-busting que la URL publica entrega el build nuevo.

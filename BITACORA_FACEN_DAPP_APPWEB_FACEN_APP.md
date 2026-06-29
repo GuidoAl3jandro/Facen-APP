@@ -993,3 +993,83 @@
 ### Riesgos
 
 * Esto actualiza el shell GitHub Pages, pero no publica la version nueva del backend Apps Script porque ese bloqueo sigue dependiendo de permisos de deployment.
+
+## 2026-06-29 19:33
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version Git inicial: `d18b43eb4ac2d7227fe496b3861e65f24904fb68`
+
+### Objetivo de la intervencion
+
+* Atender el reporte de que la appweb no se actualiza.
+* Hacer visible la version actualizada del shell tambien en vista movil.
+* Renovar el cache del service worker para forzar una nueva instalacion del shell.
+
+### Diagnostico inicial
+
+* El HTML publico ya contenia el build `2026.06.29.2`, pero la captura movil no mostraba la version.
+* La causa visible era la regla responsive `@media (max-width: 640px)`, que ocultaba `.brand span`; ese selector incluia el identificador `#shell-version`.
+* El problema reportado se podia interpretar como falta de actualizacion porque la evidencia visual quedaba oculta en movil aunque el HTML estuviera servido.
+
+### Acciones realizadas
+
+* Se actualizo `APP_BUILD` a `2026.06.29.3`.
+* Se corrigio la regla movil para mantener visible `#shell-version` con ancho controlado.
+* Se redujeron tamanos de marca, botones y separaciones en movil para evitar solapamientos.
+* Se cambio el cache del service worker a `facen-app-v7-shell-20260629`.
+* Se actualizo la secuencia de prompts del proyecto.
+
+### Archivos modificados
+
+* `index.html`
+* `sw.js`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+
+### Comandos o scripts ejecutados
+
+* `git status --branch --short`
+* `Select-String -Path .\index.html -Pattern 'APP_BUILD|shell-version|brand span|@media|serviceWorker|Actualizar' -Context 2,2`
+* `Get-Content .\BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md -Tail 120`
+* `node --check .\sw.js`
+* Extraccion temporal del script embebido de `index.html` y `node --check`
+* `git diff --check`
+* Intento de prueba visual con Playwright sobre `file:///.../index.html`
+
+### Resultados verificados
+
+* La causa de la falta de evidencia visual fue identificada en CSS responsive.
+* La version del shell queda preparada como `v2026.06.29.3` para verificacion publica.
+* `sw.js` y el JavaScript embebido en `index.html` pasan validacion sintactica con Node.
+* `git diff --check` no reporta errores de espacios; solo advertencias esperadas LF/CRLF por el entorno Windows.
+
+### Pruebas realizadas
+
+* Validacion sintactica de `sw.js`.
+* Validacion sintactica del script embebido en `index.html`.
+* Revision de diff.
+* La prueba visual automatizada local no pudo completarse porque el paquete `playwright` no esta instalado en el checkout y no se agrego como dependencia del proyecto.
+
+### Errores o incidentes
+
+* `node -e "require('playwright')"` devolvio `MODULE_NOT_FOUND`; se deja como limitacion de verificacion local, no como error de la app.
+
+### Soluciones aplicadas
+
+* Version visible en movil y cache del service worker renovado.
+
+### Pendientes
+
+* Commit y push.
+* Verificar `https://appfacen.github.io/Facen-APP/?v=2026.06.29.3`.
+
+### Riesgos
+
+* La recuperacion de contrasena dentro del backend principal sigue dependiendo del deployment Apps Script anonimo, que permanece bloqueado por permisos.

@@ -67,8 +67,19 @@
     }
     @media (max-width: 640px) {
       .bar { min-height: 48px; }
-      .brand span { display: none; }
-      button, a.btn { padding: 7px 9px; font-size: 13px; }
+      .mark { width: 30px; height: 30px; }
+      .brand { gap: 8px; flex: 1 1 auto; }
+      .brand strong { font-size: 14px; }
+      #shell-version {
+        display: block;
+        max-width: 78px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 11px;
+      }
+      .actions { gap: 6px; }
+      button, a.btn { padding: 6px 7px; font-size: 12px; }
     }
   </style>
 </head>
@@ -89,7 +100,7 @@
   </main>
   <script>
     var APP_URL = 'https://script.google.com/macros/s/AKfycbzM0NMEZ57YImDz3puF5Ma4YT-tvwcZtjugGNuVWPsphnLWcddw6L_Snv_Vr6eSba7HyQ/exec';
-    var APP_BUILD = '2026.06.29.2';
+    var APP_BUILD = '2026.06.29.3';
     var deferredPrompt = null;
     function versionedAppUrl() {
       var params = new URLSearchParams(window.location.search);
