@@ -390,3 +390,23 @@ Resultado resumido:
 * Al intentar actualizar `AKfycbxSd...` a `@50` desde `apoyomedicoips@gmail.com`, el deployment quedo `HTTP 403`; el rollback a `@49` no recupero acceso anonimo.
 * Para no dejar la app publica caida, GitHub Pages se preparo con `APP_BUILD = 2026.06.30.5`, cache `facen-app-v14-shell-20260630` y backend publico `AKfycbyr...@48`.
 * Pendiente critico: activar version `50` desde la cuenta propietaria/autorizada y verificar `/exec` anonimo antes de volver a apuntar Pages al deployment definitivo.
+
+### 2026-06-30 - Documento Word tipo poster
+
+Texto del usuario:
+
+```text
+PREPARA UN DOCUMENTO WORD CON EL CONTENIDO MINIMO PARA IMPRIMIR UN resumen tipo POSTER
+```
+
+Interpretacion operativa:
+
+* Se necesitaba un DOCX breve, imprimible y ejecutivo, no una bitacora completa.
+* El poster debia reflejar el estado real del proyecto y el bloqueo operativo de version `50`.
+
+Resultado resumido:
+
+* Se genero `docs/FACEN_APP_POSTER_RESUMEN_2026-06-30.docx`.
+* El documento esta en orientacion horizontal, con bloques sinteticos de objetivo, arquitectura, version publica, funcionalidades, datos integrados, mejora version `50`, bloqueo y proximo paso.
+* Se valido el archivo con `python-docx`.
+* Se convirtio el DOCX a HTML con Pandoc para verificar que el paquete Word no esta roto.

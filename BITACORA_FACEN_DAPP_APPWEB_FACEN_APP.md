@@ -2455,3 +2455,74 @@
 ### Recomendaciones
 
 * Mantener Pages en `AKfycbyr...@48` hasta tener un `/exec` version `50` anonimo y verificado.
+
+## 2026-06-30 10:10
+
+### Proyecto
+
+* Nombre: FACEN App
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version: poster resumen `2026-06-30`
+
+### Objetivo de la intervencion
+
+* Preparar un documento Word con contenido minimo para imprimir un resumen tipo poster del proyecto.
+
+### Diagnostico inicial
+
+* Se necesitaba un entregable impreso, sintetico y no un informe largo.
+* El contenido debia reflejar estado real: app publicada, arquitectura, mejoras listas, bloqueo GAS version `50` y proximo paso operativo.
+
+### Acciones realizadas
+
+* Se genero un DOCX horizontal de una pagina con estructura tipo poster.
+* Se incluyeron bloques breves: objetivo, arquitectura, version publica, pendiente critico, funcionalidades, datos integrados, mejora version `50`, estado verificado, bloqueo operativo y proximo paso.
+* Se valido integridad del DOCX con `python-docx`.
+* Se valido renderabilidad del DOCX convirtiendolo a HTML con Pandoc.
+
+### Archivos modificados
+
+* `docs/FACEN_APP_POSTER_RESUMEN_2026-06-30.docx`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* Generacion DOCX con `python-docx`.
+* `pandoc .\docs\FACEN_APP_POSTER_RESUMEN_2026-06-30.docx -t html -o %TEMP%\facen_app_poster_resumen_2026-06-30.html`
+* Validacion de apertura con `python-docx`.
+
+### Resultados verificados
+
+* Archivo creado: `docs/FACEN_APP_POSTER_RESUMEN_2026-06-30.docx`.
+* Tamano aproximado: 38 KB.
+* El documento contiene 3 tablas de composicion y titulo `FACEN App`.
+* Pandoc genero HTML sin error.
+
+### Pruebas realizadas
+
+* Validacion de paquete Word con `python-docx`.
+* Conversion DOCX a HTML con Pandoc.
+
+### Errores o incidentes
+
+* Un primer intento de validacion con heredoc fallo por sintaxis no compatible con PowerShell; se repitio con here-string compatible.
+
+### Soluciones aplicadas
+
+* Se uso una validacion compatible con PowerShell y se confirmo el DOCX.
+
+### Pendientes
+
+* Imprimir o revisar visualmente en Word si se desea ajustar tamano de fuente antes de presentacion fisica.
+
+### Riesgos
+
+* Al ser un resumen minimo, no reemplaza la bitacora tecnica ni el README operativo.
+
+### Recomendaciones
+
+* Usar el poster para comunicacion ejecutiva y mantener la bitacora como fuente tecnica detallada.
