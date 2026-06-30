@@ -2690,3 +2690,94 @@
 
 * Usar la nueva guia editable como archivo para distribuir a estudiantes.
 * Evitar distribuir la version anterior vertical, porque podia inducir a error al no permitir edicion directa.
+
+## 2026-06-30 10:41
+
+### Proyecto
+
+* Nombre: FACEN App
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version: guia Word editable estilizada `2026-06-30`
+
+### Objetivo de la intervencion
+
+* Mejorar el formato visual de la guia editable para estudiantes incorporando cuadros con esquinas redondeadas, color de relleno suave y sombra.
+
+### Diagnostico inicial
+
+* La version editable anterior resolvia la edicion, pero el aspecto seguia siendo pobre para una guia tipo poster.
+* Las tablas simples de Word no garantizaban esquinas redondeadas ni sombra visual.
+* Se requeria conservar la editabilidad directa por estudiantes.
+
+### Acciones realizadas
+
+* Se regenero `docs/FACEN_APP_GUIA_POSTER_EDITABLE_OFICIO_VERTICAL_2026-06-30.docx`.
+* Se uso Microsoft Word COM para crear formas nativas de Word.
+* Se mantuvo formato vertical Oficio de `8.5 x 13.0` pulgadas.
+* Se conservaron header con marca FACEN App y footer con datos editables de asignatura.
+* Se reemplazaron los bloques planos por formas de Word tipo rectangulo redondeado.
+* Se aplicaron rellenos suaves, bordes institucionales y sombra a los bloques principales.
+* Se mantuvo texto editable dentro de cada bloque como guia para estudiantes.
+
+### Archivos modificados
+
+* `docs/FACEN_APP_GUIA_POSTER_EDITABLE_OFICIO_VERTICAL_2026-06-30.docx`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+
+### Comandos o scripts ejecutados
+
+* Generacion del logo temporal con `Pillow`.
+* Generacion del DOCX estilizado con Microsoft Word COM.
+* Apertura y auditoria del DOCX con Microsoft Word COM.
+* Inspeccion del paquete DOCX con Python/ZIP.
+* Intento de exportacion visual a PDF con Word COM.
+
+### Resultados verificados
+
+* El DOCX abre con Word COM.
+* Pagina: ancho `8.5` pulgadas y alto `13.0` pulgadas.
+* `ShapeCount = 16`.
+* `RoundedBlocks = 8`.
+* `ShadowShapes = 8`.
+* `TextShapes = 12`.
+* Se verifico texto editable en formas: `RESUMEN` y `[Escriba aqui...]`.
+* El paquete XML contiene marcadores `roundRect`, sombras, rellenos suaves y placeholders.
+
+### Pruebas realizadas
+
+* Verificacion de apertura con Word COM.
+* Verificacion de dimensiones de pagina.
+* Conteo de formas redondeadas.
+* Conteo de sombras.
+* Conteo de formas con texto editable.
+* Verificacion de marcadores del DOCX comprimido.
+
+### Errores o incidentes
+
+* La exportacion a PDF desde Word COM quedo colgada y fue cancelada.
+* No habia LibreOffice/soffice disponible para una previsualizacion alternativa.
+* Pandoc no extrajo los textos dentro de formas flotantes, por limitacion de ese flujo para textboxes.
+
+### Soluciones aplicadas
+
+* Se uso Word COM como validacion principal porque el documento esta construido con formas nativas editables de Word.
+* Se cancelo el proceso de exportacion PDF colgado sin afectar el DOCX.
+
+### Pendientes
+
+* Abrir visualmente en Microsoft Word antes de distribuir a estudiantes para confirmar preferencias finas de color, sombra o ubicacion.
+
+### Riesgos
+
+* Los textos dentro de formas flotantes son editables en Word, pero algunos conversores como Pandoc pueden no extraerlos.
+* En editores distintos de Microsoft Word, la apariencia de sombras puede variar.
+
+### Recomendaciones
+
+* Distribuir esta version estilizada como guia editable principal.
+* Si se requiere compatibilidad maxima con LibreOffice o Google Docs, preparar una version alternativa basada en tablas simples aunque pierda sombras y redondeo perfecto.

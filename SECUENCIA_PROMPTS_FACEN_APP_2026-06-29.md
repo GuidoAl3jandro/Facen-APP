@@ -456,3 +456,26 @@ Resultado resumido:
 * El cuerpo se reconstruyo con tablas y parrafos editables en Word.
 * Se dejo solo contenido guia con placeholders `[Escriba aqui...]`.
 * Se valido que Pandoc extrae texto real del cuerpo, confirmando que ya no es una imagen cerrada.
+
+### 2026-06-30 - Mejora visual de guia editable
+
+Texto del usuario:
+
+```text
+cuadros con esquinas redondeadas, con color de relleno suave y sombra, por lo menos
+la version actual esta muy pobre en formato y estilo
+```
+
+Interpretacion operativa:
+
+* La guia editable anterior era funcional pero visualmente demasiado pobre.
+* La nueva version debia conservar editabilidad y agregar estilo minimo: esquinas redondeadas, rellenos suaves y sombra.
+* Para lograrlo se debian usar formas nativas de Word, no una imagen cerrada.
+
+Resultado resumido:
+
+* Se regenero `docs/FACEN_APP_GUIA_POSTER_EDITABLE_OFICIO_VERTICAL_2026-06-30.docx`.
+* Se construyo con Microsoft Word COM usando formas redondeadas editables.
+* Se validaron `8` bloques redondeados, `8` sombras y `12` formas con texto editable.
+* Se mantuvo formato Oficio vertical, header con marca FACEN App y footer con datos de asignatura.
+* La exportacion PDF desde Word COM quedo colgada y se cancelo; la validacion principal fue apertura y auditoria directa con Word COM.
