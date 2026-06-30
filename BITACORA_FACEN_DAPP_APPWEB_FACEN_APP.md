@@ -1991,3 +1991,95 @@
 * Mantener el `bootstrap` inicial limitado a lo indispensable para pintar la primera pantalla.
 * Cargar vistas pesadas solo bajo demanda.
 * Evitar parsear catalogos grandes para resolver nombres si ya existen snapshots por estudiante.
+
+## 2026-06-30 08:02
+
+### Proyecto
+
+* Nombre: FACEN App
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version: Pages publico `APP_BUILD = 2026.06.30.3`; Apps Script moderno intentado `AKfycbyr...@47`
+
+### Objetivo de la intervencion
+
+* Verificar por que el usuario sigue viendo la app antigua despues de commit/push.
+* Intentar activar una version Apps Script publica con calendario, avance y bootstrap liviano sin romper la URL estable.
+
+### Diagnostico inicial
+
+* La URL publica respondia `HTTP 200`, pero el HTML de Pages seguia apuntando a `AKfycbxPW...@19`.
+* `AKfycbxPW...@19` es el backend historico de rescate y no contiene calendario real, vista `Avance` ni bootstrap liviano.
+* El commit/push no puede actualizar automaticamente el Web App de Apps Script si Pages sigue usando un deployment versionado viejo.
+
+### Acciones realizadas
+
+* Se verifico el HTML publico de GitHub Pages con `Invoke-WebRequest`.
+* Se verifico `sw.js` publico.
+* Se listo el estado de deployments con `npx clasp deployments`.
+* Se confirmo que `appsscript.json` declara `webapp.access = ANYONE_ANONYMOUS`.
+* Se intento crear un deployment nuevo de version `47`, pero Apps Script informo limite de deployments versionados.
+* Se actualizo el deployment moderno no usado por Pages `AKfycbyr...` a version `47`.
+* Se probo anonimamente `AKfycbyr.../exec?v=probe47`.
+
+### Archivos modificados
+
+* `README.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* `Invoke-WebRequest https://appfacen.github.io/Facen-APP/?v=diagnostico-actual`
+* `Invoke-WebRequest https://appfacen.github.io/Facen-APP/sw.js?v=diagnostico-actual`
+* `npx clasp deployments`
+* `npx clasp versions`
+* `npx clasp deploy -V 47 -d "FACEN App publica calendario avance bootstrap liviano 2026-06-30"`
+* `npx clasp deploy -i AKfycbyr... -V 47 -d "FACEN App publica calendario avance bootstrap liviano 2026-06-30"`
+* `Invoke-WebRequest https://script.google.com/macros/s/AKfycbyr.../exec?v=probe47`
+
+### Resultados verificados
+
+* GitHub Pages publico sigue en `HTTP 200`.
+* Pages contiene `APP_BUILD = 2026.06.30.3`.
+* Pages sigue apuntando a `AKfycbxPW...@19`.
+* `sw.js` publico responde `HTTP 200`.
+* No se pudo crear deployment nuevo por limite de Apps Script: `Scripts may only have up to 20 versioned deployments at a time`.
+* `AKfycbyr...` fue actualizado a `@47`.
+* `AKfycbyr.../exec?v=probe47` devuelve `HTTP 403 Acceso denegado`.
+
+### Pruebas realizadas
+
+* Verificacion HTTP anonima de Pages.
+* Verificacion HTTP anonima de `sw.js`.
+* Verificacion HTTP anonima del deployment moderno `@47`.
+
+### Errores o incidentes
+
+* El intento de publicar version `47` no produjo un Web App anonimo funcional; el deployment moderno queda bloqueado con `HTTP 403`.
+* No se cambio `APP_URL` para evitar dejar la URL publica inutilizable.
+
+### Soluciones aplicadas
+
+* Se mantuvo Pages apuntando al backend historico estable.
+* Se documento que el bloqueo actual ya no es commit/push sino permisos/despliegue publico de Apps Script.
+
+### Pendientes
+
+* Entrar al proyecto Apps Script con la cuenta propietaria/autorizada.
+* Crear o actualizar un deployment de version `47` con acceso `Anyone`.
+* Verificar anonimamente que el nuevo `/exec` responda `HTTP 200` y contenga marcadores `renderAvance`, `month-grid` y `dashboard_secundario`.
+* Recien despues actualizar `APP_URL` en `index.html`, subir Pages y renovar cache/build.
+
+### Riesgos
+
+* Si se apunta Pages a `AKfycbyr...@47` ahora, la app publica queda en `Acceso denegado`.
+* Si se sigue redeployando desde una cuenta no autorizada, se pueden bloquear mas deployments historicos.
+
+### Recomendaciones
+
+* No confundir commit/push GitHub con despliegue de Apps Script.
+* Hacer la activacion final desde la cuenta propietaria/autorizada y comprobar anonimamente antes de actualizar Pages.

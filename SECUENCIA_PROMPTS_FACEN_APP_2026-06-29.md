@@ -314,3 +314,24 @@ Resultado resumido:
 * Se validaron sintaxis y render diferido con Node.
 * Se subio Apps Script HEAD y se creo version `47`.
 * Pendiente: redeploy publico propietario de version `47` y medicion real en navegador contra el nuevo `/exec`.
+
+### 2026-06-30 - Verificacion de app antigua visible
+
+Texto del usuario:
+
+```text
+sigo viendo la app antigua, no funcono el conmit and push
+```
+
+Interpretacion operativa:
+
+* El commit/push si habia actualizado GitHub y Apps Script HEAD, pero GitHub Pages seguia embebiendo el deployment historico `AKfycbxPW...@19`.
+* Para que el usuario vea calendario/avance/optimizacion, Pages necesita apuntar a un `/exec` publico con version nueva.
+
+Resultado resumido:
+
+* Se verifico `https://appfacen.github.io/Facen-APP/`: responde `HTTP 200`, conserva `APP_BUILD = 2026.06.30.3` y contiene el backend viejo `AKfycbxPW...`.
+* Se actualizo el deployment moderno `AKfycbyr...` a Apps Script version `47`.
+* La prueba anonima de `AKfycbyr.../exec?v=probe47` devolvio `HTTP 403 Acceso denegado`.
+* No se actualizo `APP_URL` de Pages porque apuntar a `AKfycbyr...@47` dejaria la app publica caida.
+* Conclusion: el problema no es el commit/push; falta un deployment Web App publico valido creado desde la cuenta propietaria/autorizada.
