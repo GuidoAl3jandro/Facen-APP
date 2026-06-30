@@ -1730,7 +1730,12 @@
 * `AGENDA_ACADEMICA` quedo con 24 examenes visibles para `id_estudiante = 8`.
 * `GRUPOS_ESTUDIO` quedo limpio con 3 grupos reales y sin grupos temporales QA.
 * `AKfycbxPW...@19` respondio `HTTP 200` y por Playwright cargo `bootSuccess = true`, `inscripciones = 7`, `agendaLen = 24`, `gruposLoaded = true`, `gruposLen = 3`.
+* Despues del push, `https://appfacen.github.io/Facen-APP/` respondio `HTTP 200`, contiene `APP_BUILD = 2026.06.30.3` y apunta a `AKfycbxPW...`.
+* `https://appfacen.github.io/Facen-APP/sw.js` respondio `HTTP 200` con cache `facen-app-v12-shell-20260630`.
+* Prueba final desde la URL publica cargo iframe `AKfycbxPW.../exec?v=2026.06.30.3`, `bootSuccess = true`, `inscripciones = 7`, `agendaLen = 24`, `gruposLoaded = true`, `gruposLen = 3`.
+* Sesiones QA temporales desactivadas; se mantuvieron intactas las sesiones reales activas.
 * La sintaxis de `apps-script/Code.gs` y del script de `apps-script/index.html` fue validada con `new Function(...)`.
+* Commit de publicacion inicial: `fbe34b9` (`Cargar examenes y reparar flujo de grupos`).
 
 ### Pruebas realizadas
 
@@ -1738,6 +1743,7 @@
 * Lectura de `CellData` para verificar `TEXT` y `stringValue` en columnas de fecha/hora.
 * Prueba Playwright de carga de bootstrap y grupos en el backend de rescate.
 * Prueba de guardado de grupo en deployment historico: confirmo que el fix de HEAD es necesario porque el backend historico devuelve `null` despues de guardar.
+* Verificacion post-push de GitHub Pages, `sw.js` y app publica dentro del iframe real de Apps Script.
 
 ### Errores o incidentes
 
