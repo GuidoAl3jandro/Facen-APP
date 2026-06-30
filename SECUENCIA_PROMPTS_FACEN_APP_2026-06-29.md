@@ -410,3 +410,26 @@ Resultado resumido:
 * El documento esta en orientacion horizontal, con bloques sinteticos de objetivo, arquitectura, version publica, funcionalidades, datos integrados, mejora version `50`, bloqueo y proximo paso.
 * Se valido el archivo con `python-docx`.
 * Se convirtio el DOCX a HTML con Pandoc para verificar que el paquete Word no esta roto.
+
+### 2026-06-30 - Ajuste poster vertical oficio
+
+Texto del usuario:
+
+```text
+formato pagina vertical OFICIO, bloques con esquinas redondeadas y con separacion visible, contenido minimo debe ser similares a los de la imagen. agrega logo facen en header y datos de asignatura en footer
+```
+
+Interpretacion operativa:
+
+* El poster debia rehacerse con apariencia academica vertical, no como resumen horizontal.
+* La referencia visual pedia titulo, autoria, resumen superior y tres columnas con bloques separados.
+* El documento debia quedar listo para impresion en hoja Oficio vertical, con header institucional y footer de asignatura.
+
+Resultado resumido:
+
+* Se genero `docs/FACEN_APP_POSTER_RESUMEN_OFICIO_VERTICAL_2026-06-30.docx`.
+* Se configuro pagina vertical Oficio de `8.5 x 13.0` pulgadas.
+* Se agrego header con marca FACEN App y footer con datos de asignatura.
+* Se compuso el cuerpo con bloques redondeados y separacion visible similar a la referencia.
+* Se corrigio mojibake detectado en una primera vista previa usando texto ASCII y bullets simples.
+* Se valido el DOCX con `python-docx`, revision visual de preview y conversion HTML con Pandoc.

@@ -2526,3 +2526,85 @@
 ### Recomendaciones
 
 * Usar el poster para comunicacion ejecutiva y mantener la bitacora como fuente tecnica detallada.
+
+## 2026-06-30 10:25
+
+### Proyecto
+
+* Nombre: FACEN App
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version: poster Word oficio vertical `2026-06-30`
+
+### Objetivo de la intervencion
+
+* Rehacer el documento Word tipo poster segun la referencia visual enviada: pagina vertical Oficio, bloques con esquinas redondeadas, separacion visible, logo FACEN en header y datos de asignatura en footer.
+
+### Diagnostico inicial
+
+* El DOCX anterior era horizontal y de sintesis ejecutiva.
+* La referencia solicitada corresponde a un poster academico vertical con titulo, autoria, resumen, tres columnas y secciones minimas.
+* En la primera vista previa del nuevo diseno aparecio mojibake en acentos y bullets especiales.
+
+### Acciones realizadas
+
+* Se genero `docs/FACEN_APP_POSTER_RESUMEN_OFICIO_VERTICAL_2026-06-30.docx`.
+* Se configuro pagina vertical Oficio de `8.5 x 13.0` pulgadas.
+* Se agrego encabezado Word con marca FACEN App y texto institucional del proyecto.
+* Se agrego pie de pagina Word con datos de asignatura, carrera, periodo, seccion y FACEN.
+* Se construyo el cuerpo del poster como imagen de alta resolucion embebida para preservar esquinas redondeadas, separacion entre bloques y composicion estable al imprimir.
+* Se adapto el contenido minimo a bloques: resumen, introduccion, problema, objetivos, metodologia, resultados y discusion, conclusiones y referencias principales.
+* Se regenero el texto en ASCII limpio y bullets con guion para evitar mojibake heredado.
+
+### Archivos modificados
+
+* `docs/FACEN_APP_POSTER_RESUMEN_OFICIO_VERTICAL_2026-06-30.docx`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+
+### Comandos o scripts ejecutados
+
+* Generacion DOCX con `python-docx` y `Pillow`.
+* Validacion de paquete Word con `python-docx`.
+* `pandoc .\docs\FACEN_APP_POSTER_RESUMEN_OFICIO_VERTICAL_2026-06-30.docx -t html -o %TEMP%\facen_app_poster_oficio_vertical.html`
+
+### Resultados verificados
+
+* Archivo creado: `docs/FACEN_APP_POSTER_RESUMEN_OFICIO_VERTICAL_2026-06-30.docx`.
+* El DOCX tiene pagina vertical Oficio: ancho `8.5` pulgadas y alto `13.0` pulgadas.
+* El paquete Word contiene recursos multimedia embebidos para el logo y el cuerpo del poster.
+* El encabezado contiene `FACEN App`, texto institucional y referencia a resumen tipo poster.
+* El pie contiene los datos de asignatura.
+* La conversion con Pandoc genero HTML sin error.
+* La vista previa PNG del poster se reviso visualmente y no presenta mojibake.
+
+### Pruebas realizadas
+
+* Apertura estructural del DOCX con `python-docx`.
+* Verificacion de dimensiones de pagina.
+* Verificacion de header y footer.
+* Conversion DOCX a HTML con Pandoc.
+* Revision visual de la imagen del poster generada como base de impresion.
+
+### Errores o incidentes
+
+* La primera vista previa mostro caracteres corruptos en palabras acentuadas y bullets especiales.
+
+### Soluciones aplicadas
+
+* Se reescribio el contenido del poster con texto ASCII y separadores simples para garantizar compatibilidad de impresion y evitar mojibake.
+
+### Pendientes
+
+* Revisar en Microsoft Word antes de imprimir fisicamente si se desea cambiar datos finales de autor, coautores o asignatura.
+
+### Riesgos
+
+* El cuerpo del poster esta embebido como imagen para garantizar fidelidad visual; si se requiere edicion fina de cada bloque desde Word, conviene generar una version alternativa completamente editable.
+
+### Recomendaciones
+
+* Mantener este DOCX como plantilla rapida para posters academicos de FACEN App y conservar la version anterior horizontal solo como resumen ejecutivo.
