@@ -290,3 +290,27 @@ Resultado resumido:
 * Se subio el codigo a Apps Script HEAD y se creo version `45`.
 * Se verifico sintaxis de `Code.gs`, script HTML y render simulado de calendario/avance en Node.
 * GitHub Pages sigue operativo con `APP_BUILD = 2026.06.30.3` apuntando al deployment publico de rescate `AKfycbxPW...@19`; las mejoras de UI requieren redeploy propietario de la version `45` para quedar visibles al publico.
+
+### 2026-06-30 - Optimizacion de carga inicial
+
+Texto del usuario:
+
+```text
+porque la app es tan lenta en cargar los datos, se puede mejorar eso?
+```
+
+Interpretacion operativa:
+
+* La carga inicial era lenta porque `obtenerBootstrap` intentaba traer muchas vistas al mismo tiempo: apuntes, eventos, lecturas, grupos y malla/correlatividades.
+* Varias funciones usaban el catalogo completo para resolver nombres de asignaturas aunque las inscripciones ya tenian snapshots o existian datos directos en `ASIGNATURAS`.
+* La mejora debia reducir tiempo de primer render sin romper vistas secundarias.
+
+Resultado resumido:
+
+* Se dejo `obtenerBootstrap` como carga liviana: perfil, inscripciones, notas, agenda y preferencias.
+* `Apuntes`, `Recordatorios`, `Lecturas`, `Grupos` y `Avance` pasan a carga diferida.
+* El inicio completa recordatorios, lecturas y grupos con una sola llamada secundaria `dashboard_secundario`.
+* `obtenerMisInscripciones_`, agenda, lecturas y grupos usan `asignaturasIndexRapido_()` para evitar parsear el catalogo completo cuando basta con Sheets/snapshots.
+* Se validaron sintaxis y render diferido con Node.
+* Se subio Apps Script HEAD y se creo version `47`.
+* Pendiente: redeploy publico propietario de version `47` y medicion real en navegador contra el nuevo `/exec`.

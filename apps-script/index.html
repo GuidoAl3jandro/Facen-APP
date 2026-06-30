@@ -674,6 +674,7 @@
         ensureViewData(State.view);
         render();
         scheduleLocalAlerts();
+        setTimeout(preloadDashboardData, 80);
       }, function() {
         clearTimeout(window.bootstrapTimer);
         document.getElementById('content').innerHTML = '<div class="empty">No se pudieron cargar tus datos. Reintenta en unos segundos o vuelve a iniciar sesion.</div>';
@@ -727,6 +728,10 @@
       res.agenda = res.agenda || [];
       res.malla = res.malla || { items: [], resumen: {} };
       res.mallaLoaded = res.mallaLoaded !== false;
+      res.apuntesLoaded = res.apuntesLoaded !== false;
+      res.eventosLoaded = res.eventosLoaded !== false;
+      res.lecturasLoaded = res.lecturasLoaded !== false;
+      res.gruposLoaded = res.gruposLoaded !== false;
       res.companeros = res.companeros || [];
       res.preferencias = res.preferencias || {};
       res.resumen = res.resumen || {};
@@ -784,6 +789,26 @@
       if (view === 'perfil' && !(State.data.carreras || []).length) return loadCarreras();
     }
 
+    function preloadDashboardData() {
+      if (!State.data || State.view !== 'dashboard') return;
+      if (State.data.loading_dashboard_secundario) return;
+      if (State.data.eventosLoaded && State.data.lecturasLoaded && State.data.gruposLoaded) return;
+      State.data.loading_dashboard_secundario = true;
+      server('obtenerDatosVista', [State.token, 'dashboard_secundario'], function(res) {
+        State.data.eventos = res.eventos || [];
+        State.data.lecturas = res.lecturas || [];
+        State.data.grupos = res.grupos || [];
+        State.data.eventosLoaded = true;
+        State.data.lecturasLoaded = true;
+        State.data.gruposLoaded = true;
+        State.data.loading_dashboard_secundario = false;
+        if (State.view === 'dashboard') render();
+      }, function() {
+        State.data.loading_dashboard_secundario = false;
+        if (State.view === 'dashboard') render();
+      });
+    }
+
     function loadCarreras() {
       if (!State.data || State.data.loading_carreras) return;
       State.data.loading_carreras = true;
@@ -807,11 +832,11 @@
         if (res.carreras) State.data.carreras = res.carreras;
         State.data[loadedKey] = true;
         State.data[loadingKey] = false;
-        if (State.view === vista || (vista === 'catalogo' && State.view === 'materias') || (vista === 'eventos' && State.view === 'recordatorios') || (vista === 'malla' && State.view === 'avance')) render();
+        if (State.view === vista || State.view === 'dashboard' || (vista === 'catalogo' && State.view === 'materias') || (vista === 'eventos' && State.view === 'recordatorios') || (vista === 'malla' && State.view === 'avance')) render();
       }, function() {
         State.data[loadedKey] = false;
         State.data[loadingKey] = false;
-        if (State.view === vista || (vista === 'catalogo' && State.view === 'materias') || (vista === 'eventos' && State.view === 'recordatorios') || (vista === 'malla' && State.view === 'avance')) render();
+        if (State.view === vista || State.view === 'dashboard' || (vista === 'catalogo' && State.view === 'materias') || (vista === 'eventos' && State.view === 'recordatorios') || (vista === 'malla' && State.view === 'avance')) render();
       });
     }
 
@@ -841,17 +866,20 @@
 
     function renderDashboard() {
       var r = State.data.resumen || {};
-      var avance = ((State.data.malla || {}).resumen || {}).avance || 0;
+      var avance = State.data.mallaLoaded ? (((State.data.malla || {}).resumen || {}).avance || 0) + '%' : 'Abrir';
+      var lecturasPendientes = State.data.lecturasLoaded ?
+        (State.data.lecturas || []).filter(function(l) { return String(l.estado || '').toLowerCase() !== 'completada'; }).length :
+        (r.lecturasPendientes || 0);
       var clases = (r.clasesHoy || []).map(function(c) {
         return item(c.asignatura + ' - Seccion ' + c.seccion, c.horario.hora_ini + ' a ' + c.horario.hora_fin + ' - ' + c.horario.aula, '');
       }).join('') || '<div class="empty">No tenes clases cargadas para hoy.</div>';
-      var eventos = upcomingEvents().slice(0, 4).map(function(e) {
+      var eventos = !State.data.eventosLoaded ? '<div class="empty">Cargando recordatorios...</div>' : upcomingEvents().slice(0, 4).map(function(e) {
         return item(e.titulo, [e.fecha_iso, e.hora, e.nombre_asignatura].filter(Boolean).join(' - '), badge(e.tipo || 'recordatorio'));
       }).join('') || '<div class="empty">Sin recordatorios proximos.</div>';
-      var lecturas = (State.data.lecturas || []).filter(function(l) { return String(l.estado || '').toLowerCase() !== 'completada'; }).slice(0, 4).map(function(l) {
+      var lecturas = !State.data.lecturasLoaded ? '<div class="empty">Cargando lecturas...</div>' : (State.data.lecturas || []).filter(function(l) { return String(l.estado || '').toLowerCase() !== 'completada'; }).slice(0, 4).map(function(l) {
         return compact(l.titulo, [l.nombre_asignatura, l.fecha_objetivo_iso, l.prioridad].filter(Boolean).join(' - '), priorityBadge(l.prioridad));
       }).join('') || '<div class="empty">Sin lecturas pendientes.</div>';
-      var grupos = (State.data.grupos || []).slice(0, 4).map(function(g) {
+      var grupos = !State.data.gruposLoaded ? '<div class="empty">Cargando grupos...</div>' : (State.data.grupos || []).slice(0, 4).map(function(g) {
         return compact(g.nombre, [g.nombre_asignatura, g.proxima_fecha_iso, g.proxima_hora].filter(Boolean).join(' - '), badge(g.estado || 'Activo'));
       }).join('') || '<div class="empty">Todavia no cargaste grupos.</div>';
       var agenda = (State.data.agenda || []).slice(0, 4).map(function(a) {
@@ -860,9 +888,9 @@
       return head('Inicio', 'Resumen rapido de tu semestre.') +
         '<div class="grid grid-5">' +
           metric('Asignaturas', r.totalAsignaturas || 0) +
-          metric('Avance', avance + '%') +
+          metric('Avance', avance) +
           metric('Promedio', fmt(r.promedio || 0)) +
-          metric('Lecturas', r.lecturasPendientes || 0) +
+          metric('Lecturas', lecturasPendientes) +
           metric('Agenda', r.agendaActiva || 0) +
         '</div>' +
         '<div class="planner" style="margin-top:14px;">' +

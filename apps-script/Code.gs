@@ -242,18 +242,18 @@ function obtenerBootstrap(token) {
     var inscripciones = safeCall_(function() { return obtenerMisInscripciones_(perfil.id_estudiante); }, []);
     var notas = safeCall_(function() { return obtenerMisNotas_(perfil.id_estudiante, inscripciones); }, []);
     var agenda = safeCall_(function() { return obtenerMiAgenda_(perfil.id_estudiante); }, []);
-    var apuntes = safeCall_(function() { return obtenerMisApuntes_(perfil.id_estudiante); }, []);
-    var eventos = safeCall_(function() { return obtenerMisEventos_(perfil.id_estudiante); }, []);
-    var lecturas = safeCall_(function() { return obtenerMisLecturas_(perfil.id_estudiante); }, []);
-    var grupos = safeCall_(function() { return obtenerMisGrupos_(perfil.id_estudiante); }, []);
     var preferencias = safeCall_(function() { return obtenerPreferencias_(perfil.id_estudiante); }, obtenerPreferenciasDefault_());
-    var malla = safeCall_(function() { return obtenerMallaAcademica_(perfil, inscripciones, notas); }, mallaDefault_());
     return bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, '', {
-      apuntes: apuntes,
-      eventos: eventos,
-      lecturas: lecturas,
-      grupos: grupos,
-      malla: malla
+      apuntes: [],
+      eventos: [],
+      lecturas: [],
+      grupos: [],
+      malla: mallaDefault_(),
+      apuntesLoaded: false,
+      eventosLoaded: false,
+      lecturasLoaded: false,
+      gruposLoaded: false,
+      mallaLoaded: false
     });
   } catch (e) {
     return {
@@ -273,6 +273,17 @@ function obtenerDatosVista(token, vista) {
     if (vista === 'eventos') return { success: true, eventos: obtenerMisEventos_(perfil.id_estudiante) };
     if (vista === 'lecturas') return { success: true, lecturas: obtenerMisLecturas_(perfil.id_estudiante) };
     if (vista === 'grupos') return { success: true, grupos: obtenerMisGrupos_(perfil.id_estudiante) };
+    if (vista === 'dashboard_secundario') {
+      return {
+        success: true,
+        eventos: obtenerMisEventos_(perfil.id_estudiante),
+        lecturas: obtenerMisLecturas_(perfil.id_estudiante),
+        grupos: obtenerMisGrupos_(perfil.id_estudiante),
+        eventosLoaded: true,
+        lecturasLoaded: true,
+        gruposLoaded: true
+      };
+    }
     if (vista === 'malla') {
       var inscripciones = obtenerMisInscripciones_(perfil.id_estudiante);
       var notas = obtenerMisNotas_(perfil.id_estudiante, inscripciones);
@@ -1386,16 +1397,26 @@ function guardarPreferencias(token, datos) {
 }
 
 function obtenerMisInscripciones_(idEstudiante) {
-  var secciones = mergedSeccionesIndex_();
-  var asignaturas = mergedAsignaturasIndex_();
-  var aulas = indexBy_(getRows_(CONFIG.SHEETS.AULAS), 'id_aula');
-  var horarios = getRows_(CONFIG.SHEETS.HORARIOS);
-  return getRows_(CONFIG.SHEETS.INSCRIPCIONES).filter(function(i) {
+  var propias = getRows_(CONFIG.SHEETS.INSCRIPCIONES).filter(function(i) {
     return i.id_estudiante == idEstudiante && isActive_(i.activo);
-  }).map(function(i) {
-    var sec = secciones[i.id_seccion] || {};
-    var idAsignatura = sec.id_asignatura || i.id_asignatura_snapshot || '';
+  });
+  var necesitaLookup = propias.some(function(i) {
+    return !i.id_asignatura_snapshot || !i.nombre_asignatura_snapshot || !i.codigo_seccion_snapshot;
+  });
+  var secciones = necesitaLookup ? indexBy_(getRows_(CONFIG.SHEETS.SECCIONES), 'id_seccion') : {};
+  var asignaturas = necesitaLookup ? asignaturasIndexRapido_(idEstudiante) : {};
+  var aulas = null;
+  var horarios = null;
+  return propias.map(function(i) {
+    var sec = necesitaLookup ? (secciones[i.id_seccion] || {}) : {};
+    var idAsignatura = i.id_asignatura_snapshot || sec.id_asignatura || '';
     var asig = asignaturas[idAsignatura] || {};
+    if ((!idAsignatura || !asig.nombre_asignatura) && i.id_seccion) {
+      var catalogSec = findCatalogSeccion_(i.id_seccion) || {};
+      idAsignatura = idAsignatura || catalogSec.id_asignatura || '';
+      sec = sec.id_seccion ? sec : catalogSec;
+      asig = asignaturas[idAsignatura] || findCatalogAsignatura_(idAsignatura) || {};
+    }
     i.id_asignatura = idAsignatura;
     i.codigo_seccion = sec.codigo_seccion || i.codigo_seccion_snapshot || '';
     i.nombre_asignatura = asig.nombre_asignatura || i.nombre_asignatura_snapshot || '';
@@ -1403,12 +1424,37 @@ function obtenerMisInscripciones_(idEstudiante) {
     i.carrera = asig.carrera || '';
     var embeddedHorarios = sec.horarios || [];
     var snapshotHorarios = parseHorariosSnapshot_(i.horarios_snapshot);
-    i.horarios = embeddedHorarios.length ? embeddedHorarios : (snapshotHorarios.length ? snapshotHorarios : horarios.filter(function(h) { return h.id_seccion == i.id_seccion; }).map(function(h) {
+    if (!embeddedHorarios.length && !snapshotHorarios.length && i.id_seccion) {
+      aulas = aulas || indexBy_(getRows_(CONFIG.SHEETS.AULAS), 'id_aula');
+      horarios = horarios || getRows_(CONFIG.SHEETS.HORARIOS);
+    }
+    i.horarios = embeddedHorarios.length ? embeddedHorarios : (snapshotHorarios.length ? snapshotHorarios : (horarios || []).filter(function(h) { return h.id_seccion == i.id_seccion; }).map(function(h) {
       var aula = aulas[h.id_aula] || {};
       return { dia: h.dia, hora_ini: h.hora_ini, hora_fin: h.hora_fin, aula: aula.nombre_aula || 'Sin aula', edificio: aula.edificio || '' };
     }));
     return i;
   });
+}
+
+function asignaturasIndexRapido_(idEstudiante) {
+  var map = {};
+  getRows_(CONFIG.SHEETS.ASIGNATURAS).forEach(function(row) {
+    if (row.id_asignatura) map[String(row.id_asignatura)] = row;
+  });
+  if (idEstudiante) {
+    getRows_(CONFIG.SHEETS.INSCRIPCIONES).forEach(function(row) {
+      if (row.id_estudiante != idEstudiante || !isActive_(row.activo)) return;
+      var id = row.id_asignatura_snapshot || row.id_asignatura;
+      if (!id || !row.nombre_asignatura_snapshot) return;
+      map[String(id)] = {
+        id_asignatura: id,
+        codigo: row.codigo_asignatura_snapshot || '',
+        nombre_asignatura: row.nombre_asignatura_snapshot || '',
+        carrera: ''
+      };
+    });
+  }
+  return map;
 }
 
 function parseHorariosSnapshot_(value) {
@@ -1436,7 +1482,7 @@ function obtenerMisNotas_(idEstudiante, inscripciones) {
 }
 
 function obtenerMisLecturas_(idEstudiante) {
-  var asignaturas = mergedAsignaturasIndex_();
+  var asignaturas = asignaturasIndexRapido_(idEstudiante);
   return getRows_(CONFIG.SHEETS.LECTURAS).filter(function(l) {
     return l.id_estudiante == idEstudiante;
   }).map(function(l) {
@@ -1451,7 +1497,7 @@ function obtenerMisLecturas_(idEstudiante) {
 }
 
 function obtenerMisGrupos_(idEstudiante) {
-  var asignaturas = mergedAsignaturasIndex_();
+  var asignaturas = asignaturasIndexRapido_(idEstudiante);
   return getRows_(CONFIG.SHEETS.GRUPOS).filter(function(g) {
     return g.id_estudiante == idEstudiante;
   }).map(function(g) {
@@ -1464,7 +1510,7 @@ function obtenerMisGrupos_(idEstudiante) {
 }
 
 function obtenerMiAgenda_(idEstudiante) {
-  var asignaturas = mergedAsignaturasIndex_();
+  var asignaturas = asignaturasIndexRapido_(idEstudiante);
   return getRows_(CONFIG.SHEETS.AGENDA).filter(function(a) {
     return a.id_estudiante == idEstudiante && a.activo != 0;
   }).map(function(a) {
@@ -1669,6 +1715,11 @@ function bootstrapResponse_(session, perfil, inscripciones, notas, agenda, prefe
   var lecturas = extra.lecturas || [];
   var grupos = extra.grupos || [];
   var malla = extra.malla || mallaDefault_();
+  var apuntesLoaded = extra.apuntesLoaded !== undefined ? extra.apuntesLoaded : true;
+  var eventosLoaded = extra.eventosLoaded !== undefined ? extra.eventosLoaded : true;
+  var lecturasLoaded = extra.lecturasLoaded !== undefined ? extra.lecturasLoaded : true;
+  var gruposLoaded = extra.gruposLoaded !== undefined ? extra.gruposLoaded : true;
+  var mallaLoaded = extra.mallaLoaded !== undefined ? extra.mallaLoaded : true;
   return {
     success: true,
     warning: warning || '',
@@ -1680,15 +1731,15 @@ function bootstrapResponse_(session, perfil, inscripciones, notas, agenda, prefe
     inscripciones: inscripciones || [],
     notas: notas || [],
     apuntes: apuntes,
-    apuntesLoaded: true,
+    apuntesLoaded: apuntesLoaded,
     eventos: eventos,
-    eventosLoaded: true,
+    eventosLoaded: eventosLoaded,
     lecturas: lecturas,
-    lecturasLoaded: true,
+    lecturasLoaded: lecturasLoaded,
     grupos: grupos,
-    gruposLoaded: true,
+    gruposLoaded: gruposLoaded,
     malla: malla,
-    mallaLoaded: true,
+    mallaLoaded: mallaLoaded,
     agenda: agenda || [],
     preferencias: preferencias || obtenerPreferenciasDefault_(),
     companeros: [],

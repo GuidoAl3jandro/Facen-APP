@@ -49,6 +49,7 @@ El catalogo operativo usa este orden: snapshot CSV generado desde Google Sheets,
 - El codigo defensivo para convertir `Date` a texto fue subido a Apps Script HEAD y versionado como `43`, pero no quedo activo en backend publico.
 - El guardado robusto de grupos esta corregido en `apps-script/Code.gs` e `apps-script/index.html`; requiere redeploy publico desde la cuenta propietaria/autorizada para quedar activo en produccion.
 - El calendario real, la vista `Avance`, la malla `MALLA_ACADEMICA` y las correlatividades `CORRELATIVIDADES` quedaron preparados en Apps Script HEAD y versionados como `45`; requieren redeploy publico propietario para quedar visibles en GitHub Pages.
+- La optimizacion de carga inicial quedo preparada en Apps Script HEAD y versionada como `47`: el `bootstrap` inicial queda liviano y las vistas secundarias se cargan bajo demanda o en segundo plano.
 - El libro operativo contiene 40 asignaturas de la malla 2025 y 36 correlatividades cargadas desde `Guia-Academica-2026-2.pdf` / texto extraido.
 - El deployment moderno `AKfycbyr...` quedo restringido despues de intentar redeployarlo desde la cuenta actual; no usarlo en Pages hasta redeploy publico desde la cuenta propietaria/autorizada.
 - El deployment historico `AKfycbwi0...@20` tambien quedo restringido despues de intentar actualizarlo desde la cuenta actual; por eso Pages debe usar temporalmente `AKfycbxPW...@19`.

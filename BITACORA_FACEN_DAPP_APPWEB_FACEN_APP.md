@@ -1892,3 +1892,102 @@
 * Publicar version `45` solo desde la cuenta propietaria/autorizada y verificar `HTTP 200` anonimo antes de cambiar Pages.
 * Mantener malla y correlatividades como datos auditables en Sheets, no embebidos solamente en HTML.
 * Registrar cualquier ajuste oficial de nivel/semestre directamente en `MALLA_ACADEMICA`.
+
+## 2026-06-30 07:52
+
+### Proyecto
+
+* Nombre: FACEN App
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version: Apps Script HEAD version `47`; Pages publico sigue en `APP_BUILD = 2026.06.30.3`
+
+### Objetivo de la intervencion
+
+* Diagnosticar por que la app tarda en cargar datos.
+* Reducir el peso del `bootstrap` inicial sin eliminar funcionalidades.
+* Mantener la app preparada para redeploy publico propietario sin tocar deployments historicos.
+
+### Diagnostico inicial
+
+* `obtenerBootstrap` cargaba perfil, inscripciones, notas, agenda, apuntes, eventos, lecturas, grupos, preferencias y malla/correlatividades en una sola llamada.
+* La malla y correlatividades solo son necesarias al abrir `Avance`, pero se estaban cargando al inicio.
+* El dashboard necesitaba algunos datos secundarios, pero no necesitaba bloquear el primer render por ellos.
+* `obtenerMisInscripciones_`, `obtenerMiAgenda_`, `obtenerMisLecturas_` y `obtenerMisGrupos_` dependian de funciones que podian parsear el catalogo completo para resolver nombres de asignaturas.
+
+### Acciones realizadas
+
+* Se aligero `obtenerBootstrap`: ahora carga solo perfil, inscripciones, notas, agenda y preferencias.
+* Se marcaron como no cargadas las vistas `apuntes`, `eventos`, `lecturas`, `grupos` y `malla`.
+* Se agrego la vista interna `dashboard_secundario` en `obtenerDatosVista` para traer eventos, lecturas y grupos en una sola llamada posterior.
+* Se agrego `preloadDashboardData()` al frontend para completar esos paneles en segundo plano despues del primer render.
+* Se ajusto el dashboard para mostrar estados `Cargando...` cuando esos datos secundarios aun no llegaron.
+* Se agrego `asignaturasIndexRapido_()` para resolver nombres desde `ASIGNATURAS` y snapshots de inscripcion.
+* Se optimizo `obtenerMisInscripciones_()` para leer `AULAS`/`HORARIOS` solo si una inscripcion no trae snapshot de horarios.
+* Se cambio agenda, lecturas y grupos para usar el indice rapido en vez de `mergedAsignaturasIndex_()`.
+* Se subio el codigo a Apps Script HEAD y se creo version `47`.
+
+### Archivos modificados
+
+* `apps-script/Code.gs`
+* `apps-script/index.html`
+* `README.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `G:\Mi unidad\MANUAL_MAESTRO_FORMATOS_FUNCIONES_APPWEB\APRENDIZAJE_FACEN_APP_BOOTSTRAP_LIVIANO_2026-06-30.md`
+
+### Comandos o scripts ejecutados
+
+* `rg` para localizar ruta de bootstrap y funciones de lectura.
+* Validacion sintactica local de `Code.gs` y del script HTML con Node.
+* Prueba Node con stubs de navegador para validar render diferido del dashboard y calendario.
+* `npx clasp push --force`
+* `npx clasp version "FACEN App bootstrap liviano 2026-06-30"`
+
+### Resultados verificados
+
+* Validacion sintactica local: `syntax ok`.
+* Render diferido local: `render lazy ok`.
+* `git diff --check` sin errores de whitespace; solo avisos esperados LF/CRLF.
+* Apps Script HEAD actualizado: `Pushed 4 files at 7:52:31`.
+* Apps Script version `47` creada.
+
+### Pruebas realizadas
+
+* Validacion del script backend con `new Function(...)`.
+* Validacion del script frontend con `new Function(...)`.
+* Render simulado de dashboard con malla/eventos/lecturas/grupos no cargados.
+* Render simulado de agenda calendario.
+
+### Errores o incidentes
+
+* No se ejecuto redeploy publico por el antecedente de deployments restringidos `HTTP 403` desde esta cuenta.
+* No se midio todavia tiempo real de carga en navegador contra version `47` porque requiere redeploy publico propietario.
+
+### Soluciones aplicadas
+
+* Primer render mas liviano por reduccion de datos iniciales.
+* Carga secundaria agrupada en una sola llamada para dashboard.
+* Resolucion de asignaturas sin parsear catalogo completo cuando existen snapshots o datos directos.
+
+### Pendientes
+
+* Redeployar Apps Script version `47` desde cuenta propietaria/autorizada con acceso `Anyone`.
+* Verificar `/exec` anonimo de version `47`.
+* Medir tiempo de carga antes/despues en navegador real.
+* Si sigue lento, crear endpoint especifico `obtenerInicioLigero` con medicion de tiempos por bloque y cache de usuario.
+
+### Riesgos
+
+* Mientras GitHub Pages use `AKfycbxPW...@19`, esta optimizacion no es visible publicamente.
+* La carga diferida cambia el comportamiento visual inicial: algunos paneles muestran `Cargando...` durante unos segundos.
+* Si una inscripcion vieja carece de snapshots y tampoco existe en hojas directas, se sigue usando fallback al catalogo completo.
+
+### Recomendaciones
+
+* Mantener el `bootstrap` inicial limitado a lo indispensable para pintar la primera pantalla.
+* Cargar vistas pesadas solo bajo demanda.
+* Evitar parsear catalogos grandes para resolver nombres si ya existen snapshots por estudiante.
