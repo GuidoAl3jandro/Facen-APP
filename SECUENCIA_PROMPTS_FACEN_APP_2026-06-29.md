@@ -237,4 +237,4 @@ Resultado resumido:
 * Se agrego sanitizacion defensiva de `Date` en `apps-script/Code.gs`, se subio a Apps Script HEAD y se creo version `42`.
 * El intento de activar `AKfycbyr...@42` dejo el deployment restringido con `Necesitas acceso`; por seguridad se retiro de Pages.
 * Se comprobo que `AKfycbwi0...@20` sigue publico y carga Perfil + 7 asignaturas con el libro corregido.
-* Se preparo `APP_BUILD = 2026.06.30.2` y `facen-app-v11-shell-20260630`, apuntando Pages temporalmente al backend fallback publico.
+* Se publico y verifico `APP_BUILD = 2026.06.30.2` y `facen-app-v11-shell-20260630`, apuntando Pages temporalmente al backend fallback publico.

@@ -1628,6 +1628,7 @@
 * Apps Script directo con el libro corregido cargo `perfil.email = dmeza.py@gmail.com`, `inscripcionesLen = 7` y `resumen.totalAsignaturas = 7`.
 * GitHub Pages, dentro del iframe real del backend probado, cargo usuario `diegomezapy`, Perfil completo y 7 asignaturas.
 * El deployment fallback `AKfycbwi0...@20` respondio `HTTP 200` y cargo Perfil + Inscripciones con el libro actual.
+* GitHub Pages publicado respondio `HTTP 200` con `APP_BUILD = 2026.06.30.2`, iframe `AKfycbwi0.../exec?v=2026.06.30.2`, Perfil completo y 7 asignaturas.
 
 ### Pruebas realizadas
 
@@ -1649,8 +1650,6 @@
 
 ### Pendientes
 
-* Hacer commit y push de esta intervencion.
-* Verificar GitHub Pages publicado con `APP_BUILD = 2026.06.30.2`.
 * Redeployar la version moderna del Apps Script desde la cuenta propietaria/autorizada y verificar anonimamente antes de cambiar Pages de nuevo.
 
 ### Riesgos

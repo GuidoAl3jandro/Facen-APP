@@ -42,7 +42,7 @@ El catalogo operativo usa este orden: snapshot CSV generado desde Google Sheets,
 
 ## Estado operativo verificado 2026-06-30
 
-- `https://appfacen.github.io/Facen-APP/` debe publicar `APP_BUILD = 2026.06.30.2` y apuntar temporalmente al deployment publico `AKfycbwi0...@20`.
+- `https://appfacen.github.io/Facen-APP/` publica `APP_BUILD = 2026.06.30.2` y apunta temporalmente al deployment publico `AKfycbwi0...@20`.
 - El libro operativo fue corregido para que las columnas de fecha/hora se lean como texto; esto evita que el `bootstrap` pierda Perfil e Inscripciones por objetos `Date` de Google Sheets.
 - Con prueba Playwright se verifico carga de `diegomezapy`: Perfil completo, `inscripcionesLen = 7` y `resumen.totalAsignaturas = 7`.
 - El codigo defensivo para convertir `Date` a texto fue subido a Apps Script HEAD y versionado como `42`, pero no quedo activo en backend publico.

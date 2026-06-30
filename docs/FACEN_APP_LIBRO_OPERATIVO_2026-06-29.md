@@ -55,7 +55,7 @@ Fecha de reconstruccion: 2026-06-29 20:55 America/Asuncion
 
 - Metadata final: 22 hojas productivas, sin hojas `REBUILD_*`.
 - Rangos verificados despues del intercambio: `USUARIOS`, `ESTUDIANTES`, `ASIGNATURAS`, `HORARIOS_ASIGNATURAS`, `INSCRIPCIONES`, `PREFERENCIAS_ESTUDIANTE`, `LOGS`.
-- GitHub Pages se prepara para publicar `APP_BUILD = 2026.06.30.2`.
+- GitHub Pages publico `APP_BUILD = 2026.06.30.2` apuntando al backend fallback `AKfycbwi0...@20`.
 - Backend Apps Script fallback `AKfycbwi0...@20` respondio `HTTP 200` y cargo Perfil completo + 7 inscripciones para `diegomezapy`.
 - Las columnas de fecha/hora criticas quedaron como texto (`TEXT` + `stringValue`) para evitar fallos de serializacion en `google.script.run`.
 
