@@ -2379,3 +2379,79 @@
 * No volver a redeployar deployments publicos de FACEN App desde `apoyomedicoips@gmail.com`.
 * Usar la UI de Apps Script con cuenta propietaria/autorizada para activar version `50`.
 * Probar `/exec` anonimo antes de cambiar `APP_URL` de Pages.
+
+## 2026-06-30 09:15
+
+### Proyecto
+
+* Nombre: FACEN App
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version: commit `cf50ea4`, Pages `APP_BUILD = 2026.06.30.5`
+
+### Objetivo de la intervencion
+
+* Confirmar que la URL publica no quedo apuntando al deployment `AKfycbxSd...` que devolvia `HTTP 403`.
+* Dejar evidencia posterior al push.
+
+### Diagnostico inicial
+
+* Despues del push, GitHub Pages estuvo unos minutos en estado `building` y siguio sirviendo el HTML anterior.
+* Al completarse el build, Pages publico el shell actualizado.
+
+### Acciones realizadas
+
+* Commit y push: `cf50ea4 Agregar agenda automatica por matricula`.
+* Verificacion extendida de Pages hasta que `status = built`.
+* Verificacion HTTP de `index.html` y `sw.js` publicados.
+* Captura Playwright del shell publico.
+
+### Archivos modificados
+
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* `git commit -m "Agregar agenda automatica por matricula"`
+* `git push origin main`
+* `gh api repos/appfacen/Facen-APP/pages`
+* `Invoke-WebRequest https://appfacen.github.io/Facen-APP/?v=final-agenda-auto-...`
+* `Invoke-WebRequest https://appfacen.github.io/Facen-APP/sw.js?v=final-agenda-auto-...`
+* `npx playwright screenshot --wait-for-selector '#shell-version' --wait-for-timeout 3000 --viewport-size "1366,900" https://appfacen.github.io/Facen-APP/?v=shot-20260630-5-091457 C:\Users\Diego\AppData\Local\Temp\facen-app-pages-20260630-5.png`
+
+### Resultados verificados
+
+* GitHub Pages: `HTTP 200`.
+* HTML publico contiene `APP_BUILD = 2026.06.30.5`.
+* HTML publico contiene `AKfycbyr...` y ya no contiene `AKfycbxSd...`.
+* `sw.js` publico contiene `facen-app-v14-shell-20260630`.
+* Captura Playwright muestra `FACEN App v2026.06.30.5` y login cargado.
+
+### Pruebas realizadas
+
+* Verificacion HTTP publica con cache-busting.
+* Verificacion de service worker publico.
+* Verificacion visual con navegador automatizado.
+
+### Errores o incidentes
+
+* Ninguno adicional despues del push; el retraso fue propagacion normal de GitHub Pages.
+
+### Soluciones aplicadas
+
+* Pages quedo restaurado en backend publico estable mientras version `50` espera activacion desde cuenta propietaria/autorizada.
+
+### Pendientes
+
+* Activar Apps Script version `50` publicamente con cuenta propietaria/autorizada para que la agenda automatica quede visible en produccion.
+
+### Riesgos
+
+* Si se intenta activar version `50` otra vez desde `apoyomedicoips@gmail.com`, puede repetirse el `HTTP 403`.
+
+### Recomendaciones
+
+* Mantener Pages en `AKfycbyr...@48` hasta tener un `/exec` version `50` anonimo y verificado.
