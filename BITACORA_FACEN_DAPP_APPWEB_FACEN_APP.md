@@ -1563,3 +1563,104 @@
 ### Riesgos
 
 * Si `AKfycbyr...@39` vuelve a quedar restringido por permisos, Pages debera volver a un fallback o publicarse un deployment nuevo desde la cuenta propietaria/autorizada.
+
+## 2026-06-30 05:43
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Apps Script asociado: `https://script.google.com/u/0/home/projects/1mXbo3LGQwW6S3wKtAcCyMHPBDHkm0KFRXaRpBbAcdNAM-8hr5z9FfLZT/edit`
+* Responsable: Codex
+* Version inicial: `1c368ef`
+
+### Objetivo de la intervencion
+
+* Corregir que los datos de Perfil desaparecieran al recargar.
+* Corregir que las asignaturas inscriptas no quedaran asociadas al usuario en la carga posterior.
+* Mantener operativa la app publica y documentar el estado real del deployment GAS.
+
+### Diagnostico inicial
+
+* El libro si contenia el perfil de `diegomezapy` (`id_usuario = 8`, `id_estudiante = 8`) y sus inscripciones.
+* La app mostraba Perfil vacio y 0 asignaturas despues de recargar porque `obtenerBootstrap` devolvia datos vacios al frontend.
+* La causa tecnica fue la serializacion de objetos `Date` leidos con `getValues()` desde Google Sheets: `google.script.run` no transportaba correctamente el paquete completo cuando habia fechas nativas dentro de `perfil`, `inscripciones`, `notas`, `preferencias` o logs.
+* El deployment moderno `AKfycbyr...` era funcional antes del redeploy, pero al intentar actualizarlo desde la cuenta actual quedo restringido con `HTTP 403 / Necesitas acceso`.
+
+### Acciones realizadas
+
+* Se verificaron rangos criticos del spreadsheet productivo `1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc`.
+* Se convirtieron a texto las columnas de fecha/hora criticas en `USUARIOS`, `SESIONES`, `INSCRIPCIONES`, `NOTAS`, `APUNTES`, `EVENTOS_PERSONALES`, `LECTURAS`, `GRUPOS_ESTUDIO`, `AGENDA_ACADEMICA`, `PREFERENCIAS_ESTUDIANTE` y `LOGS`.
+* Se reescribieron valores existentes de fechas como `stringValue` con formato `yyyy-MM-dd HH:mm:ss`.
+* Se agrego en `apps-script/Code.gs` una sanitizacion defensiva para convertir cualquier valor `Date` a texto antes de armar objetos de fila.
+* Se subio el codigo a Apps Script HEAD con `clasp push --force` y se creo la version `42`.
+* Se intento actualizar el deployment `AKfycbyr...` a `@42`; la prueba anonima devolvio `Necesitas acceso`.
+* Se revirtio el deployment a `@41`, pero al haberse redeployado desde la cuenta actual siguio restringido.
+* Se probaron deployments historicos publicos y se eligio `AKfycbwi0...@20` porque carga Perfil e Inscripciones con el libro actual.
+* Se cambio GitHub Pages a `APP_BUILD = 2026.06.30.2` y cache `facen-app-v11-shell-20260630`, apuntando al backend fallback publico `AKfycbwi0...@20`.
+
+### Archivos modificados
+
+* `apps-script/Code.gs`
+* `index.html`
+* `sw.js`
+* `README.md`
+* `docs/FACEN_APP_LIBRO_OPERATIVO_2026-06-29.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* `npx clasp push --force`
+* `npx clasp version "Sanitize date values for bootstrap"`
+* `npx clasp deploy -i AKfycbyr... -V 42`
+* `npx clasp deploy -i AKfycbyr... -V 41`
+* `npx clasp deployments`
+* Pruebas Playwright headless contra Apps Script directo y contra GitHub Pages.
+* Lecturas y actualizaciones controladas con Google Sheets API.
+
+### Resultados verificados
+
+* `INSCRIPCIONES!E`, `NOTAS!J`, `PREFERENCIAS_ESTUDIANTE!L`, `USUARIOS!G:H` y `SESIONES!D:E` quedaron como texto, no como fecha nativa.
+* Apps Script directo con el libro corregido cargo `perfil.email = dmeza.py@gmail.com`, `inscripcionesLen = 7` y `resumen.totalAsignaturas = 7`.
+* GitHub Pages, dentro del iframe real del backend probado, cargo usuario `diegomezapy`, Perfil completo y 7 asignaturas.
+* El deployment fallback `AKfycbwi0...@20` respondio `HTTP 200` y cargo Perfil + Inscripciones con el libro actual.
+
+### Pruebas realizadas
+
+* Verificacion de `CellData` para confirmar `effectiveValue.stringValue` y `numberFormat.type = TEXT`.
+* Prueba Playwright con sesion QA temporal dentro del iframe de Apps Script.
+* Comparacion de deployments historicos publicos con HTTP anonimo.
+* Prueba de carga real de Perfil e Inscripciones en candidatos `@20`, `@19`, `@18`, `@17`, `@16` y `@15`.
+
+### Errores o incidentes
+
+* El intento de redeploy del backend moderno con la cuenta actual dejo `AKfycbyr...` restringido; no se debe usar como backend publico hasta redeploy desde cuenta propietaria/autorizada.
+* El deployment fallback `@20` no contiene las mejoras mas recientes de recuperacion y actualizacion de catalogo, pero si carga Perfil, Materias e Inscripciones con el libro corregido.
+
+### Soluciones aplicadas
+
+* Correccion de datos: columnas de fecha/hora convertidas a texto para que `google.script.run` no rompa el `bootstrap`.
+* Correccion de fuente: sanitizacion defensiva de fechas en `getRows_`.
+* Recuperacion operativa: Pages vuelve temporalmente al deployment publico `AKfycbwi0...@20`.
+
+### Pendientes
+
+* Hacer commit y push de esta intervencion.
+* Verificar GitHub Pages publicado con `APP_BUILD = 2026.06.30.2`.
+* Redeployar la version moderna del Apps Script desde la cuenta propietaria/autorizada y verificar anonimamente antes de cambiar Pages de nuevo.
+
+### Riesgos
+
+* Mientras Pages use `@20`, la app queda sin funciones nuevas del backend moderno.
+* Si alguien vuelve a redeployar deployments publicos desde una cuenta no propietaria/autorizada, puede repetir el bloqueo `Necesitas acceso`.
+* El arreglo de codigo no estara activo en produccion moderna hasta un redeploy valido; por ahora la estabilidad publica depende del formato de texto aplicado en el libro.
+
+### Recomendaciones
+
+* No volver a tocar `AKfycbyr...` desde la cuenta actual para produccion publica.
+* Mantener las columnas de fecha/hora como texto en el libro operativo.
+* Cuando se haga redeploy valido, probar primero `/exec` anonimo y luego Perfil + Materias con usuario real antes de actualizar `APP_URL`.

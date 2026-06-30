@@ -214,3 +214,27 @@ Resultado resumido:
 * Ese deployment contiene `recoverPassword`, `savePerfil`, `renderMaterias`, `catalogoLoaded` y `Actualizar registros`.
 * Se cambio `APP_URL` en GitHub Pages a `AKfycbyr.../exec`.
 * Se publico `APP_BUILD = 2026.06.30.1` y cache PWA `facen-app-v10-shell-20260630`.
+
+### 2026-06-30 - Persistencia real de Perfil e Inscripciones
+
+Texto del usuario:
+
+```text
+mis datos de perfil se guardan solo un rato, luego se borra todo. y cuando asigno una asignatura este no se asocia al usuario, no funciona
+```
+
+Interpretacion operativa:
+
+* El problema ya no era solamente visual: Perfil e Inscripciones existian en Sheets, pero el `bootstrap` posterior a recarga devolvia datos vacios.
+* La prueba debia hacerse contra la URL publica y contra el iframe real de Apps Script, no solo leyendo la hoja.
+
+Resultado resumido:
+
+* Se verifico que `diegomezapy` (`id_usuario = 8`, `id_estudiante = 8`) tenia Perfil e Inscripciones en el libro.
+* Se identifico que columnas de fecha/hora estaban como fechas nativas de Sheets; Apps Script las leia como objetos `Date` y `google.script.run` rompia el paquete de datos.
+* Se convirtieron columnas criticas de fecha/hora a texto y se reescribieron valores existentes como `yyyy-MM-dd HH:mm:ss`.
+* Se verifico por Playwright que el backend carga Perfil completo, `inscripcionesLen = 7` y `resumen.totalAsignaturas = 7`.
+* Se agrego sanitizacion defensiva de `Date` en `apps-script/Code.gs`, se subio a Apps Script HEAD y se creo version `42`.
+* El intento de activar `AKfycbyr...@42` dejo el deployment restringido con `Necesitas acceso`; por seguridad se retiro de Pages.
+* Se comprobo que `AKfycbwi0...@20` sigue publico y carga Perfil + 7 asignaturas con el libro corregido.
+* Se preparo `APP_BUILD = 2026.06.30.2` y `facen-app-v11-shell-20260630`, apuntando Pages temporalmente al backend fallback publico.

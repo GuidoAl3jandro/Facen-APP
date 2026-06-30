@@ -1811,10 +1811,18 @@ function getRows_(name) {
     return row.some(function(v) { return v !== ''; });
   }).map(function(row) {
     var obj = {};
-    headers.forEach(function(h, i) { obj[h] = row[i]; });
+    headers.forEach(function(h, i) { obj[h] = serializableCellValue_(row[i]); });
     return obj;
   });
   return ROW_CACHE_[name];
+}
+
+function serializableCellValue_(value) {
+  if (Object.prototype.toString.call(value) === '[object Date]') {
+    if (isNaN(value.getTime())) return '';
+    return Utilities.formatDate(value, 'America/Asuncion', 'yyyy-MM-dd HH:mm:ss');
+  }
+  return value;
 }
 
 function appendObject_(sheetName, obj) {
