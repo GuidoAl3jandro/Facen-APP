@@ -141,3 +141,24 @@ Resultado resumido:
 * Se normalizo `ESTUDIANTES!I8` a la carrera canonica.
 * Se verificaron 4 asignaturas activas para esa carrera: `MAT201`, `MAT120`, `MAT101`, `MAT330`.
 * Se registro `NORMALIZAR_CARRERA_ASIGNATURAS` en `LOGS!A48:E48`.
+
+### 2026-06-29 - Perfil y Materias no guardan/cargan
+
+Texto del usuario:
+
+```text
+no guarda ni carga los datos del perfil, tamopco carga los datos de las asignatras
+```
+
+Interpretacion operativa:
+
+* El problema ya no es solo el dato de carrera: el backend publico usado por Pages debe ser revisado.
+* Evitar dejar al usuario apuntando a un deployment que devuelve `403`.
+
+Resultado resumido:
+
+* Se clono e inspecciono Apps Script `@22`.
+* Se probo actualizar el deployment anterior a `@40` y `@25`; ambos quedaron `HTTP 403`.
+* El deployment anterior `AKfycbzM0... @22` no recupero acceso anonimo despues del rollback.
+* Se probaron deployments historicos y se eligio `AKfycbwi0em5pAGlaVMstzCPxOs7aopGNylBwspSlj9Sx4ZwK_cNMSHiCi5fmPpgP68FoqPHjA @20`, que responde `HTTP 200` y contiene login, Perfil y Materias.
+* Se preparo `APP_BUILD = 2026.06.29.5` y `facen-app-v9-shell-20260629`.

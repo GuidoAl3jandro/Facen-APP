@@ -1272,3 +1272,90 @@
 ### Riesgos
 
 * Mientras produccion siga en el deployment antiguo `@22`, perfiles con carreras abreviadas o variantes pueden volver a quedar sin catalogo.
+
+## 2026-06-29 20:26
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version Git inicial: `e8c9140802ab58bdf9349abf4c33cc5241d0cc38`
+
+### Objetivo de la intervencion
+
+* Corregir que Perfil y Materias no cargaran/guardaran de forma usable en la app publica.
+* Evitar que GitHub Pages apunte a un Apps Script restringido.
+
+### Diagnostico inicial
+
+* La URL de Apps Script `AKfycbzM0NMEZ57YImDz3puF5Ma4YT-tvwcZtjugGNuVWPsphnLWcddw6L_Snv_Vr6eSba7HyQ` quedo en `HTTP 403` despues de probar redeploys a versiones nuevas y rollback.
+* El redeploy del mismo deployment a `@40` y `@25` quedo restringido por permisos.
+* El rollback a `@22` no recupero acceso anonimo de forma inmediata.
+* Se probaron deployments historicos anonimos; `AKfycbwi0em5pAGlaVMstzCPxOs7aopGNylBwspSlj9Sx4ZwK_cNMSHiCi5fmPpgP68FoqPHjA @20` respondio `HTTP 200` y contiene login, Perfil y Materias.
+
+### Acciones realizadas
+
+* Se clono la version Apps Script `@22` en carpeta temporal para inspeccionar el comportamiento real.
+* Se probaron versiones `@23`, `@24` y `@25`; `@25` quedo en `HTTP 403`.
+* Se hizo rollback a `@22`, pero el deployment siguio restringido.
+* Se probaron todos los deployments conocidos por HTTP anonimo.
+* Se cambio `APP_URL` del shell GitHub Pages al deployment publico funcional `AKfycbwi0em5pAGlaVMstzCPxOs7aopGNylBwspSlj9Sx4ZwK_cNMSHiCi5fmPpgP68FoqPHjA/exec`.
+* Se actualizo `APP_BUILD` a `2026.06.29.5`.
+* Se cambio el cache del service worker a `facen-app-v9-shell-20260629`.
+
+### Archivos modificados
+
+* `index.html`
+* `sw.js`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+
+### Comandos o scripts ejecutados
+
+* `npx clasp clone-script 1mXbo3LGQwW6S3wKtAcCyMHPBDHkm0KFRXaRpBbAcdNAM-8hr5z9FfLZT 22 --rootDir .`
+* `npx clasp redeploy ... -V 40`
+* `npx clasp redeploy ... -V 25`
+* `npx clasp redeploy ... -V 22`
+* `npx clasp deployments`
+* Prueba HTTP anonima de todos los deployments listados.
+* `node --check .\sw.js`
+* Validacion con `node --check` del script embebido en `index.html`.
+* `git diff --check`
+
+### Resultados verificados
+
+* El deployment nuevo elegido `AKfycbwi0em5pAGlaVMstzCPxOs7aopGNylBwspSlj9Sx4ZwK_cNMSHiCi5fmPpgP68FoqPHjA @20` respondio `HTTP 200`.
+* Ese deployment contiene login, `savePerfil`, `renderMaterias` y `catalogoLoaded`.
+* El shell queda preparado para publicar `v2026.06.29.5` apuntando al backend publico funcional.
+* `sw.js` y el JavaScript embebido validaron sintaxis.
+* `git diff --check` no reporto errores de whitespace, solo advertencias LF/CRLF esperadas.
+
+### Pruebas realizadas
+
+* Verificacion HTTP anonima de candidatos Apps Script.
+* Validacion sintactica local.
+* Revision de diff.
+
+### Errores o incidentes
+
+* El deployment anterior `AKfycbzM0... @22` quedo inaccesible anonimamente despues de los redeploys; se evita usarlo desde Pages.
+* Las versiones nuevas del proyecto siguen bloqueadas por permisos (`HTTP 403`) si se usan como deployment anonimo desde la cuenta actual.
+
+### Soluciones aplicadas
+
+* GitHub Pages se reorienta a un deployment historico publico funcional para recuperar Perfil y Materias.
+
+### Pendientes
+
+* Commit, push y verificacion publica de `v2026.06.29.5`.
+* El usuario debe abrir la URL de Pages y pulsar `Actualizar` para limpiar cache/service worker si venia de una version anterior.
+* Solucion definitiva: publicar el backend actual desde la cuenta propietaria con acceso anonimo real.
+
+### Riesgos
+
+* `@20` no contiene todas las mejoras modernas del repo, pero es publico y funcional para Perfil/Materias.
+* La recuperacion automatica de contrasena no queda resuelta en `@20`.
