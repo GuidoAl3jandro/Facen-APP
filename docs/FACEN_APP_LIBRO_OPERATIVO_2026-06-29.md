@@ -15,7 +15,8 @@ Fecha de reconstruccion: 2026-06-29 20:55 America/Asuncion
 - Spreadsheet productivo: `https://docs.google.com/spreadsheets/d/1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc/edit`
 - Respaldo previo: `https://docs.google.com/spreadsheets/d/1j3vn6kjy0tMZU2IdD6qzQUBrhX_7AkZNxe8IPtg78Hw`
 - GitHub Pages: `https://appfacen.github.io/Facen-APP/`
-- Backend publico usado por Pages: `https://script.google.com/macros/s/AKfycbwi0em5pAGlaVMstzCPxOs7aopGNylBwspSlj9Sx4ZwK_cNMSHiCi5fmPpgP68FoqPHjA/exec`
+- Backend publico usado por Pages desde 2026-06-30: `https://script.google.com/macros/s/AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg/exec`
+- Backend fallback historico previo: `https://script.google.com/macros/s/AKfycbwi0em5pAGlaVMstzCPxOs7aopGNylBwspSlj9Sx4ZwK_cNMSHiCi5fmPpgP68FoqPHjA/exec`
 
 ## Pestanas productivas
 
@@ -54,7 +55,7 @@ Fecha de reconstruccion: 2026-06-29 20:55 America/Asuncion
 
 - Metadata final: 22 hojas productivas, sin hojas `REBUILD_*`.
 - Rangos verificados despues del intercambio: `USUARIOS`, `ESTUDIANTES`, `ASIGNATURAS`, `HORARIOS_ASIGNATURAS`, `INSCRIPCIONES`, `PREFERENCIAS_ESTUDIANTE`, `LOGS`.
-- GitHub Pages respondio `HTTP 200` con `APP_BUILD = 2026.06.29.5`.
+- GitHub Pages respondio `HTTP 200` con `APP_BUILD = 2026.06.30.1`.
 - Backend Apps Script publico respondio `HTTP 200` y contiene elementos de Perfil y Materias.
 
 ## Limitaciones pendientes

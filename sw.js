@@ -1,4 +1,4 @@
-const CACHE_NAME = 'facen-app-v9-shell-20260629';
+const CACHE_NAME = 'facen-app-v10-shell-20260630';
 const SHELL_FILES = [
   './',
   './index.html',

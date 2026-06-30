@@ -1482,3 +1482,84 @@
 * Mantener este spreadsheet como libro operativo canonico mientras `AKfycbwi0...@20` siga siendo el backend publico.
 * No crear otro spreadsheet como backend real hasta poder publicar un nuevo deployment Apps Script que apunte al nuevo ID.
 * Cuando se recupere permiso GAS, ejecutar una prueba de login real y publicar la version actual con recuperacion de contrasena y cache moderno.
+
+## 2026-06-30 05:08
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Apps Script asociado: `https://script.google.com/u/0/home/projects/1mXbo3LGQwW6S3wKtAcCyMHPBDHkm0KFRXaRpBbAcdNAM-8hr5z9FfLZT/edit`
+* Responsable: Codex
+* Version Git inicial: `592085e`
+
+### Objetivo de la intervencion
+
+* Corregir que el usuario siguiera viendo la misma app y las mismas fallas despues de reconstruir el libro.
+* Asegurar que GitHub Pages apunte al deployment publico correcto del proyecto GAS asociado.
+
+### Diagnostico inicial
+
+* GitHub Pages servia correctamente `APP_BUILD = 2026.06.29.5`, pero apuntaba al deployment historico `AKfycbwi0...@20`.
+* El deployment `@20` responde `HTTP 200`, pero no contiene recuperacion de contrasena ni el boton nuevo `Actualizar registros`.
+* Se confirmo con el usuario que el proyecto GAS asociado es `1mXbo3LGQwW6S3wKtAcCyMHPBDHkm0KFRXaRpBbAcdNAM-8hr5z9FfLZT`.
+* Al probar deployments del proyecto asociado, `AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg @39` respondio anonimamente `HTTP 200`.
+
+### Acciones realizadas
+
+* Se probaron deployments versionados del proyecto GAS asociado sin redeployar Apps Script.
+* Se verifico que `AKfycbyr...@39` contiene `recoverPassword`, `savePerfil`, `renderMaterias`, `catalogoLoaded` y `Actualizar registros`.
+* Se cambio `APP_URL` en `index.html` desde `AKfycbwi0...@20` a `AKfycbyr...@39`.
+* Se actualizo `APP_BUILD` a `2026.06.30.1`.
+* Se actualizo cache PWA a `facen-app-v10-shell-20260630`.
+* Se actualizo README, bitacora, secuencia de prompts y especificacion del libro.
+
+### Archivos modificados
+
+* `index.html`
+* `sw.js`
+* `README.md`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+* `docs/FACEN_APP_LIBRO_OPERATIVO_2026-06-29.md`
+
+### Comandos o scripts ejecutados
+
+* `git status --branch --short`
+* `npx clasp deployments`
+* Prueba HTTP anonima de deployments Apps Script.
+* `Invoke-WebRequest` contra GitHub Pages, `sw.js` y deployment `AKfycbyr...@39`.
+
+### Resultados verificados
+
+* `AKfycbyr...@39` responde `HTTP 200`.
+* `AKfycbyr...@39` contiene recuperacion, Perfil, Materias, catalogo y Actualizar registros.
+* El shell local queda con `APP_BUILD = 2026.06.30.1`.
+* `sw.js` queda con `facen-app-v10-shell-20260630`.
+
+### Pruebas realizadas
+
+* Comparacion de deployments publicos por GET anonimo.
+* Verificacion de marcadores funcionales en HTML del deployment seleccionado.
+* Revision de archivos a modificar antes del commit.
+
+### Errores o incidentes
+
+* La reconstruccion del libro no cambiaba lo que veia el usuario porque Pages seguia abriendo el deployment historico `@20`.
+
+### Soluciones aplicadas
+
+* Reapuntar GitHub Pages al deployment publico corregido del proyecto GAS asociado.
+* Renovar build y service worker para forzar actualizacion del shell.
+
+### Pendientes
+
+* Verificar despues del push que GitHub Pages publique `APP_BUILD = 2026.06.30.1`.
+* El usuario debe pulsar `Actualizar` o abrir con cache-busting si el navegador conserva el service worker viejo.
+
+### Riesgos
+
+* Si `AKfycbyr...@39` vuelve a quedar restringido por permisos, Pages debera volver a un fallback o publicarse un deployment nuevo desde la cuenta propietaria/autorizada.

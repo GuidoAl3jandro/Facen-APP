@@ -188,3 +188,29 @@ Resultado resumido:
 * El perfil activo `diegomezapy` quedo con carrera canonica y dos asignaturas base compatibles.
 * Se verifico `HTTP 200` en GitHub Pages y en el backend Apps Script publico.
 * No se pudo ejecutar `clasp run` por permisos de la cuenta actual, por lo que no se pudo limpiar `CacheService` desde consola; el cache del Apps Script historico puede tardar unos minutos en expirar.
+
+### 2026-06-30 - Cambio al deployment GAS asociado correcto
+
+Texto del usuario:
+
+```text
+pues veo la misma app y las mismas fallas
+```
+
+```text
+ten en cuenta que el GAS proyecto asociado es https://script.google.com/u/0/home/projects/1mXbo3LGQwW6S3wKtAcCyMHPBDHkm0KFRXaRpBbAcdNAM-8hr5z9FfLZT/edit
+```
+
+Interpretacion operativa:
+
+* GitHub Pages estaba publicado, pero seguia apuntando al deployment historico `@20`, que no contiene recuperacion ni el boton nuevo de actualizar catalogo.
+* El proyecto GAS asociado es el script `1mXbo3LGQwW6S3wKtAcCyMHPBDHkm0KFRXaRpBbAcdNAM-8hr5z9FfLZT`.
+* Se debia usar el deployment publico mas nuevo y funcional de ese mismo proyecto.
+
+Resultado resumido:
+
+* Se probaron 21 deployments versionados del proyecto GAS asociado.
+* `AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg @39` respondio `HTTP 200`.
+* Ese deployment contiene `recoverPassword`, `savePerfil`, `renderMaterias`, `catalogoLoaded` y `Actualizar registros`.
+* Se cambio `APP_URL` en GitHub Pages a `AKfycbyr.../exec`.
+* Se publico `APP_BUILD = 2026.06.30.1` y cache PWA `facen-app-v10-shell-20260630`.
