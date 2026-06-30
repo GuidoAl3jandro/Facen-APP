@@ -335,3 +335,29 @@ Resultado resumido:
 * La prueba anonima de `AKfycbyr.../exec?v=probe47` devolvio `HTTP 403 Acceso denegado`.
 * No se actualizo `APP_URL` de Pages porque apuntar a `AKfycbyr...@47` dejaria la app publica caida.
 * Conclusion: el problema no es el commit/push; falta un deployment Web App publico valido creado desde la cuenta propietaria/autorizada.
+
+### 2026-06-30 - Activacion del deployment v47 publico
+
+Texto del usuario:
+
+```text
+version 47 deployado en https://script.google.com/macros/s/AKfycbxSdWT7GNhw4gB0G-CVytdZnsg5MkwPfjkp4jxRmhzn4yLx9geRRgM9l9PNcKM_tI63Vw/exec
+
+pero igual la app me muesrra la version vieja
+```
+
+Interpretacion operativa:
+
+* El usuario ya habia resuelto el bloqueo principal: existia un `/exec` v47 publico creado desde una cuenta autorizada.
+* La app seguia vieja porque GitHub Pages conservaba `APP_URL = AKfycbxPW.../exec`, `APP_BUILD = 2026.06.30.3` y cache `facen-app-v12-shell-20260630`.
+* Antes de cambiar Pages habia que verificar anonimamente que el nuevo `/exec` realmente respondiera publico y tuviera la app nueva.
+
+Resultado resumido:
+
+* Se probo `AKfycbxSd.../exec?v=probe47-new` y respondio `HTTP 200`.
+* Se verificaron marcadores del frontend nuevo dentro del deployment: `renderAvance`, `month-grid` y `dashboard_secundario`.
+* Se cambio `index.html` para apuntar a `AKfycbxSd.../exec`.
+* Se actualizo `APP_BUILD` a `2026.06.30.4`.
+* Se actualizo `sw.js` a `facen-app-v13-shell-20260630`.
+* Se actualizo README y bitacora para registrar que el deployment v47 ya es publico y que los deployments `AKfycbyr...` / `AKfycbwi0...` quedan restringidos o no recomendados.
+* Pendiente de cierre: commit, push y verificacion de `https://appfacen.github.io/Facen-APP/?v=2026.06.30.4-final`.

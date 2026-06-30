@@ -2083,3 +2083,93 @@
 
 * No confundir commit/push GitHub con despliegue de Apps Script.
 * Hacer la activacion final desde la cuenta propietaria/autorizada y comprobar anonimamente antes de actualizar Pages.
+
+## 2026-06-30 08:33
+
+### Proyecto
+
+* Nombre: FACEN App
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version: Apps Script deployment v47 `AKfycbxSd...`; Pages shell local `APP_BUILD = 2026.06.30.4`
+
+### Objetivo de la intervencion
+
+* Resolver por que el usuario seguia viendo `FACEN App v2026.06.30.3` aunque ya existia un deployment v47 nuevo.
+* Cambiar GitHub Pages para que apunte al deployment v47 publico entregado por el usuario.
+* Renovar cache del service worker para forzar salida de la version vieja.
+
+### Diagnostico inicial
+
+* El usuario informo que la version 47 ya estaba deployada en `AKfycbxSd.../exec`, pero la app publica seguia mostrando la version vieja.
+* La causa probable era el shell de GitHub Pages: `index.html` seguia usando `APP_URL = AKfycbxPW.../exec` y `APP_BUILD = 2026.06.30.3`.
+* El service worker publicado seguia en cache `facen-app-v12-shell-20260630`.
+
+### Acciones realizadas
+
+* Se probo anonimamente el deployment v47 `AKfycbxSd.../exec`.
+* Se verifico que el HTML del deployment v47 contiene marcadores de la app nueva: `renderAvance`, `month-grid` y `dashboard_secundario`.
+* Se actualizo `index.html` para apuntar a `AKfycbxSd.../exec`.
+* Se actualizo `APP_BUILD` a `2026.06.30.4`.
+* Se actualizo `sw.js` a cache `facen-app-v13-shell-20260630`.
+* Se actualizo `README.md` para distinguir deployment v47 publico, deployment moderno restringido y deployment historico de rescate.
+
+### Archivos modificados
+
+* `index.html`
+* `sw.js`
+* `README.md`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+
+### Comandos o scripts ejecutados
+
+* `Invoke-WebRequest https://script.google.com/macros/s/AKfycbxSdWT7GNhw4gB0G-CVytdZnsg5MkwPfjkp4jxRmhzn4yLx9geRRgM9l9PNcKM_tI63Vw/exec?v=probe47-new`
+* `rg -n "APP_URL|APP_BUILD|CACHE_NAME|AKfycbxSd" index.html sw.js README.md BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `git status --branch --short`
+
+### Resultados verificados
+
+* El deployment v47 `AKfycbxSd.../exec?v=probe47-new` respondio `HTTP 200`.
+* El HTML directo del deployment v47 contiene `renderAvance`, `month-grid` y `dashboard_secundario`.
+* El shell local queda con `APP_BUILD = 2026.06.30.4`.
+* El shell local apunta a `AKfycbxSd.../exec`.
+* El service worker local queda con cache `facen-app-v13-shell-20260630`.
+
+### Pruebas realizadas
+
+* Verificacion HTTP anonima del `/exec` v47.
+* Verificacion de marcadores de funcionalidades nuevas dentro del HTML devuelto por Apps Script.
+* Verificacion local de configuracion de Pages y service worker.
+
+### Errores o incidentes
+
+* La app publica seguia mostrando la version anterior porque GitHub Pages no habia sido actualizado al deployment v47.
+* El problema ya no estaba en Apps Script v47, sino en el enlace `APP_URL` y el cache del shell PWA.
+
+### Soluciones aplicadas
+
+* Apuntar GitHub Pages al deployment v47 publico y verificado.
+* Subir version visible `2026.06.30.4`.
+* Cambiar nombre de cache del service worker para invalidar el shell viejo.
+
+### Pendientes
+
+* Hacer commit y push del shell actualizado.
+* Verificar `https://appfacen.github.io/Facen-APP/?v=2026.06.30.4-final` despues del push.
+* Si un navegador conserva cache viejo, usar el boton `Actualizar` o abrir la URL con parametro `?v=2026.06.30.4-final`.
+
+### Riesgos
+
+* GitHub Pages puede demorar algunos minutos en servir el nuevo commit.
+* Un service worker viejo puede mantener el shell `2026.06.30.3` hasta que se abra con cache-busting o se pulse `Actualizar`.
+* El flujo completo de guardado de grupos debe validarse con usuario real en produccion, aunque el deployment v47 ya responde publico.
+
+### Recomendaciones
+
+* No actualizar `APP_URL` si el `/exec` nuevo no responde anonimamente `HTTP 200`.
+* En cada cambio de deployment, renovar `APP_BUILD` y `CACHE_NAME`.
+* Documentar por separado: codigo creado, version Apps Script creada, deployment publico verificado, GitHub Pages actualizado y validacion por usuario.
