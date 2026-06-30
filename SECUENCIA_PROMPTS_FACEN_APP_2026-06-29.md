@@ -161,4 +161,5 @@ Resultado resumido:
 * Se probo actualizar el deployment anterior a `@40` y `@25`; ambos quedaron `HTTP 403`.
 * El deployment anterior `AKfycbzM0... @22` no recupero acceso anonimo despues del rollback.
 * Se probaron deployments historicos y se eligio `AKfycbwi0em5pAGlaVMstzCPxOs7aopGNylBwspSlj9Sx4ZwK_cNMSHiCi5fmPpgP68FoqPHjA @20`, que responde `HTTP 200` y contiene login, Perfil y Materias.
-* Se preparo `APP_BUILD = 2026.06.29.5` y `facen-app-v9-shell-20260629`.
+* Se publico `APP_BUILD = 2026.06.29.5` y `facen-app-v9-shell-20260629`.
+* GitHub Pages quedo `built`; Pages, `sw.js` y backend de destino respondieron `HTTP 200`.

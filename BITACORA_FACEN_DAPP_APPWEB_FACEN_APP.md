@@ -1330,15 +1330,22 @@
 
 * El deployment nuevo elegido `AKfycbwi0em5pAGlaVMstzCPxOs7aopGNylBwspSlj9Sx4ZwK_cNMSHiCi5fmPpgP68FoqPHjA @20` respondio `HTTP 200`.
 * Ese deployment contiene login, `savePerfil`, `renderMaterias` y `catalogoLoaded`.
-* El shell queda preparado para publicar `v2026.06.29.5` apuntando al backend publico funcional.
+* El shell quedo publicado como `v2026.06.29.5` apuntando al backend publico funcional.
 * `sw.js` y el JavaScript embebido validaron sintaxis.
 * `git diff --check` no reporto errores de whitespace, solo advertencias LF/CRLF esperadas.
+* GitHub Pages paso a estado `built`.
+* La URL publica `https://appfacen.github.io/Facen-APP/?cb=...` respondio `HTTP 200`, contiene `APP_BUILD = '2026.06.29.5'` y el deployment `AKfycbwi0...`.
+* `https://appfacen.github.io/Facen-APP/sw.js?cb=...` respondio `HTTP 200` con `facen-app-v9-shell-20260629`.
+* El backend de destino respondio `HTTP 200`, longitud `90378`, con login, `savePerfil`, `renderMaterias` y `catalogoLoaded`.
+* `HEAD` local y `origin/main` quedaron en `4e5cd7795473553b7f13c9265e787e479a82f3bf`.
 
 ### Pruebas realizadas
 
 * Verificacion HTTP anonima de candidatos Apps Script.
 * Validacion sintactica local.
 * Revision de diff.
+* Verificacion de GitHub Pages via API.
+* Verificacion HTTP anonima de Pages, `sw.js` y backend de destino.
 
 ### Errores o incidentes
 
@@ -1351,7 +1358,6 @@
 
 ### Pendientes
 
-* Commit, push y verificacion publica de `v2026.06.29.5`.
 * El usuario debe abrir la URL de Pages y pulsar `Actualizar` para limpiar cache/service worker si venia de una version anterior.
 * Solucion definitiva: publicar el backend actual desde la cuenta propietaria con acceso anonimo real.
 
