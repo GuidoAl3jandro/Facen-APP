@@ -433,3 +433,26 @@ Resultado resumido:
 * Se compuso el cuerpo con bloques redondeados y separacion visible similar a la referencia.
 * Se corrigio mojibake detectado en una primera vista previa usando texto ASCII y bullets simples.
 * Se valido el DOCX con `python-docx`, revision visual de preview y conversion HTML con Pandoc.
+
+### 2026-06-30 - Correccion a guia editable para estudiantes
+
+Texto del usuario:
+
+```text
+este documento deben poder editarlo los estudiantes, y no se ppuede. Ademas debe ser nada mas que una guia
+```
+
+Interpretacion operativa:
+
+* La version visual anterior no servia para distribucion a estudiantes porque el cuerpo estaba embebido como imagen.
+* El documento debia funcionar como plantilla o guia editable, no como poster final del proyecto FACEN App.
+* Era mejor reemplazar el archivo vertical no editable por una guia Word con tablas y texto nativo.
+
+Resultado resumido:
+
+* Se elimino `docs/FACEN_APP_POSTER_RESUMEN_OFICIO_VERTICAL_2026-06-30.docx`.
+* Se genero `docs/FACEN_APP_GUIA_POSTER_EDITABLE_OFICIO_VERTICAL_2026-06-30.docx`.
+* Se mantuvo pagina vertical Oficio y header/footer institucionales.
+* El cuerpo se reconstruyo con tablas y parrafos editables en Word.
+* Se dejo solo contenido guia con placeholders `[Escriba aqui...]`.
+* Se valido que Pandoc extrae texto real del cuerpo, confirmando que ya no es una imagen cerrada.

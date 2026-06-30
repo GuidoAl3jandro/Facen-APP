@@ -2608,3 +2608,85 @@
 ### Recomendaciones
 
 * Mantener este DOCX como plantilla rapida para posters academicos de FACEN App y conservar la version anterior horizontal solo como resumen ejecutivo.
+
+## 2026-06-30 10:31
+
+### Proyecto
+
+* Nombre: FACEN App
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version: guia Word editable oficio vertical `2026-06-30`
+
+### Objetivo de la intervencion
+
+* Corregir el documento tipo poster para que sea editable por estudiantes y quede solamente como guia, no como poster final cerrado.
+
+### Diagnostico inicial
+
+* El documento anterior preservaba bien la apariencia visual, pero el cuerpo del poster estaba embebido como imagen.
+* Esa decision impedia que los estudiantes editaran directamente titulo, autores, resumen y bloques de contenido.
+* El usuario indico que el documento debia ser nada mas que una guia editable.
+
+### Acciones realizadas
+
+* Se elimino el DOCX vertical no editable `docs/FACEN_APP_POSTER_RESUMEN_OFICIO_VERTICAL_2026-06-30.docx`.
+* Se genero `docs/FACEN_APP_GUIA_POSTER_EDITABLE_OFICIO_VERTICAL_2026-06-30.docx`.
+* Se mantuvo pagina vertical Oficio de `8.5 x 13.0` pulgadas.
+* Se mantuvo encabezado con marca FACEN App y pie con datos de asignatura como placeholders editables.
+* Se reconstruyo el cuerpo con tablas y texto nativo de Word, sin imagen de fondo para el contenido.
+* Se dejo contenido minimo tipo guia: titulo, autores, institucion, resumen, introduccion, problema, objetivos, metodologia, resultados y discusion, conclusiones y referencias principales.
+* Se usaron placeholders simples `[Escriba aqui...]` para que el estudiante reemplace directamente el texto.
+
+### Archivos modificados
+
+* `docs/FACEN_APP_GUIA_POSTER_EDITABLE_OFICIO_VERTICAL_2026-06-30.docx`
+* `docs/FACEN_APP_POSTER_RESUMEN_OFICIO_VERTICAL_2026-06-30.docx`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+
+### Comandos o scripts ejecutados
+
+* Generacion DOCX con `python-docx` y `Pillow`.
+* Validacion estructural con `python-docx`.
+* `pandoc .\docs\FACEN_APP_GUIA_POSTER_EDITABLE_OFICIO_VERTICAL_2026-06-30.docx -t html -o %TEMP%\facen_app_guia_poster_editable.html`
+
+### Resultados verificados
+
+* Archivo creado: `docs/FACEN_APP_GUIA_POSTER_EDITABLE_OFICIO_VERTICAL_2026-06-30.docx`.
+* El DOCX tiene pagina vertical Oficio: ancho `8.5` pulgadas y alto `13.0` pulgadas.
+* El paquete conserva solo una imagen multimedia para el logo del encabezado.
+* El cuerpo del documento contiene texto real editable en Word.
+* Pandoc extrajo `TITULO DEL TRABAJO`, `RESUMEN` y los placeholders `[Escriba aqui...]`, confirmando que el contenido no esta cerrado como imagen.
+
+### Pruebas realizadas
+
+* Apertura estructural del DOCX con `python-docx`.
+* Verificacion de dimensiones de pagina.
+* Verificacion de footer con datos de asignatura como placeholders.
+* Conversion DOCX a HTML con Pandoc.
+* Busqueda en HTML convertido de textos editables del cuerpo.
+
+### Errores o incidentes
+
+* La version anterior no era editable para estudiantes porque el cuerpo era una imagen.
+
+### Soluciones aplicadas
+
+* Se sustituyo el cuerpo grafico por una guia editable basada en tablas y parrafos nativos de Word.
+
+### Pendientes
+
+* Si se requiere una apariencia con esquinas redondeadas perfectamente identicas a la referencia, preparar una segunda variante en Word con formas editables. La prioridad de esta correccion fue la editabilidad real.
+
+### Riesgos
+
+* Las tablas de Word son mas editables y robustas para estudiantes, pero no reproducen con total fidelidad las esquinas redondeadas de una composicion grafica cerrada.
+
+### Recomendaciones
+
+* Usar la nueva guia editable como archivo para distribuir a estudiantes.
+* Evitar distribuir la version anterior vertical, porque podia inducir a error al no permitir edicion directa.
