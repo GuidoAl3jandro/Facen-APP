@@ -1190,3 +1190,85 @@
 
 * Si el usuario intenta ingresar con `diego.meza` o `dmeza.py@gmail.com`, esas cuentas no fueron modificadas en esta intervencion.
 * El fallback de Pages mejora el acceso visual, pero no reemplaza la publicacion correcta del backend Apps Script con recuperacion de contrasena.
+
+## 2026-06-29 20:11
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version Git inicial: `d1d424ff322e825543509195b4006bf7a2b93302`
+
+### Objetivo de la intervencion
+
+* Corregir que, despues de acceder, no funcionara la carga de asignaturas para el usuario activo.
+
+### Diagnostico inicial
+
+* La version publica de Apps Script usada por produccion es antigua (`deployment @22`) y no contiene las mejoras recientes del repo para carrera/catalogo.
+* La sesion reciente activa correspondia a `id_usuario = 8`, `username = diegomezapy`, no a `id_usuario = 4`.
+* El perfil `ESTUDIANTES!A8:L8` tenia `carrera = Estadística`.
+* El catalogo de `ASIGNATURAS` usa como carrera canonica `Licenciatura en Ciencias Mencion Matematica Estadistica`.
+* La version publica vieja puede no resolver alias o carreras abreviadas, por lo que el catalogo podia quedar vacio o sin carga visible.
+
+### Acciones realizadas
+
+* Se leyo la version publica real del HTML Apps Script y se confirmo que no tiene el selector/carga nueva del repo.
+* Se revisaron `ASIGNATURAS`, `SECCIONES`, `HORARIOS_ASIGNATURAS`, `CARRERAS`, `ESTUDIANTES`, `INSCRIPCIONES` y `SESIONES`.
+* Se normalizo `ESTUDIANTES!I8` desde `Estadística` a `Licenciatura en Ciencias Mencion Matematica Estadistica`.
+* Se agrego log tecnico en `LOGS` con accion `NORMALIZAR_CARRERA_ASIGNATURAS`.
+
+### Archivos modificados
+
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+
+### Datos modificados
+
+* Google Sheets `FACEN_APP`
+* Hoja `ESTUDIANTES`, celda `I8`
+* Hoja `LOGS`, fila `A48:E48`
+
+### Comandos o scripts ejecutados
+
+* `git status --branch --short`
+* `Invoke-WebRequest https://script.google.com/macros/s/.../exec?v=debug-asignaturas`
+* Lecturas acotadas de Google Sheets: `ASIGNATURAS`, `SECCIONES`, `HORARIOS_ASIGNATURAS`, `CARRERAS`, `ESTUDIANTES`, `INSCRIPCIONES`, `SESIONES`, `LOGS`
+* Batch update de Google Sheets sobre `ESTUDIANTES!I8`
+* Append de log en `LOGS`
+
+### Resultados verificados
+
+* `ESTUDIANTES!A8:L8` quedo con `id_usuario = 8`, `username asociado = diegomezapy`, `carrera = Licenciatura en Ciencias Mencion Matematica Estadistica`.
+* La busqueda en `ASIGNATURAS` para esa carrera devolvio 4 asignaturas activas: `MAT201`, `MAT120`, `MAT101`, `MAT330`.
+* `SECCIONES` y `HORARIOS_ASIGNATURAS` tienen secciones y horarios numericos compatibles con la version publica vieja.
+* El log tecnico quedo en `LOGS!A48:E48`, `id_log = 46`, accion `NORMALIZAR_CARRERA_ASIGNATURAS`.
+* No se modificaron contrasenas ni otras cuentas.
+
+### Pruebas realizadas
+
+* Lectura posterior de `ESTUDIANTES!A8:L8`.
+* Busqueda acotada de asignaturas por la carrera canonica.
+* Busqueda acotada del log `NORMALIZAR_CARRERA_ASIGNATURAS`.
+* Verificacion de que el repo estaba limpio antes de documentar.
+
+### Errores o incidentes
+
+* El registro reciente del usuario quedo con carrera abreviada, incompatible con la carga de catalogo de la version publica antigua.
+
+### Soluciones aplicadas
+
+* Normalizacion de carrera del perfil activo a la denominacion canonica del catalogo.
+
+### Pendientes
+
+* El usuario debe recargar la app o pulsar `Actualizar` en la vista Materias para que el frontend vuelva a solicitar el catalogo.
+* Solucion permanente: publicar la version nueva de Apps Script que ya contiene manejo mas robusto de carreras y catalogo.
+
+### Riesgos
+
+* Mientras produccion siga en el deployment antiguo `@22`, perfiles con carreras abreviadas o variantes pueden volver a quedar sin catalogo.

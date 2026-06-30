@@ -120,3 +120,24 @@ Resultado resumido:
 * Se agrego log tecnico `RESET_CONTRASENA_ASISTIDO` sin clave temporal en `LOGS!A42:E42`.
 * Se publico `APP_BUILD = 2026.06.29.4`, boton `Entrar` y fallback de acceso directo.
 * GitHub Pages quedo `built`; el HTML publico y `sw.js` respondieron `HTTP 200` con el build y cache nuevos.
+
+### 2026-06-29 - Carga de asignaturas
+
+Texto del usuario:
+
+```text
+ya puedo acceder pero , no funciona la carga de asignaturas
+```
+
+Interpretacion operativa:
+
+* El acceso ya funciona, pero el catalogo no carga para el usuario activo.
+* Revisar perfil, carrera, catalogo y version publica real antes de tocar el deployment Apps Script.
+
+Resultado resumido:
+
+* Se identifico que la sesion activa reciente era de `diegomezapy` (`id_usuario = 8`).
+* Su perfil tenia `carrera = Estadística`, mientras el catalogo usa `Licenciatura en Ciencias Mencion Matematica Estadistica`.
+* Se normalizo `ESTUDIANTES!I8` a la carrera canonica.
+* Se verificaron 4 asignaturas activas para esa carrera: `MAT201`, `MAT120`, `MAT101`, `MAT330`.
+* Se registro `NORMALIZAR_CARRERA_ASIGNATURAS` en `LOGS!A48:E48`.
