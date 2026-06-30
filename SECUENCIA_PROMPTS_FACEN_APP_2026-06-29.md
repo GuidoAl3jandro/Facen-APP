@@ -360,4 +360,7 @@ Resultado resumido:
 * Se actualizo `APP_BUILD` a `2026.06.30.4`.
 * Se actualizo `sw.js` a `facen-app-v13-shell-20260630`.
 * Se actualizo README y bitacora para registrar que el deployment v47 ya es publico y que los deployments `AKfycbyr...` / `AKfycbwi0...` quedan restringidos o no recomendados.
-* Pendiente de cierre: commit, push y verificacion de `https://appfacen.github.io/Facen-APP/?v=2026.06.30.4-final`.
+* Se hizo commit `a74781c` y push a `origin/main`.
+* Se verifico `https://appfacen.github.io/Facen-APP/?v=verify-20260630-4-084111`: `HTTP 200`, contiene `APP_BUILD = 2026.06.30.4` y el deployment `AKfycbxSd...`.
+* Se verifico `sw.js`: contiene `facen-app-v13-shell-20260630`.
+* Se genero captura publica con Playwright: el shell muestra `FACEN App v2026.06.30.4` y carga el login dentro del iframe.

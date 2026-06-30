@@ -44,7 +44,8 @@ El catalogo operativo usa este orden: snapshot CSV generado desde Google Sheets,
 
 ## Estado operativo verificado 2026-06-30
 
-- `https://appfacen.github.io/Facen-APP/` queda preparado con `APP_BUILD = 2026.06.30.4` y apunta al deployment publico v47 `AKfycbxSd...`, verificado anonimamente con `HTTP 200` y marcadores de calendario real, vista `Avance` y bootstrap liviano.
+- `https://appfacen.github.io/Facen-APP/` quedo publicado y verificado con `APP_BUILD = 2026.06.30.4`; apunta al deployment publico v47 `AKfycbxSd...`, verificado anonimamente con `HTTP 200` y marcadores de calendario real, vista `Avance` y bootstrap liviano.
+- Commit de activacion en GitHub Pages: `a74781c`.
 - Se cargaron fechas de examenes desde `Guia-Academica-2026-2.pdf`: 28 filas en `FECHAS_EXAMENES` y 24 eventos visibles para `diegomezapy` en `AGENDA_ACADEMICA`.
 - El libro operativo fue corregido para que las columnas de fecha/hora se lean como texto; esto evita que el `bootstrap` pierda Perfil e Inscripciones por objetos `Date` de Google Sheets.
 - El codigo defensivo para convertir `Date` a texto, el guardado robusto de grupos, el calendario real, la vista `Avance`, la malla `MALLA_ACADEMICA`, las correlatividades `CORRELATIVIDADES` y la optimizacion de carga inicial quedan incluidos en el deployment publico v47 `AKfycbxSd...`.

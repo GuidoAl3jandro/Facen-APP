@@ -2173,3 +2173,93 @@
 * No actualizar `APP_URL` si el `/exec` nuevo no responde anonimamente `HTTP 200`.
 * En cada cambio de deployment, renovar `APP_BUILD` y `CACHE_NAME`.
 * Documentar por separado: codigo creado, version Apps Script creada, deployment publico verificado, GitHub Pages actualizado y validacion por usuario.
+
+## 2026-06-30 08:45
+
+### Proyecto
+
+* Nombre: FACEN App
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version: `APP_BUILD = 2026.06.30.4`, cache `facen-app-v13-shell-20260630`, commit `a74781c`
+
+### Objetivo de la intervencion
+
+* Cerrar la activacion publica del deployment Apps Script v47 en GitHub Pages.
+* Verificar que el cambio ya este visible en la URL publica y no solo en el repositorio.
+
+### Diagnostico inicial
+
+* El commit `a74781c` fue creado y empujado a `origin/main`.
+* La API de GitHub Pages confirma fuente `main` en ruta `/` y estado `built`.
+* Durante los primeros segundos posteriores al push, Pages pudo servir una copia vieja; luego el HTML publico ya mostro la version nueva.
+
+### Acciones realizadas
+
+* Se hizo `git push origin main`.
+* Se consulto la URL publica de Pages con cache-busting.
+* Se consulto `sw.js` publico con cache-busting.
+* Se consulto el deployment Apps Script v47 directo.
+* Se verifico la configuracion Pages con `gh api`.
+* Se genero captura publica con Playwright CLI fuera del repositorio.
+
+### Archivos modificados
+
+* `README.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* `git commit -m "Publicar deployment GAS version 47 en Pages"`
+* `git push origin main`
+* `Invoke-WebRequest https://appfacen.github.io/Facen-APP/?v=verify-20260630-4-084111`
+* `Invoke-WebRequest https://appfacen.github.io/Facen-APP/sw.js?v=verify-20260630-4-084111`
+* `Invoke-WebRequest https://script.google.com/macros/s/AKfycbxSdWT7GNhw4gB0G-CVytdZnsg5MkwPfjkp4jxRmhzn4yLx9geRRgM9l9PNcKM_tI63Vw/exec?v=verify-public-pages`
+* `gh api repos/appfacen/Facen-APP/pages --jq '{url: .html_url, status: .status, cname: .cname, source: .source}'`
+* `npx playwright screenshot --wait-for-selector '#shell-version' --wait-for-timeout 3000 --viewport-size "1366,900" https://appfacen.github.io/Facen-APP/?v=shot-20260630-4-084308 C:\Users\Diego\AppData\Local\Temp\facen-app-pages-20260630-4.png`
+
+### Resultados verificados
+
+* GitHub Pages: `HTTP 200`, contiene `APP_BUILD = '2026.06.30.4'`.
+* GitHub Pages: contiene el deployment `AKfycbxSdWT7GNhw4gB0G-CVytdZnsg5MkwPfjkp4jxRmhzn4yLx9geRRgM9l9PNcKM_tI63Vw`.
+* `sw.js`: `HTTP 200`, contiene `facen-app-v13-shell-20260630`.
+* Apps Script v47 directo: `HTTP 200`, contiene `renderAvance`, `month-grid` y `dashboard_secundario`.
+* GitHub Pages config: `status = built`, `source.branch = main`, `source.path = /`.
+* Captura Playwright: el shell muestra `FACEN App v2026.06.30.4` y carga el login dentro del iframe.
+
+### Pruebas realizadas
+
+* Verificacion HTTP publica de Pages.
+* Verificacion HTTP publica del service worker.
+* Verificacion HTTP publica del deployment Apps Script v47.
+* Verificacion de configuracion GitHub Pages via GitHub CLI.
+* Evidencia visual con navegador automatizado.
+
+### Errores o incidentes
+
+* El primer intento de encadenar `git add` y `git commit` con `&&` fallo porque esta sesion de PowerShell no acepta ese separador; se ejecuto luego en comandos separados.
+* El primer muestreo de Pages despues del push alcanzo a ver una version vieja durante la propagacion normal; minutos despues Pages sirvio el HTML nuevo.
+
+### Soluciones aplicadas
+
+* Commit y push del shell nuevo.
+* Verificacion posterior al push con cache-busting.
+* Documentacion actualizada para que el estado operativo ya no quede como pendiente.
+
+### Pendientes
+
+* Validacion funcional por usuario real de guardado de grupos, carga de asignaturas y vista de avance dentro de la sesion propia.
+* Si un dispositivo conserva `v2026.06.30.3`, usar `Actualizar` o abrir `https://appfacen.github.io/Facen-APP/?v=2026.06.30.4-final`.
+
+### Riesgos
+
+* Navegadores con service worker previo pueden requerir una recarga forzada.
+* Si el deployment v47 pierde permisos, Pages seguira cargando el shell nuevo pero el iframe podria fallar; conservar la regla de verificar `/exec` anonimo.
+
+### Recomendaciones
+
+* Para futuras versiones, repetir la secuencia: probar `/exec` nuevo anonimo, cambiar `APP_URL`, subir `APP_BUILD`, renovar `CACHE_NAME`, commit/push, verificar Pages y documentar evidencia.
