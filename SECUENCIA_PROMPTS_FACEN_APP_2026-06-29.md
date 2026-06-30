@@ -163,3 +163,28 @@ Resultado resumido:
 * Se probaron deployments historicos y se eligio `AKfycbwi0em5pAGlaVMstzCPxOs7aopGNylBwspSlj9Sx4ZwK_cNMSHiCi5fmPpgP68FoqPHjA @20`, que responde `HTTP 200` y contiene login, Perfil y Materias.
 * Se publico `APP_BUILD = 2026.06.29.5` y `facen-app-v9-shell-20260629`.
 * GitHub Pages quedo `built`; Pages, `sw.js` y backend de destino respondieron `HTTP 200`.
+
+### 2026-06-29 - Reconstruccion completa del libro operativo
+
+Texto del usuario:
+
+```text
+no funciona nada, porque no reconstruimos todo absolutamente de nuevo creando el lirbo en linea que tnga las hojas y datos correctos para asegurar que la appweb funciones super bien y con rapidez
+```
+
+Interpretacion operativa:
+
+* El problema ya no se trataba como una correccion puntual de perfil o asignaturas.
+* Como el backend publico funcional `AKfycbwi0...@20` usa el spreadsheet existente, crear otro libro con otro ID no resolveria la app publica sin redeploy GAS.
+* La ruta segura fue respaldar el spreadsheet existente y reconstruirlo in-place con hojas, encabezados y datos compatibles.
+
+Resultado resumido:
+
+* Se creo respaldo completo previo: `https://docs.google.com/spreadsheets/d/1j3vn6kjy0tMZU2IdD6qzQUBrhX_7AkZNxe8IPtg78Hw`.
+* Se crearon hojas temporales `REBUILD_*`, se verificaron y luego reemplazaron las hojas productivas.
+* El libro productivo conserva el ID usado por la app: `1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc`.
+* Quedaron 22 pestanas productivas, 12 carreras, 17 asignaturas, 17 secciones, 25 horarios, 8 aulas y 5 inscripciones base.
+* Se limpiaron sesiones viejas y se preservaron credenciales existentes de usuarios activos.
+* El perfil activo `diegomezapy` quedo con carrera canonica y dos asignaturas base compatibles.
+* Se verifico `HTTP 200` en GitHub Pages y en el backend Apps Script publico.
+* No se pudo ejecutar `clasp run` por permisos de la cuenta actual, por lo que no se pudo limpiar `CacheService` desde consola; el cache del Apps Script historico puede tardar unos minutos en expirar.

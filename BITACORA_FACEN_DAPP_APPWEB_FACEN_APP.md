@@ -1365,3 +1365,120 @@
 
 * `@20` no contiene todas las mejoras modernas del repo, pero es publico y funcional para Perfil/Materias.
 * La recuperacion automatica de contrasena no queda resuelta en `@20`.
+
+## 2026-06-29 20:55
+
+### Proyecto
+
+* Nombre: FACEN App / DAPP appweb
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica canonica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version Git inicial: `4e5cd7795473553b7f13c9265e787e479a82f3bf`
+
+### Objetivo de la intervencion
+
+* Reconstruir de forma integral el libro Google Sheets operativo para eliminar inconsistencias de hojas, perfiles, asignaturas, horarios, inscripciones y sesiones.
+* Mantener el ID del spreadsheet que ya usa el backend publico funcional para no depender de un redeploy Apps Script bloqueado por permisos.
+
+### Diagnostico inicial
+
+* El usuario informo que "no funciona nada" y propuso reconstruir el libro completo.
+* La app publica actualmente usa GitHub Pages `v2026.06.29.5` apuntando al deployment historico publico `AKfycbwi0...@20`.
+* Ese deployment apunta al spreadsheet existente `1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc`; crear un libro nuevo con otro ID no seria leido por la app publica sin publicar otro deployment GAS.
+* `clasp run diagnosticoCatalogoRapido` fallo con falta de permiso para ejecutar funciones del script desde la cuenta actual.
+
+### Acciones realizadas
+
+* Se creo copia completa de respaldo del spreadsheet productivo antes de modificar datos.
+* Se leyo metadata del spreadsheet y rangos acotados de hojas criticas.
+* Se crearon hojas temporales `REBUILD_*` dentro del mismo spreadsheet con esquema limpio y datos compatibles.
+* Se verificaron las hojas temporales antes de reemplazar produccion.
+* Se eliminaron las hojas productivas viejas y se renombraron las hojas `REBUILD_*` a los nombres productivos.
+* Se aplico formato operativo minimo: encabezado congelado, filtros y autoajuste de columnas.
+* Se preservaron credenciales existentes de usuarios activos; no se registraron contrasenas ni hashes en archivos del repo.
+* Se limpiaron sesiones viejas reconstruyendo `SESIONES` solo con encabezado.
+* Se restauro el hash original de la cuenta demo luego de una preparacion temporal de prueba que no llego a ejecutar login.
+
+### Archivos modificados
+
+* `README.md`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+* `docs/FACEN_APP_LIBRO_OPERATIVO_2026-06-29.md`
+
+### Datos modificados
+
+* Spreadsheet productivo: `https://docs.google.com/spreadsheets/d/1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc/edit`
+* Respaldo previo: `https://docs.google.com/spreadsheets/d/1j3vn6kjy0tMZU2IdD6qzQUBrhX_7AkZNxe8IPtg78Hw`
+* Hojas productivas reconstruidas: 22.
+* Carreras: 12.
+* Asignaturas: 17.
+* Secciones: 17.
+* Horarios: 25.
+* Aulas: 8.
+* Inscripciones base: 5.
+
+### Comandos o scripts ejecutados
+
+* `git status --branch --short`
+* `npx clasp status`
+* `npx clasp run diagnosticoCatalogoRapido`
+* `Invoke-WebRequest` contra GitHub Pages y Apps Script publico.
+* Lecturas acotadas de Google Sheets mediante conector.
+* Copia de respaldo de Drive mediante conector.
+* `batchUpdate` de Google Sheets para crear `REBUILD_*`, intercambiar hojas y aplicar formato.
+
+### Resultados verificados
+
+* El respaldo completo previo quedo creado en Drive.
+* El spreadsheet productivo conserva el mismo ID usado por la app publica.
+* No quedan hojas `REBUILD_*` despues del intercambio final.
+* `USUARIOS`, `ESTUDIANTES`, `ASIGNATURAS`, `SECCIONES`, `HORARIOS_ASIGNATURAS`, `INSCRIPCIONES`, `PREFERENCIAS_ESTUDIANTE` y `LOGS` fueron releidos despues de la reconstruccion.
+* `HORARIOS_ASIGNATURAS` muestra horas como texto (`08:00`, `09:30`, etc.) y no como fracciones numericas.
+* `diegomezapy` conserva perfil activo con carrera canonica `Licenciatura en Ciencias Mencion Matematica Estadistica`.
+* `INSCRIPCIONES` contiene asignaturas base compatibles para el perfil activo.
+* GitHub Pages respondio `HTTP 200`, contiene `APP_BUILD = 2026.06.29.5` y apunta al backend `AKfycbwi0...`.
+* El backend Apps Script publico respondio `HTTP 200` y contiene funciones/elementos de Perfil y Materias.
+
+### Pruebas realizadas
+
+* Verificacion de metadata del spreadsheet antes y despues.
+* Lectura de rangos criticos antes de reconstruir, en hojas temporales y luego en hojas productivas.
+* Verificacion HTTP anonima de GitHub Pages con cache-busting.
+* Verificacion HTTP anonima del backend Apps Script con cache-busting.
+* Intento de prueba de ejecucion `clasp run`, bloqueado por permisos.
+* Intento de preparar prueba headless con Playwright sin modificar dependencias; no se completo porque el modulo no estaba disponible para `require` en el repo.
+
+### Errores o incidentes
+
+* `clasp run diagnosticoCatalogoRapido` no pudo ejecutarse: la cuenta actual no tiene permiso para correr funciones del proyecto Apps Script.
+* No se pudo vaciar `CacheService` del Apps Script historico desde consola; el cache del catalogo podria tardar unos minutos en expirar.
+* La prueba headless de login no se completo sin instalar dependencia adicional; no se dejo cambio de contrasena demo.
+
+### Soluciones aplicadas
+
+* Reconstruccion in-place del spreadsheet usado por produccion, con respaldo completo previo.
+* Limpieza de sesiones viejas para forzar tokens nuevos.
+* Normalizacion de carrera y catalogo para que Perfil y Materias compartan denominaciones compatibles.
+* Documentacion de esquema operativo sin credenciales.
+
+### Pendientes
+
+* El usuario debe cerrar sesion/recargar la app y volver a ingresar para generar un token nuevo.
+* Si la app muestra catalogo viejo, esperar unos minutos o usar el boton `Actualizar`; el cache Apps Script historico expira automaticamente.
+* Publicacion definitiva sigue requiriendo que la cuenta propietaria/autorizada publique el Apps Script actual con acceso anonimo real.
+
+### Riesgos
+
+* Mientras se use el deployment historico `@20`, la app queda limitada por el codigo de esa version aunque el libro ya este limpio.
+* El cambio de sheetId interno de las pestanas no afecta el backend porque el codigo busca por nombre, pero cualquier automatizacion externa que apunte a sheetIds viejos debera actualizarse.
+* Sin permiso de ejecucion Apps Script no se puede probar login por API ni limpiar cache desde consola.
+
+### Recomendaciones
+
+* Mantener este spreadsheet como libro operativo canonico mientras `AKfycbwi0...@20` siga siendo el backend publico.
+* No crear otro spreadsheet como backend real hasta poder publicar un nuevo deployment Apps Script que apunte al nuevo ID.
+* Cuando se recupere permiso GAS, ejecutar una prueba de login real y publicar la version actual con recuperacion de contrasena y cache moderno.

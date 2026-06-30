@@ -33,7 +33,7 @@ El despliegue puede ser anonimo porque la aplicacion maneja sesiones por token p
 - Spreadsheet: `https://docs.google.com/spreadsheets/d/1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc/edit`
 - Apps Script: `https://script.google.com/d/1mXbo3LGQwW6S3wKtAcCyMHPBDHkm0KFRXaRpBbAcdNAM-8hr5z9FfLZT/edit`
 - Web app deployment corregido pendiente de publicacion efectiva: `AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg`
-- Web app fallback actualmente usado por GitHub Pages: `AKfycbzM0NMEZ57YImDz3puF5Ma4YT-tvwcZtjugGNuVWPsphnLWcddw6L_Snv_Vr6eSba7HyQ`
+- Web app fallback actualmente usado por GitHub Pages: `AKfycbwi0em5pAGlaVMstzCPxOs7aopGNylBwspSlj9Sx4ZwK_cNMSHiCi5fmPpgP68FoqPHjA`
 - GitHub Pages: `https://appfacen.github.io/Facen-APP/`
 
 La raiz del repositorio contiene el shell PWA instalable de GitHub Pages (`index.html`, `manifest.webmanifest`, `sw.js`, `icon.svg`). La aplicacion real vive en Apps Script porque usa `google.script.run` para comunicarse con el backend. El catalogo rapido de asignaturas y horarios 2026-2 viaja embebido en `apps-script/catalogo_csv.html` para reducir lecturas iniciales de Google Sheets.
@@ -42,11 +42,22 @@ El catalogo operativo usa este orden: snapshot CSV generado desde Google Sheets,
 
 ## Estado operativo verificado 2026-06-29
 
-- `https://appfacen.github.io/Facen-APP/` responde `HTTP 200` y muestra el login de la app en escritorio y movil mediante el fallback publico `AKfycbzM0...@22`.
+- `https://appfacen.github.io/Facen-APP/` responde `HTTP 200` y apunta al fallback publico funcional `AKfycbwi0...@20`.
 - El codigo corregido fue empujado a Apps Script HEAD y se creo la version `40`, pero los deployments versionados generados o redeployados desde la cuenta `apoyomedicoips@gmail.com` responden `HTTP 403 / Necesitas acceso`.
 - El deployment corregido `AKfycbyr...@39` no debe usarse como `APP_URL` hasta que responda anonimamente `HTTP 200`.
-- No redeployar el fallback publico `AKfycbzM0...@22` desde una cuenta que no sea propietaria/autorizada, porque las pruebas de 2026-06-29 confirmaron que un deployment historico publico puede quedar restringido al redeployarse desde la cuenta actual.
+- No redeployar deployments historicos publicos desde una cuenta que no sea propietaria/autorizada, porque las pruebas de 2026-06-29 confirmaron que un deployment historico publico puede quedar restringido al redeployarse desde la cuenta actual.
 - Para publicar la version corregida, abrir Apps Script con la cuenta propietaria o una cuenta explicitamente autorizada para desplegar Web Apps publicos, publicar la version actual con acceso `Anyone`, verificar `/exec` anonimo y recien despues cambiar `APP_URL` en `index.html`.
+
+## Libro operativo reconstruido 2026-06-29
+
+- Spreadsheet productivo reconstruido in-place: `https://docs.google.com/spreadsheets/d/1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc/edit`
+- Respaldo completo previo a reconstruccion: `https://docs.google.com/spreadsheets/d/1j3vn6kjy0tMZU2IdD6qzQUBrhX_7AkZNxe8IPtg78Hw`
+- Motivo de la reconstruccion in-place: el deployment publico funcional `AKfycbwi0...@20` apunta al spreadsheet existente. Crear otro spreadsheet sin redeploy de Apps Script no seria visto por la app publica.
+- Se reconstruyeron 22 pestanas productivas con encabezados congelados, filtros y formato simple: usuarios, sesiones, perfiles, carreras, asignaturas, secciones, horarios, aulas, inscripciones, notas, apuntes, eventos, lecturas, grupos, agenda, preferencias, logs y pestanas legacy.
+- Se limpiaron sesiones para evitar tokens viejos y se preservaron las credenciales existentes de usuarios activos.
+- El perfil activo `diegomezapy` quedo asociado a `Licenciatura en Ciencias Mencion Matematica Estadistica` y con inscripciones base compatibles (`MAT201`, `MAT120`).
+
+La especificacion sin credenciales del libro reconstruido queda en `docs/FACEN_APP_LIBRO_OPERATIVO_2026-06-29.md`.
 
 ## Comandos utiles
 
