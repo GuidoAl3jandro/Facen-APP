@@ -364,3 +364,29 @@ Resultado resumido:
 * Se verifico `https://appfacen.github.io/Facen-APP/?v=verify-20260630-4-084111`: `HTTP 200`, contiene `APP_BUILD = 2026.06.30.4` y el deployment `AKfycbxSd...`.
 * Se verifico `sw.js`: contiene `facen-app-v13-shell-20260630`.
 * Se genero captura publica con Playwright: el shell muestra `FACEN App v2026.06.30.4` y carga el login dentro del iframe.
+
+### 2026-06-30 - Agenda automatica por matricula
+
+Texto del usuario:
+
+```text
+la agenda deberia por defecto cargar ya las fechas de examenes de las asignaturas y de los dias de clases y horarios en las asignatruas matriculadas del estudiante
+```
+
+Interpretacion operativa:
+
+* La agenda no debia depender solo de eventos manuales en `AGENDA_ACADEMICA`.
+* Para cualquier estudiante, la app debe combinar eventos manuales con clases recurrentes desde las inscripciones activas y examenes desde `FECHAS_EXAMENES`.
+* Los eventos automaticos no deben poder borrarse como si fueran personales.
+
+Resultado resumido:
+
+* Se leyo la planilla real `FACEN_APP`: `FECHAS_EXAMENES` tiene 28 filas con `id_asignatura`, `tipo`, `fecha`, `hora`.
+* Se implemento en `apps-script/Code.gs` la agenda derivada desde `INSCRIPCIONES` + horarios y desde `FECHAS_EXAMENES`.
+* Se agrego deduplicacion para no repetir examenes ya cargados manualmente ni equivalencias `202/1013` de Algebra Lineal I.
+* Se ajusto `apps-script/index.html` para mostrar eventos automaticos en modo solo lectura, sin boton eliminar.
+* Se valido sintaxis local de backend/frontend y se simulo `obtenerMiAgenda_` con datos reales.
+* Se subio Apps Script HEAD y se creo version `50`.
+* Al intentar actualizar `AKfycbxSd...` a `@50` desde `apoyomedicoips@gmail.com`, el deployment quedo `HTTP 403`; el rollback a `@49` no recupero acceso anonimo.
+* Para no dejar la app publica caida, GitHub Pages se preparo con `APP_BUILD = 2026.06.30.5`, cache `facen-app-v14-shell-20260630` y backend publico `AKfycbyr...@48`.
+* Pendiente critico: activar version `50` desde la cuenta propietaria/autorizada y verificar `/exec` anonimo antes de volver a apuntar Pages al deployment definitivo.

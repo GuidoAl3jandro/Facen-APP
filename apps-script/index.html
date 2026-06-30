@@ -340,6 +340,10 @@
     .calendar-event.examen { border-left-color: var(--danger); background: #fff0ef; }
     .calendar-event.entrega { border-left-color: #8b6414; background: #fff7e6; }
     .calendar-event.reunion { border-left-color: #356c9d; background: #edf5ff; }
+    .calendar-event.automatic { border-style: solid; border-width: 1px 1px 1px 4px; border-color: rgba(22,108,112,.2) rgba(22,108,112,.2) rgba(22,108,112,.2) var(--primary); }
+    .calendar-event.examen.automatic { border-left-color: var(--danger); }
+    .calendar-event.entrega.automatic { border-left-color: #8b6414; }
+    .calendar-event.reunion.automatic { border-left-color: #356c9d; }
     .week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
     .week-col { min-height: 360px; border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 10px; display: grid; align-content: start; gap: 8px; }
     .day-view { display: grid; gap: 8px; }
@@ -1177,15 +1181,17 @@
       rows = rows.slice(0, 60);
       return '<div class="list">' + (rows.map(function(row) {
         var a = row.event;
-        return '<div class="item agenda-list-row"><div><strong>' + esc(formatDateShort(row.day)) + '</strong><div class="sub">' + esc(dayNamesShort()[dayOrderFromDate(row.day)]) + '</div></div><div>' + renderCalendarEvent(a) + '</div><div><button class="btn btn-danger btn-small" onclick="deleteAgenda(' + a.id_agenda + ')">Eliminar</button></div></div>';
+        var action = isDerivedAgenda(a) ? '<span class="badge">Automatico</span>' : '<button class="btn btn-danger btn-small" onclick="deleteAgenda(' + a.id_agenda + ')">Eliminar</button>';
+        return '<div class="item agenda-list-row"><div><strong>' + esc(formatDateShort(row.day)) + '</strong><div class="sub">' + esc(dayNamesShort()[dayOrderFromDate(row.day)]) + '</div></div><div>' + renderCalendarEvent(a) + '</div><div>' + action + '</div></div>';
       }).join('') || '<div class="empty">No hay eventos proximos.</div>') + '</div>';
     }
 
     function renderCalendarEvent(a) {
       var tipo = String(a.tipo || '').toLowerCase();
-      return '<button class="calendar-event ' + escAttr(tipo) + '" onclick="event.stopPropagation(); openAgenda(' + a.id_agenda + ')">' +
+      var automatic = isDerivedAgenda(a);
+      return '<button class="calendar-event ' + escAttr(tipo + (automatic ? ' automatic' : '')) + '" onclick="event.stopPropagation(); openAgenda(' + a.id_agenda + ')">' +
         '<strong>' + esc(a.titulo || 'Sin titulo') + '</strong>' +
-        '<span>' + esc([eventTime(a), a.nombre_asignatura, a.sala].filter(Boolean).join(' - ')) + '</span>' +
+        '<span>' + esc([eventTime(a), a.nombre_asignatura, a.sala, automatic ? 'Automatico' : ''].filter(Boolean).join(' - ')) + '</span>' +
       '</button>';
     }
 
@@ -1632,6 +1638,7 @@
 
     function openAgenda(id, tipo, fecha) {
       var a = id ? State.data.agenda.find(function(x) { return x.id_agenda == id; }) : {};
+      if (id && isDerivedAgenda(a)) return openAgendaInfo(a);
       a = a || { tipo: tipo || 'clase', alerta_activa: 1, minutos_antes: 15, fecha_iso: fecha || '' };
       if (!id && fecha) a.fecha_iso = fecha;
       var foot = (id ? '<button class="btn btn-danger" onclick="deleteAgenda(' + id + ')">Eliminar</button>' : '') +
@@ -1646,6 +1653,25 @@
         '<div class="field"><label>Mapa o ubicacion</label><input class="input" name="mapa_url" value="' + escAttr(a.mapa_url) + '" placeholder="Link de Google Maps o plano FACEN"></div>' +
         '<div class="field"><label>Notas</label><textarea class="textarea" name="notas">' + esc(a.notas) + '</textarea></div></form>',
         foot);
+    }
+    function openAgendaInfo(a) {
+      if (!a) return;
+      var when = a.fecha_iso ? formatDateShort(parseDateKey(a.fecha_iso)) : (a.dia || 'Sin fecha');
+      var detail = [
+        ['Tipo', a.tipo],
+        ['Asignatura', a.nombre_asignatura],
+        ['Fecha o dia', when],
+        ['Hora', eventTime(a)],
+        ['Aula', a.sala],
+        ['Edificio', a.edificio],
+        ['Origen', a.origen === 'fechas_examenes' ? 'Guia academica / FECHAS_EXAMENES' : 'Matricula y horario de seccion']
+      ].filter(function(row) { return row[1]; }).map(function(row) {
+        return '<div class="item"><div class="title">' + esc(row[0]) + '</div><div class="sub">' + esc(row[1]) + '</div></div>';
+      }).join('');
+      openModal('Agenda academica', '<div class="status-row"><span class="badge">Automatico</span></div><h3>' + esc(a.titulo || 'Evento academico') + '</h3><div class="list">' + detail + '</div>' + (a.notas ? '<p class="sub">' + esc(a.notas) + '</p>' : ''), '<button class="btn btn-primary" onclick="closeModal()">Cerrar</button>');
+    }
+    function isDerivedAgenda(a) {
+      return !!(a && (String(a.derivado) === '1' || String(a.editable) === '0' || a.origen));
     }
     function saveAgenda(evt) {
       var btn = busyButton(evt, 'Guardando...');
@@ -1662,6 +1688,8 @@
       }, function() { releaseButton(btn); });
     }
     function deleteAgenda(id) {
+      var existing = State.data.agenda.find(function(x) { return x.id_agenda == id; });
+      if (isDerivedAgenda(existing)) return toast('Este evento se genera automaticamente desde tu matricula.', 'warn');
       if (!confirm('Eliminar esta entrada?')) return;
       server('eliminarAgenda', [State.token, id], function(res) {
         if (res.agenda) State.data.agenda = res.agenda;

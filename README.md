@@ -33,8 +33,8 @@ El despliegue puede ser anonimo porque la aplicacion maneja sesiones por token p
 
 - Spreadsheet: `https://docs.google.com/spreadsheets/d/1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc/edit`
 - Apps Script: `https://script.google.com/d/1mXbo3LGQwW6S3wKtAcCyMHPBDHkm0KFRXaRpBbAcdNAM-8hr5z9FfLZT/edit`
-- Web app deployment actualmente usado por GitHub Pages: `AKfycbxSdWT7GNhw4gB0G-CVytdZnsg5MkwPfjkp4jxRmhzn4yLx9geRRgM9l9PNcKM_tI63Vw`
-- Web app moderno restringido, no usar en Pages: `AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg`
+- Web app deployment actualmente usado por GitHub Pages: `AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg`
+- Web app v47/v49 informado por usuario, actualmente restringido tras redeploy desde cuenta no propietaria: `AKfycbxSdWT7GNhw4gB0G-CVytdZnsg5MkwPfjkp4jxRmhzn4yLx9geRRgM9l9PNcKM_tI63Vw`
 - Web app historico de rescate, solo para rollback: `AKfycbxPW313JYFjjRodLkOEPl6xswoDCM1ZkbeUtAALdrhIGBg2rY85YiBnJyzwmZz8F-on9Q`
 - GitHub Pages: `https://appfacen.github.io/Facen-APP/`
 
@@ -44,12 +44,12 @@ El catalogo operativo usa este orden: snapshot CSV generado desde Google Sheets,
 
 ## Estado operativo verificado 2026-06-30
 
-- `https://appfacen.github.io/Facen-APP/` quedo publicado y verificado con `APP_BUILD = 2026.06.30.4`; apunta al deployment publico v47 `AKfycbxSd...`, verificado anonimamente con `HTTP 200` y marcadores de calendario real, vista `Avance` y bootstrap liviano.
-- Commit de activacion en GitHub Pages: `a74781c`.
+- `https://appfacen.github.io/Facen-APP/` queda restaurado con `APP_BUILD = 2026.06.30.5`; apunta al deployment publico estable `AKfycbyr...@48`, verificado anonimamente con `HTTP 200`, calendario real, vista `Avance` y bootstrap liviano.
+- La agenda automatica de clases y examenes quedo implementada en Apps Script HEAD y versionada como `50`; para verla en produccion se debe activar la version `50` desde la cuenta propietaria/autorizada con acceso `Anyone`.
 - Se cargaron fechas de examenes desde `Guia-Academica-2026-2.pdf`: 28 filas en `FECHAS_EXAMENES` y 24 eventos visibles para `diegomezapy` en `AGENDA_ACADEMICA`.
 - El libro operativo fue corregido para que las columnas de fecha/hora se lean como texto; esto evita que el `bootstrap` pierda Perfil e Inscripciones por objetos `Date` de Google Sheets.
 - El codigo defensivo para convertir `Date` a texto, el guardado robusto de grupos, el calendario real, la vista `Avance`, la malla `MALLA_ACADEMICA`, las correlatividades `CORRELATIVIDADES` y la optimizacion de carga inicial quedan incluidos en el deployment publico v47 `AKfycbxSd...`.
-- Si un navegador sigue mostrando `v2026.06.30.3`, usar el boton `Actualizar` del shell o abrir `https://appfacen.github.io/Facen-APP/?v=2026.06.30.4-final` para forzar cache-busting del service worker anterior.
+- Si un navegador sigue mostrando una version anterior, usar el boton `Actualizar` del shell o abrir `https://appfacen.github.io/Facen-APP/?v=2026.06.30.5-final` para forzar cache-busting del service worker anterior.
 - El libro operativo contiene 40 asignaturas de la malla 2025 y 36 correlatividades cargadas desde `Guia-Academica-2026-2.pdf` / texto extraido.
 - El deployment moderno `AKfycbyr...` quedo restringido despues de intentar redeployarlo desde la cuenta actual; no usarlo en Pages hasta redeploy publico desde la cuenta propietaria/autorizada.
 - El deployment historico `AKfycbwi0...@20` tambien quedo restringido despues de intentar actualizarlo desde la cuenta actual; no usarlo como backend publico.
@@ -72,6 +72,8 @@ La especificacion sin credenciales del libro reconstruido queda en `docs/FACEN_A
 El 2026-06-30 se corrigio el libro productivo para evitar fechas nativas en el paquete de `bootstrap`. Durante el intento de activar versiones nuevas desde la cuenta actual, `AKfycbyr...` y luego `AKfycbwi0...` quedaron restringidos por permisos; por continuidad operativa GitHub Pages se mantuvo temporalmente con `APP_BUILD = 2026.06.30.3` apuntando al backend publico de rescate `AKfycbxPW...@19`.
 
 Mas tarde, el propietario/autorizado dejo publicado el deployment v47 `AKfycbxSd.../exec`. Ese `/exec` fue probado anonimamente con `HTTP 200` y marcadores de la app nueva, por lo que GitHub Pages se actualizo a `APP_BUILD = 2026.06.30.4`, cache `facen-app-v13-shell-20260630` y `APP_URL = AKfycbxSd.../exec`.
+
+El mismo 2026-06-30 se implemento en Apps Script HEAD la agenda academica derivada: clases recurrentes desde `INSCRIPCIONES` + `HORARIOS_ASIGNATURAS` y examenes desde `FECHAS_EXAMENES`, sin duplicar eventos ya existentes en `AGENDA_ACADEMICA`. El codigo fue subido y versionado como `50`. Al intentar mover `AKfycbxSd...` a `@50` desde `apoyomedicoips@gmail.com`, el deployment quedo `HTTP 403`; el rollback a `@49` no recupero el acceso anonimo. Para no dejar Pages caido, el shell se restauro a `APP_BUILD = 2026.06.30.5`, cache `facen-app-v14-shell-20260630`, apuntando al deployment publico `AKfycbyr...@48`.
 
 ## Comandos utiles
 

@@ -2263,3 +2263,119 @@
 ### Recomendaciones
 
 * Para futuras versiones, repetir la secuencia: probar `/exec` nuevo anonimo, cambiar `APP_URL`, subir `APP_BUILD`, renovar `CACHE_NAME`, commit/push, verificar Pages y documentar evidencia.
+
+## 2026-06-30 09:10
+
+### Proyecto
+
+* Nombre: FACEN App
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version: Apps Script HEAD/version `50`; Pages shell local `APP_BUILD = 2026.06.30.5`
+
+### Objetivo de la intervencion
+
+* Hacer que la agenda cargue por defecto clases recurrentes de las asignaturas matriculadas y examenes de la guia academica.
+* Evitar que el estudiante tenga que cargar manualmente fechas que ya existen en `FECHAS_EXAMENES` o en los horarios de su seccion.
+
+### Diagnostico inicial
+
+* `FECHAS_EXAMENES` existe en el libro operativo con 28 filas y encabezados `id_examen`, `id_asignatura`, `tipo`, `num`, `fecha`, `hora`, `aula`, `es_recuperatorio`.
+* `AGENDA_ACADEMICA` tenia 24 examenes cargados manualmente para `id_estudiante = 8`, pero el backend no generaba examenes automaticamente para cualquier estudiante matriculado.
+* `obtenerMiAgenda_` solo leia `AGENDA_ACADEMICA`; no combinaba inscripciones, horarios ni fechas normativas de examen.
+* El shell Pages apuntaba a `AKfycbxSd...`, que estaba publico en `@49` al inicio de la intervencion.
+
+### Acciones realizadas
+
+* Se agrego `CONFIG.SHEETS.EXAMENES = FECHAS_EXAMENES`.
+* Se agrego el esquema `FECHAS_EXAMENES` a `SCHEMA`.
+* Se cambio `obtenerMiAgenda_(idEstudiante, inscripciones)` para combinar:
+  * eventos manuales activos de `AGENDA_ACADEMICA`;
+  * clases automaticas desde `inscripciones.horarios`;
+  * examenes automaticos desde `FECHAS_EXAMENES`.
+* Se agrego deduplicacion por tipo, fecha/dia, hora, `id_asignatura`, nombre normalizado y equivalencia estrecha `202/1013` para Algebra Lineal I.
+* Se marcaron eventos automaticos con `derivado = 1`, `editable = 0` y `origen`.
+* Se ajusto el frontend para que los eventos automaticos se abran en modo solo lectura y no muestren boton eliminar.
+* Se subio Apps Script HEAD con `npx clasp push --force`.
+* Se creo Apps Script version `50`.
+* Se intento mover el deployment publico `AKfycbxSd...` a `@50`.
+* Al quedar `HTTP 403`, se intento rollback a `@49`.
+* Como `AKfycbxSd...` siguio `HTTP 403`, se probo fallback publico y se eligio `AKfycbyr...@48`, que responde `HTTP 200` y mantiene calendario/avance/bootstrap liviano.
+* Se restauro GitHub Pages a `AKfycbyr...@48`, `APP_BUILD = 2026.06.30.5` y cache `facen-app-v14-shell-20260630`.
+
+### Archivos modificados
+
+* `apps-script/Code.gs`
+* `apps-script/index.html`
+* `index.html`
+* `sw.js`
+* `README.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* Lectura Google Sheets: `FECHAS_EXAMENES!A1:H40`, `INSCRIPCIONES!A1:N25`, `AGENDA_ACADEMICA!A1:R35`, `HORARIOS_ASIGNATURAS!A1:F40`.
+* `node -e "new Function(fs.readFileSync('apps-script/Code.gs','utf8'))"`
+* Validacion de scripts embebidos de `apps-script/index.html` con `new Function`.
+* Simulacion local de `obtenerMiAgenda_` con datos reales de inscripciones, agenda y fechas.
+* `git diff --check`
+* `npx clasp status`
+* `npx clasp push --force`
+* `npx clasp version "FACEN App agenda automatica clases examenes 2026-06-30"`
+* `npx clasp deploy -i AKfycbxSd... -V 50 -d "FACEN App agenda automatica clases examenes 2026-06-30"`
+* `npx clasp deploy -i AKfycbxSd... -V 49 -d "ROLLBACK FACEN App public deployment v49 after v50 permission check 2026-06-30"`
+* `npx clasp show-authorized-user`
+* Pruebas HTTP anonimas sobre `AKfycbxSd...`, `AKfycbyr...`, `AKfycbxPW...` y otros fallbacks.
+
+### Resultados verificados
+
+* Sintaxis `Code.gs`: OK.
+* Sintaxis script HTML: OK.
+* Simulacion local: con agenda manual existente se generan clases automaticas y no se duplican examenes equivalentes `202/1013`.
+* Apps Script HEAD actualizado: `Pushed 4 files at 9:04:10`.
+* Apps Script version `50` creada.
+* `npx clasp show-authorized-user` confirma cuenta activa `apoyomedicoips@gmail.com`.
+* `AKfycbxSd...@50` devuelve `HTTP 403`.
+* Rollback `AKfycbxSd...@49` sigue devolviendo `HTTP 403`.
+* `AKfycbyr...@48` responde `HTTP 200` y contiene `month-grid`, `renderAvance` y `dashboard_secundario`.
+
+### Pruebas realizadas
+
+* Lectura acotada de hojas reales con Google Sheets connector.
+* Validacion sintactica local.
+* Simulacion local de agenda derivada.
+* Verificacion HTTP anonima de deployments Apps Script.
+
+### Errores o incidentes
+
+* Activar `AKfycbxSd...` a version `50` desde `apoyomedicoips@gmail.com` dejo el deployment con `HTTP 403`.
+* El rollback a `@49` no recupero el acceso anonimo.
+* El deployment `@HEAD` `AKfycbyv...` devuelve pagina de error de permisos, no sirve como URL publica.
+
+### Soluciones aplicadas
+
+* Se dejo el codigo de agenda automatica en Apps Script HEAD y version `50`.
+* Se restauro el shell Pages a un deployment publico sano (`AKfycbyr...@48`) para no dejar la app publica caida.
+* Se documento que la activacion publica de la version `50` debe hacerse desde la cuenta propietaria/autorizada que pueda publicar Web Apps con acceso `Anyone`.
+
+### Pendientes
+
+* Desde la cuenta propietaria/autorizada, abrir Apps Script `1mXbo3LGQwW6S3wKtAcCyMHPBDHkm0KFRXaRpBbAcdNAM-8hr5z9FfLZT` y actualizar/crear deployment publico con version `50`, acceso `Anyone`.
+* Enviar la URL `/exec` publica resultante o confirmar que `AKfycbxSd...` recupero `HTTP 200`.
+* Una vez verificado anonimamente el `/exec` version `50`, volver a apuntar GitHub Pages al deployment definitivo.
+
+### Riesgos
+
+* Repetir `clasp deploy` desde `apoyomedicoips@gmail.com` puede dejar restringidos otros deployments.
+* Si Pages apunta a un deployment `403`, el usuario ve shell pero no puede usar la app.
+* Mientras Pages use `AKfycbyr...@48`, la agenda automatica implementada en version `50` aun no esta visible en produccion.
+
+### Recomendaciones
+
+* No volver a redeployar deployments publicos de FACEN App desde `apoyomedicoips@gmail.com`.
+* Usar la UI de Apps Script con cuenta propietaria/autorizada para activar version `50`.
+* Probar `/exec` anonimo antes de cambiar `APP_URL` de Pages.

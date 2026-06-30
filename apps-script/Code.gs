@@ -23,6 +23,7 @@ var CONFIG = {
     LECTURAS: 'LECTURAS',
     GRUPOS: 'GRUPOS_ESTUDIO',
     AGENDA: 'AGENDA_ACADEMICA',
+    EXAMENES: 'FECHAS_EXAMENES',
     MALLA: 'MALLA_ACADEMICA',
     CORRELATIVIDADES: 'CORRELATIVIDADES',
     PREFERENCIAS: 'PREFERENCIAS_ESTUDIANTE',
@@ -63,6 +64,7 @@ var SCHEMA = {
   LECTURAS: ['id_lectura', 'id_estudiante', 'id_asignatura', 'titulo', 'fuente', 'url', 'estado', 'prioridad', 'fecha_objetivo', 'notas', 'fecha_creacion', 'fecha_modificacion'],
   GRUPOS_ESTUDIO: ['id_grupo', 'id_estudiante', 'id_asignatura', 'nombre', 'integrantes', 'canal', 'lugar', 'proxima_fecha', 'proxima_hora', 'objetivo', 'estado', 'fecha_creacion', 'fecha_modificacion'],
   AGENDA_ACADEMICA: ['id_agenda', 'id_estudiante', 'id_asignatura', 'tipo', 'titulo', 'dia', 'fecha', 'hora_ini', 'hora_fin', 'sala', 'edificio', 'mapa_url', 'notas', 'alerta_activa', 'minutos_antes', 'activo', 'fecha_creacion', 'fecha_modificacion'],
+  FECHAS_EXAMENES: ['id_examen', 'id_asignatura', 'tipo', 'num', 'fecha', 'hora', 'aula', 'es_recuperatorio'],
   MALLA_ACADEMICA: ['id_malla', 'carrera', 'plan', 'codigo', 'nombre_asignatura', 'nivel_sugerido', 'creditos', 'area', 'fuente', 'activo'],
   CORRELATIVIDADES: ['id_correlatividad', 'carrera', 'plan', 'codigo_asignatura', 'nombre_asignatura', 'codigo_requisito', 'nombre_requisito', 'tipo', 'fuente', 'activo'],
   PREFERENCIAS_ESTUDIANTE: ['id_preferencia', 'id_estudiante', 'alertas_clases', 'alertas_examenes', 'alertas_reuniones', 'alertas_entregas', 'minutos_clases', 'minutos_examenes', 'minutos_reuniones', 'minutos_entregas', 'instalacion_pwa', 'fecha_modificacion'],
@@ -241,7 +243,7 @@ function obtenerBootstrap(token) {
     var perfil = getOrCreatePerfil_(session.id_usuario);
     var inscripciones = safeCall_(function() { return obtenerMisInscripciones_(perfil.id_estudiante); }, []);
     var notas = safeCall_(function() { return obtenerMisNotas_(perfil.id_estudiante, inscripciones); }, []);
-    var agenda = safeCall_(function() { return obtenerMiAgenda_(perfil.id_estudiante); }, []);
+    var agenda = safeCall_(function() { return obtenerMiAgenda_(perfil.id_estudiante, inscripciones); }, []);
     var preferencias = safeCall_(function() { return obtenerPreferencias_(perfil.id_estudiante); }, obtenerPreferenciasDefault_());
     return bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, '', {
       apuntes: [],
@@ -348,7 +350,7 @@ function actualizarCatalogoDesdeHoja(token) {
     log_(session.id_usuario, 'CATALOGO_ACTUALIZAR', counts.asignaturas + ' asignaturas, ' + counts.secciones + ' secciones, ' + counts.horarios + ' horarios');
     var inscripciones = obtenerMisInscripciones_(perfil.id_estudiante);
     var notas = obtenerMisNotas_(perfil.id_estudiante, inscripciones);
-    var agenda = obtenerMiAgenda_(perfil.id_estudiante);
+    var agenda = obtenerMiAgenda_(perfil.id_estudiante, inscripciones);
     return {
       success: true,
       message: 'Catalogo actualizado desde la hoja de calculo.',
@@ -1053,7 +1055,7 @@ function inscribirSeccion(token, idSeccion) {
       message: 'Asignatura agregada.',
       inscripciones: inscripciones,
       notas: obtenerMisNotas_(perfil.id_estudiante, inscripciones),
-      resumen: resumen_(perfil.id_estudiante, inscripciones, null, [], [], [], [], obtenerMiAgenda_(perfil.id_estudiante)),
+      resumen: resumen_(perfil.id_estudiante, inscripciones, null, [], [], [], [], obtenerMiAgenda_(perfil.id_estudiante, inscripciones)),
       catalogo: obtenerCatalogoParaPerfil_(perfil, false),
       catalogoLoaded: true
     };
@@ -1069,7 +1071,7 @@ function quitarInscripcion(token, idInscripcion) {
   }
   log_(session.id_usuario, 'DESINSCRIPCION', String(idInscripcion));
   var inscripciones = obtenerMisInscripciones_(perfil.id_estudiante);
-  var agenda = obtenerMiAgenda_(perfil.id_estudiante);
+  var agenda = obtenerMiAgenda_(perfil.id_estudiante, inscripciones);
   return {
     success: true,
     message: 'Asignatura quitada.',
@@ -1509,17 +1511,181 @@ function obtenerMisGrupos_(idEstudiante) {
   });
 }
 
-function obtenerMiAgenda_(idEstudiante) {
+function obtenerMiAgenda_(idEstudiante, inscripciones) {
+  inscripciones = inscripciones || obtenerMisInscripciones_(idEstudiante);
   var asignaturas = asignaturasIndexRapido_(idEstudiante);
-  return getRows_(CONFIG.SHEETS.AGENDA).filter(function(a) {
+  var seen = {};
+  var manual = getRows_(CONFIG.SHEETS.AGENDA).filter(function(a) {
     return a.id_estudiante == idEstudiante && a.activo != 0;
   }).map(function(a) {
     a.nombre_asignatura = a.id_asignatura ? ((asignaturas[a.id_asignatura] || {}).nombre_asignatura || '') : '';
     a.fecha_iso = isoDate_(a.fecha);
+    a.derivado = 0;
+    a.editable = 1;
+    markAgendaSeen_(seen, a);
     return a;
-  }).sort(function(a, b) {
-    return agendaRank_(a) - agendaRank_(b) || String(a.hora_ini || '').localeCompare(String(b.hora_ini || ''));
   });
+  return manual.concat(agendaDerivadaDeInscripciones_(idEstudiante, inscripciones, seen)).sort(function(a, b) {
+    return agendaRank_(a) - agendaRank_(b) || String(a.hora_ini || '').localeCompare(String(b.hora_ini || '')) || String(a.titulo || '').localeCompare(String(b.titulo || ''));
+  });
+}
+
+function agendaDerivadaDeInscripciones_(idEstudiante, inscripciones, seen) {
+  seen = seen || {};
+  var rows = [];
+  var seq = 0;
+  (inscripciones || []).forEach(function(inscripcion) {
+    (inscripcion.horarios || []).forEach(function(h) {
+      var item = {
+        id_agenda: -100000 - (++seq),
+        id_estudiante: idEstudiante,
+        id_asignatura: inscripcion.id_asignatura || inscripcion.id_asignatura_snapshot || '',
+        tipo: 'clase',
+        titulo: 'Clase: ' + (inscripcion.nombre_asignatura || 'Asignatura'),
+        dia: canonicalDayName_(h.dia),
+        fecha: '',
+        fecha_iso: '',
+        hora_ini: trim_(h.hora_ini),
+        hora_fin: trim_(h.hora_fin),
+        sala: trim_(h.aula || h.sala || 'Sin aula'),
+        edificio: trim_(h.edificio),
+        mapa_url: trim_(h.mapa_url),
+        notas: 'Automatico desde matricula activa' + (inscripcion.codigo_seccion ? '. Seccion ' + inscripcion.codigo_seccion : ''),
+        alerta_activa: 1,
+        minutos_antes: 15,
+        activo: 1,
+        fecha_creacion: '',
+        fecha_modificacion: '',
+        nombre_asignatura: inscripcion.nombre_asignatura || '',
+        derivado: 1,
+        editable: 0,
+        origen: 'horario_matricula'
+      };
+      addDerivedAgendaItem_(rows, item, seen);
+    });
+  });
+  agendaExamenesDerivados_(idEstudiante, inscripciones, seen).forEach(function(item) {
+    item.id_agenda = -200000 - (++seq);
+    rows.push(item);
+  });
+  return rows;
+}
+
+function agendaExamenesDerivados_(idEstudiante, inscripciones, seen) {
+  var inscripcionesBySubject = {};
+  var keys = {};
+  (inscripciones || []).forEach(function(i) {
+    var id = String(i.id_asignatura || i.id_asignatura_snapshot || '');
+    if (id) inscripcionesBySubject[id] = i;
+    addCourseKeys_(keys, i.codigo || i.codigo_asignatura_snapshot, i.nombre_asignatura || i.nombre_asignatura_snapshot);
+  });
+  var examenes = safeCall_(function() { return getRows_(CONFIG.SHEETS.EXAMENES); }, []);
+  var rows = [];
+  examenes.forEach(function(examen) {
+    var idAsignatura = trim_(examen.id_asignatura || examen.id_materia || examen.asignatura_id);
+    var inscripcion = idAsignatura ? inscripcionesBySubject[String(idAsignatura)] : null;
+    if (!inscripcion && hasCourseKey_(keys, examen.codigo || examen.codigo_asignatura, examen.nombre_asignatura || examen.asignatura)) {
+      inscripcion = (inscripciones || []).filter(function(i) {
+        return hasCourseKey_(
+          courseKeyMapForInscripcion_(i),
+          examen.codigo || examen.codigo_asignatura,
+          examen.nombre_asignatura || examen.asignatura
+        );
+      })[0] || null;
+      idAsignatura = inscripcion ? (inscripcion.id_asignatura || inscripcion.id_asignatura_snapshot || idAsignatura) : idAsignatura;
+    }
+    if (!inscripcion) return;
+    var fecha = dateOnlyString_(examen.fecha || examen.fecha_examen || examen.dia);
+    if (!fecha) return;
+    var tipoExamen = trim_(examen.tipo || examen.tipo_examen || 'Examen');
+    var item = {
+      id_agenda: '',
+      id_estudiante: idEstudiante,
+      id_asignatura: idAsignatura,
+      tipo: 'examen',
+      titulo: 'Examen: ' + (inscripcion.nombre_asignatura || examen.nombre_asignatura || 'Asignatura') + ' - ' + tipoExamen,
+      dia: '',
+      fecha: fecha,
+      fecha_iso: fecha,
+      hora_ini: trim_(examen.hora || examen.hora_ini || '17:00'),
+      hora_fin: trim_(examen.hora_fin),
+      sala: trim_(examen.aula || examen.sala),
+      edificio: trim_(examen.edificio),
+      mapa_url: trim_(examen.mapa_url),
+      notas: 'Automatico desde FECHAS_EXAMENES' + (examen.es_recuperatorio == 1 ? '. Recuperatorio.' : '.'),
+      alerta_activa: 1,
+      minutos_antes: 60,
+      activo: 1,
+      fecha_creacion: '',
+      fecha_modificacion: '',
+      nombre_asignatura: inscripcion.nombre_asignatura || examen.nombre_asignatura || '',
+      derivado: 1,
+      editable: 0,
+      origen: 'fechas_examenes'
+    };
+    addDerivedAgendaItem_(rows, item, seen);
+  });
+  return rows;
+}
+
+function addDerivedAgendaItem_(rows, item, seen) {
+  if (isAgendaSeen_(seen, item)) return;
+  markAgendaSeen_(seen, item);
+  rows.push(item);
+}
+
+function agendaNaturalKey_(item) {
+  return agendaNaturalKeys_(item)[0] || '';
+}
+
+function agendaNaturalKeys_(item) {
+  var base = [
+    normalize_(item.tipo),
+    dateOnlyString_(item.fecha || item.fecha_iso || ''),
+    normalize_(item.dia),
+    trim_(item.hora_ini),
+    trim_(item.hora_fin)
+  ].join('|');
+  var keys = [];
+  var id = String(item.id_asignatura || '');
+  var name = normalize_(item.nombre_asignatura || '');
+  if (id) keys.push('id:' + id + '|' + base);
+  if (name) keys.push('name:' + name + '|' + base);
+  agendaEquivalentCourseKeys_(item).forEach(function(key) { keys.push(key + '|' + base); });
+  if (!keys.length) keys.push('title:' + normalize_(item.titulo || '') + '|' + base);
+  return keys;
+}
+
+function markAgendaSeen_(seen, item) {
+  agendaNaturalKeys_(item).forEach(function(key) { seen[key] = true; });
+}
+
+function isAgendaSeen_(seen, item) {
+  return agendaNaturalKeys_(item).some(function(key) { return seen[key]; });
+}
+
+function agendaEquivalentCourseKeys_(item) {
+  var id = String(item.id_asignatura || '');
+  var name = normalize_(item.nombre_asignatura || item.titulo || '');
+  var keys = [];
+  if (id === '202' || id === '1013' || name.indexOf('algebra lineal i') >= 0 || name.indexOf('lgebra lineal i') >= 0) {
+    keys.push('equiv:algebra-lineal-i');
+  }
+  return keys;
+}
+
+function courseKeyMapForInscripcion_(inscripcion) {
+  var map = {};
+  addCourseKeys_(map, inscripcion.codigo || inscripcion.codigo_asignatura_snapshot, inscripcion.nombre_asignatura || inscripcion.nombre_asignatura_snapshot);
+  return map;
+}
+
+function canonicalDayName_(value) {
+  var order = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+  var labels = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+  var normalized = normalize_(value);
+  var idx = order.indexOf(normalized);
+  return idx >= 0 ? labels[idx] : trim_(value);
 }
 
 function obtenerPreferencias_(idEstudiante) {
@@ -1831,7 +1997,7 @@ function resumen_(idEstudiante, inscripciones, notas, apuntes, eventos, lecturas
   eventos = eventos || obtenerMisEventos_(idEstudiante);
   lecturas = lecturas || obtenerMisLecturas_(idEstudiante);
   grupos = grupos || obtenerMisGrupos_(idEstudiante);
-  agenda = agenda || obtenerMiAgenda_(idEstudiante);
+  agenda = agenda || obtenerMiAgenda_(idEstudiante, inscripciones);
   var hoy = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'][new Date().getDay()];
   var clasesHoy = [];
   inscripciones.forEach(function(i) {
