@@ -265,3 +265,28 @@ Resultado resumido:
 * Se eligio como rescate publico `AKfycbxPW...@19`, verificado con `bootSuccess = true`, 7 inscripciones, 24 examenes y 3 grupos existentes.
 * Se preparo `APP_BUILD = 2026.06.30.3` y `facen-app-v12-shell-20260630`.
 * Pendiente critico: redeploy propietario de la version `43` para que el guardado robusto de grupos quede activo en produccion.
+
+### 2026-06-30 - Calendario real, notificaciones y avance academico
+
+Texto del usuario:
+
+```text
+ya funciona, ahora la ajenda debe verse como un calendario real, con posibildad de vista diaria, semanal, mes, año, etc. Debe poder editarse, agregar o eleiminar un evento sobre el calendario. Debe opder activarse notificaciones en la app para avisos anticipados de eventos. De la guia academica se puede sacar la grilla completa de asignaturas y las correlatividades para que el estudiantes sepa en que etapa se encuentra, cuantas asignturas le falta, etc. eEn general la vista y formato, aspecto de la app es muy pobre y sencillo, mejóralo radicalmente.
+```
+
+Interpretacion operativa:
+
+* La app ya cargaba perfil, materias, agenda y grupos existentes, pero la agenda aun era una lista simple.
+* Habia que convertir la agenda en calendario editable real y preparar una vista de progreso academico desde la guia.
+* No se debia redeployar el backend publico desde la cuenta actual porque los intentos previos dejaron deployments `403`.
+
+Resultado resumido:
+
+* Se implemento en `apps-script/index.html` un calendario con vistas dia, semana, mes, ano y lista, navegacion anterior/hoy/siguiente, creacion desde celda de calendario y edicion/eliminacion de eventos existentes.
+* Se mejoro el flujo de notificaciones: estado de permiso visible, boton de activacion y reprogramacion local despues de guardar agenda/preferencias.
+* Se agrego la vista `Avance` con resumen de malla, barra de progreso, asignaturas por nivel, estados aprobada/cursando/pendiente/bloqueada y correlatividades faltantes.
+* Se agregaron al backend las hojas `MALLA_ACADEMICA` y `CORRELATIVIDADES`, lectura de malla, calculo de avance y respuesta incremental de agenda.
+* Se cargaron en el libro operativo 40 asignaturas de la malla 2025 y 36 correlatividades desde `Guia-Academica-2026-2.pdf`.
+* Se subio el codigo a Apps Script HEAD y se creo version `45`.
+* Se verifico sintaxis de `Code.gs`, script HTML y render simulado de calendario/avance en Node.
+* GitHub Pages sigue operativo con `APP_BUILD = 2026.06.30.3` apuntando al deployment publico de rescate `AKfycbxPW...@19`; las mejoras de UI requieren redeploy propietario de la version `45` para quedar visibles al publico.

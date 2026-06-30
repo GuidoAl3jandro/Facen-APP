@@ -1774,3 +1774,121 @@
 * No redeployar deployments historicos publicos desde esta cuenta.
 * Mantener `FECHAS_EXAMENES`, `AGENDA_ACADEMICA` y `GRUPOS_ESTUDIO` con fechas/horas como texto cuando el backend publico sea historico.
 * Documentar en la carpeta maestra el patron: si un deployment GAS anonimo queda `403` al redeployar, buscar un deployment historico publico sin tocarlo y exigir redeploy propietario para activar codigo nuevo.
+
+## 2026-06-30 07:41
+
+### Proyecto
+
+* Nombre: FACEN App
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version: Apps Script HEAD version `45`; Pages publico sigue en `APP_BUILD = 2026.06.30.3`
+
+### Objetivo de la intervencion
+
+* Reemplazar la agenda tipo lista por un calendario real con vistas dia, semana, mes, ano y lista.
+* Permitir crear, editar y eliminar eventos directamente desde el calendario.
+* Mejorar activacion y estado de notificaciones locales para avisos anticipados.
+* Incorporar malla academica 2025 y correlatividades desde la guia academica para calcular avance del estudiante.
+* Mejorar radicalmente la estructura visual sin romper el backend publico estable.
+
+### Diagnostico inicial
+
+* La agenda ya tenia funciones de guardado, eliminacion y alertas, pero se renderizaba como lista simple.
+* `guardarAgenda` seguia guardando `fecha` como `new Date(...)`, patron riesgoso por los problemas previos de serializacion en `google.script.run`.
+* El libro operativo no tenia hojas dedicadas a malla academica ni correlatividades.
+* `Guia-Academica-2026-2.txt` contenia la seccion de Licenciatura en Ciencias Mencion Matematica Estadistica - Plan 2025 con malla completa y prerrequisitos.
+* El deployment publico seguro seguia siendo `AKfycbxPW...@19`; no se debia redeployar desde la cuenta actual por el historial de `HTTP 403`.
+
+### Acciones realizadas
+
+* Se revisaron aprendizajes maestros FACEN sobre serializacion de fechas y recuperacion de deployment publico.
+* Se extrajo de la guia la malla 2025 de Matematica Estadistica y sus prerrequisitos.
+* Se agregaron al esquema Apps Script las hojas `MALLA_ACADEMICA` y `CORRELATIVIDADES`.
+* Se cargaron en Google Sheets 40 asignaturas de malla y 36 correlatividades, con fuente `Guia Academica FACEN 2026-2 p.79`.
+* Se implemento `obtenerMallaAcademica_()` para calcular aprobadas, cursando, pendientes, bloqueadas, creditos y porcentaje de avance.
+* Se agregaron equivalencias defensivas para reconocer registros historicos como `Calculo I` y electivas tipo `Analitica de Big Data`.
+* Se reemplazo `renderAgenda()` por calendario con vistas dia, semana, mes, ano y lista.
+* Se agrego la vista `Avance` a la navegacion.
+* Se ajusto `guardarAgenda` para guardar fechas como texto `yyyy-MM-dd` y devolver `agenda` + `resumen`.
+* Se ajusto `eliminarAgenda` para devolver `agenda` + `resumen`.
+* Se ajusto `guardarPreferencias` y el frontend para actualizar alertas sin recargar toda la app.
+* Se subio el codigo a Apps Script HEAD con `npx clasp push --force`.
+* Se creo Apps Script version `45` con descripcion `FACEN App calendario malla avance 2026-06-30`.
+
+### Archivos modificados
+
+* `apps-script/Code.gs`
+* `apps-script/index.html`
+* `README.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+* `G:\Mi unidad\MANUAL_MAESTRO_FORMATOS_FUNCIONES_APPWEB\APRENDIZAJE_FACEN_APP_CALENDARIO_MALLA_AVANCE_2026-06-30.md`
+
+### Comandos o scripts ejecutados
+
+* `rg` sobre `Guia-Academica-2026-2.txt` para localizar malla y plan 2025.
+* Lecturas de Google Sheets con conector Google Drive/Sheets.
+* Batch update de Google Sheets para crear `MALLA_ACADEMICA` y `CORRELATIVIDADES`.
+* `node -e` para validar sintaxis de `apps-script/index.html`.
+* `node -e` para validar sintaxis de `apps-script/Code.gs`.
+* Prueba Node con stubs de navegador para renderizar calendario mes/semana y vista de avance.
+* `npx clasp push --force`
+* `npx clasp version "FACEN App calendario malla avance 2026-06-30"`
+* `npx clasp deployments`
+* `Invoke-WebRequest` contra GitHub Pages y `sw.js`.
+
+### Resultados verificados
+
+* `MALLA_ACADEMICA!A1:J45` contiene 40 asignaturas con encabezados correctos.
+* `CORRELATIVIDADES!A1:J40` contiene 36 correlatividades con encabezados correctos.
+* La sintaxis local de `Code.gs` paso con `new Function(...)`.
+* La sintaxis del script HTML paso con `new Function(...)`.
+* La prueba de render simulado devolvio `render ok` para calendario mensual, calendario semanal y vista de avance.
+* Apps Script HEAD fue actualizado correctamente: `Pushed 4 files at 7:40:03`.
+* Apps Script version `45` fue creada.
+* `https://appfacen.github.io/Facen-APP/` respondio `HTTP 200`, conserva `APP_BUILD = 2026.06.30.3` y sigue apuntando a `AKfycbxPW...`.
+* `https://appfacen.github.io/Facen-APP/sw.js` respondio `HTTP 200` con cache `facen-app-v12-shell-20260630`.
+
+### Pruebas realizadas
+
+* Validacion de estructura del libro operativo despues de crear hojas nuevas.
+* Validacion sintactica de backend y frontend.
+* Validacion de render de calendario mensual, semanal y malla con datos simulados.
+* Verificacion HTTP anonima de Pages y service worker despues de subir HEAD a GAS.
+* Verificacion de deployments disponibles; no se actualizo ningun deployment publico.
+
+### Errores o incidentes
+
+* Dos pruebas iniciales de render con Node fallaron por sintaxis de shell/PowerShell, no por errores de la app. Se corrigio usando tuberia PowerShell a Node.
+* El deployment `@HEAD` visible por `clasp deployments` respondio `HTTP 200` pero no contenia marcadores nuevos de calendario/avance; no se uso para Pages.
+
+### Soluciones aplicadas
+
+* Calendario real y vista de avance implementados en el codigo fuente.
+* Datos de malla y correlatividades cargados como hojas auditables en el libro operativo.
+* Fechas de agenda protegidas como texto para evitar repetir la falla de serializacion.
+* Se mantuvo Pages en el backend publico estable para no romper el acceso actual.
+
+### Pendientes
+
+* Redeployar Apps Script version `45` desde la cuenta propietaria/autorizada con acceso `Anyone`.
+* Probar anonimamente el nuevo `/exec` version `45`.
+* Solo despues de esa prueba, actualizar `APP_URL` de GitHub Pages al deployment nuevo y renovar `APP_BUILD`/cache.
+* Validar visualmente en navegador real las vistas dia, semana, mes, ano, lista y avance con usuario real.
+* Revisar con coordinacion academica los niveles sugeridos 5 a 8, porque la guia muestra malla/prerrequisitos completos y horarios/niveles actuales, pero no una tabla semestral explicita para todos los niveles superiores.
+
+### Riesgos
+
+* Las mejoras no son visibles todavia en la URL publica mientras Pages use `AKfycbxPW...@19`.
+* Redeployar desde una cuenta no propietaria/autorizada puede volver a restringir el backend publico.
+* Los niveles superiores de la malla fueron organizados tecnicamente por correlatividad; deben validarse institucionalmente si se usaran como semestre oficial.
+
+### Recomendaciones
+
+* Publicar version `45` solo desde la cuenta propietaria/autorizada y verificar `HTTP 200` anonimo antes de cambiar Pages.
+* Mantener malla y correlatividades como datos auditables en Sheets, no embebidos solamente en HTML.
+* Registrar cualquier ajuste oficial de nivel/semestre directamente en `MALLA_ACADEMICA`.

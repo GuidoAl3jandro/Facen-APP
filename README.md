@@ -7,9 +7,10 @@ Agenda academica instalable y optimizada para estudiantes de FACEN.
 - Registro e inicio de sesion con token propio por navegador.
 - Seleccion de asignaturas y secciones cursadas.
 - Vista de horario con aulas asignadas.
-- Agenda editable de clases, examenes, entregas y reuniones.
+- Agenda editable de clases, examenes, entregas y reuniones con vistas de dia, semana, mes, ano y lista.
 - Salas, edificios y enlaces de mapa por actividad.
 - Preferencias de alertas por tipo de actividad.
+- Vista de avance academico con malla 2025, correlatividades, asignaturas aprobadas, cursando, pendientes y bloqueadas.
 - Seccion Mis companeros con contacto opt-in y creacion rapida de grupos de estudio.
 - Registro de notas personales por inscripcion.
 - Apuntes, lecturas, grupos de estudio, recordatorios y enlaces por estudiante.
@@ -47,6 +48,8 @@ El catalogo operativo usa este orden: snapshot CSV generado desde Google Sheets,
 - El libro operativo fue corregido para que las columnas de fecha/hora se lean como texto; esto evita que el `bootstrap` pierda Perfil e Inscripciones por objetos `Date` de Google Sheets.
 - El codigo defensivo para convertir `Date` a texto fue subido a Apps Script HEAD y versionado como `43`, pero no quedo activo en backend publico.
 - El guardado robusto de grupos esta corregido en `apps-script/Code.gs` e `apps-script/index.html`; requiere redeploy publico desde la cuenta propietaria/autorizada para quedar activo en produccion.
+- El calendario real, la vista `Avance`, la malla `MALLA_ACADEMICA` y las correlatividades `CORRELATIVIDADES` quedaron preparados en Apps Script HEAD y versionados como `45`; requieren redeploy publico propietario para quedar visibles en GitHub Pages.
+- El libro operativo contiene 40 asignaturas de la malla 2025 y 36 correlatividades cargadas desde `Guia-Academica-2026-2.pdf` / texto extraido.
 - El deployment moderno `AKfycbyr...` quedo restringido despues de intentar redeployarlo desde la cuenta actual; no usarlo en Pages hasta redeploy publico desde la cuenta propietaria/autorizada.
 - El deployment historico `AKfycbwi0...@20` tambien quedo restringido despues de intentar actualizarlo desde la cuenta actual; por eso Pages debe usar temporalmente `AKfycbxPW...@19`.
 - No redeployar deployments historicos publicos desde una cuenta que no sea propietaria/autorizada, porque las pruebas de 2026-06-29 confirmaron que un deployment historico publico puede quedar restringido al redeployarse desde la cuenta actual.

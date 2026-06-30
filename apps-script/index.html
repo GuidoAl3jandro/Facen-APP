@@ -62,9 +62,8 @@
       position: absolute;
       inset: 0;
       background:
-        linear-gradient(135deg, rgba(22,108,112,.9), rgba(17,45,61,.7)),
-        radial-gradient(circle at 20% 20%, rgba(214,159,48,.42), transparent 30%),
-        radial-gradient(circle at 80% 70%, rgba(255,255,255,.18), transparent 28%);
+        linear-gradient(135deg, rgba(22,108,112,.94), rgba(17,45,61,.78)),
+        repeating-linear-gradient(45deg, rgba(255,255,255,.08) 0 1px, transparent 1px 18px);
     }
     .auth-art > div { position: relative; }
     .auth-art h1 { font-size: clamp(38px, 6vw, 74px); line-height: .95; margin: 0 0 14px; letter-spacing: 0; }
@@ -154,6 +153,7 @@
     .page-head h2 { margin: 0; font-size: 28px; letter-spacing: 0; }
     .page-head p { margin: 6px 0 0; color: var(--muted); }
     .grid { display: grid; gap: 14px; }
+    .grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
     .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -263,6 +263,138 @@
     .toast.error { background: var(--danger); }
     .toast.ok { background: var(--ok); }
     .mobile-nav { display: none; }
+    .segmented {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #eef4f8;
+      flex-wrap: wrap;
+    }
+    .segmented button {
+      border: 0;
+      background: transparent;
+      border-radius: 6px;
+      padding: 8px 11px;
+      color: var(--muted);
+      font-weight: 900;
+    }
+    .segmented button.active { background: #fff; color: var(--ink); box-shadow: 0 4px 12px rgba(31,50,68,.08); }
+    .calendar-card { overflow: hidden; }
+    .calendar-top {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .calendar-title { display: grid; gap: 4px; }
+    .calendar-title strong { font-size: 22px; }
+    .calendar-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .calendar-weekdays, .month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+    .calendar-weekdays {
+      gap: 6px;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .calendar-weekdays div { padding: 0 4px; }
+    .month-grid { gap: 6px; }
+    .calendar-day {
+      min-height: 124px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow: hidden;
+    }
+    .calendar-day:hover { border-color: rgba(22,108,112,.45); box-shadow: 0 8px 18px rgba(25,46,70,.07); }
+    .calendar-day.outside { background: #f7fafc; color: #9aacb9; }
+    .calendar-day.today { outline: 2px solid rgba(214,159,48,.7); outline-offset: -2px; }
+    .day-number { display: flex; align-items: center; justify-content: space-between; font-weight: 900; }
+    .event-dot { font-size: 11px; color: var(--muted); font-weight: 800; }
+    .calendar-event {
+      width: 100%;
+      border: 0;
+      border-left: 4px solid var(--primary);
+      border-radius: 6px;
+      background: #eef8f7;
+      color: var(--ink);
+      padding: 6px 7px;
+      text-align: left;
+      display: grid;
+      gap: 2px;
+      min-height: 32px;
+    }
+    .calendar-event strong { font-size: 12px; line-height: 1.2; }
+    .calendar-event span { font-size: 11px; color: var(--muted); line-height: 1.2; }
+    .calendar-event.examen { border-left-color: var(--danger); background: #fff0ef; }
+    .calendar-event.entrega { border-left-color: #8b6414; background: #fff7e6; }
+    .calendar-event.reunion { border-left-color: #356c9d; background: #edf5ff; }
+    .week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+    .week-col { min-height: 360px; border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 10px; display: grid; align-content: start; gap: 8px; }
+    .day-view { display: grid; gap: 8px; }
+    .day-slot { display: grid; grid-template-columns: 78px 1fr; gap: 10px; align-items: start; border-bottom: 1px solid var(--line); padding: 9px 0; }
+    .day-slot:last-child { border-bottom: 0; }
+    .day-time { color: var(--muted); font-weight: 900; font-size: 12px; }
+    .year-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .year-month { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 12px; display: grid; gap: 8px; min-height: 118px; }
+    .year-month strong { display: flex; justify-content: space-between; gap: 8px; }
+    .agenda-list-row { display: grid; grid-template-columns: 116px 1fr auto; gap: 12px; align-items: center; }
+    .notify-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fbfc;
+      margin-bottom: 14px;
+    }
+    .progress-shell { display: grid; gap: 16px; }
+    .progress-band {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+    .progress-bar {
+      height: 16px;
+      border-radius: 999px;
+      background: #e3ebf0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    .progress-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--ok), var(--primary)); }
+    .malla-layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 14px; }
+    .malla-timeline { display: grid; gap: 16px; }
+    .malla-level { display: grid; gap: 8px; }
+    .malla-level h3 { margin: 0; font-size: 16px; }
+    .malla-subject {
+      border: 1px solid var(--line);
+      border-left: 5px solid #9aacb9;
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+      display: grid;
+      gap: 8px;
+    }
+    .malla-subject.aprobada { border-left-color: var(--ok); background: #f4fbf7; }
+    .malla-subject.cursando { border-left-color: var(--primary); background: #f1faf9; }
+    .malla-subject.pendiente { border-left-color: var(--accent); background: #fffaf0; }
+    .malla-subject.bloqueada { border-left-color: #9aacb9; background: #f7fafc; }
+    .status-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .req-list { color: var(--muted); font-size: 12px; line-height: 1.45; }
     @media (max-width: 900px) {
       .auth-page { grid-template-columns: 1fr; }
       .auth-art { min-height: 32vh; padding: 28px; align-items: center; }
@@ -281,7 +413,7 @@
       .top-actions { margin-left: auto; }
       .top-actions .user-pill { display: none; }
       .content { padding: 18px 14px 86px; }
-      .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .grid-5, .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
       .page-head { align-items: start; flex-direction: column; }
       .item { align-items: stretch; flex-direction: column; }
       .note-row { grid-template-columns: 1fr 1fr; }
@@ -299,6 +431,13 @@
       .mobile-nav button { border: 0; background: #fff; padding: 9px 4px; font-size: 12px; color: var(--muted); }
       .mobile-nav button.active { color: var(--primary); font-weight: 900; }
       .planner { grid-template-columns: 1fr; }
+      .calendar-top, .progress-band, .malla-layout { grid-template-columns: 1fr; }
+      .calendar-actions { justify-content: flex-start; }
+      .calendar-weekdays { display: none; }
+      .month-grid, .week-grid, .year-grid { grid-template-columns: 1fr; }
+      .calendar-day, .week-col { min-height: auto; }
+      .agenda-list-row { grid-template-columns: 1fr; align-items: stretch; }
+      .notify-strip { align-items: stretch; flex-direction: column; }
     }
   </style>
 </head>
@@ -393,11 +532,14 @@
       user: null,
       data: null,
       view: 'dashboard',
+      calendarView: localStorage.getItem('facen_calendar_view') || 'month',
+      calendarDate: localStorage.getItem('facen_calendar_date') || new Date().toISOString().slice(0, 10),
       alertTimers: [],
       authCarrerasLoaded: false,
       nav: [
         ['dashboard', 'Inicio'],
         ['materias', 'Materias'],
+        ['avance', 'Avance'],
         ['horario', 'Horario'],
         ['agenda', 'Agenda'],
         ['notas', 'Notas'],
@@ -583,6 +725,8 @@
       res.lecturas = res.lecturas || [];
       res.grupos = res.grupos || [];
       res.agenda = res.agenda || [];
+      res.malla = res.malla || { items: [], resumen: {} };
+      res.mallaLoaded = res.mallaLoaded !== false;
       res.companeros = res.companeros || [];
       res.preferencias = res.preferencias || {};
       res.resumen = res.resumen || {};
@@ -636,6 +780,7 @@
       if (view === 'recordatorios' && !State.data.eventosLoaded) return loadVista('eventos', 'eventos', 'eventosLoaded');
       if (view === 'lecturas' && !State.data.lecturasLoaded) return loadVista('lecturas', 'lecturas', 'lecturasLoaded');
       if (view === 'grupos' && !State.data.gruposLoaded) return loadVista('grupos', 'grupos', 'gruposLoaded');
+      if (view === 'avance' && !State.data.mallaLoaded) return loadVista('malla', 'malla', 'mallaLoaded');
       if (view === 'perfil' && !(State.data.carreras || []).length) return loadCarreras();
     }
 
@@ -662,11 +807,11 @@
         if (res.carreras) State.data.carreras = res.carreras;
         State.data[loadedKey] = true;
         State.data[loadingKey] = false;
-        if (State.view === vista || (vista === 'catalogo' && State.view === 'materias') || (vista === 'eventos' && State.view === 'recordatorios')) render();
+        if (State.view === vista || (vista === 'catalogo' && State.view === 'materias') || (vista === 'eventos' && State.view === 'recordatorios') || (vista === 'malla' && State.view === 'avance')) render();
       }, function() {
         State.data[loadedKey] = false;
         State.data[loadingKey] = false;
-        if (State.view === vista || (vista === 'catalogo' && State.view === 'materias') || (vista === 'eventos' && State.view === 'recordatorios')) render();
+        if (State.view === vista || (vista === 'catalogo' && State.view === 'materias') || (vista === 'eventos' && State.view === 'recordatorios') || (vista === 'malla' && State.view === 'avance')) render();
       });
     }
 
@@ -675,11 +820,12 @@
       document.querySelectorAll('[data-view]').forEach(function(btn) {
         btn.classList.toggle('active', btn.getAttribute('data-view') === State.view);
       });
-      var titles = { dashboard: 'Inicio', materias: 'Materias', horario: 'Horario', agenda: 'Agenda', notas: 'Notas', apuntes: 'Apuntes', lecturas: 'Lecturas', companeros: 'Companeros', grupos: 'Grupos', recordatorios: 'Recordatorios', perfil: 'Perfil' };
+      var titles = { dashboard: 'Inicio', materias: 'Materias', avance: 'Avance', horario: 'Horario', agenda: 'Agenda', notas: 'Notas', apuntes: 'Apuntes', lecturas: 'Lecturas', companeros: 'Companeros', grupos: 'Grupos', recordatorios: 'Recordatorios', perfil: 'Perfil' };
       document.getElementById('view-title').textContent = titles[State.view] || 'FACEN App';
       var views = {
         dashboard: renderDashboard,
         materias: renderMaterias,
+        avance: renderAvance,
         horario: renderHorario,
         agenda: renderAgenda,
         notas: renderNotas,
@@ -695,6 +841,7 @@
 
     function renderDashboard() {
       var r = State.data.resumen || {};
+      var avance = ((State.data.malla || {}).resumen || {}).avance || 0;
       var clases = (r.clasesHoy || []).map(function(c) {
         return item(c.asignatura + ' - Seccion ' + c.seccion, c.horario.hora_ini + ' a ' + c.horario.hora_fin + ' - ' + c.horario.aula, '');
       }).join('') || '<div class="empty">No tenes clases cargadas para hoy.</div>';
@@ -711,8 +858,9 @@
         return compact(a.titulo, [a.tipo, a.dia || a.fecha_iso, a.hora_ini, a.sala].filter(Boolean).join(' - '), badge(a.alerta_activa ? 'Alerta' : 'Sin alerta'));
       }).join('') || '<div class="empty">Agrega clases, examenes o reuniones a tu agenda.</div>';
       return head('Inicio', 'Resumen rapido de tu semestre.') +
-        '<div class="grid grid-4">' +
+        '<div class="grid grid-5">' +
           metric('Asignaturas', r.totalAsignaturas || 0) +
+          metric('Avance', avance + '%') +
           metric('Promedio', fmt(r.promedio || 0)) +
           metric('Lecturas', r.lecturasPendientes || 0) +
           metric('Agenda', r.agendaActiva || 0) +
@@ -816,15 +964,325 @@
     }
 
     function renderAgenda() {
-      var rows = (State.data.agenda || []).map(function(a) {
-        var place = [a.sala, a.edificio].filter(Boolean).join(', ');
-        var map = a.mapa_url ? ' - mapa cargado' : '';
-        var sub = [a.tipo, a.nombre_asignatura, a.dia || a.fecha_iso, a.hora_ini + (a.hora_fin ? '-' + a.hora_fin : ''), place].filter(Boolean).join(' - ') + map;
-        return item(a.titulo, sub, '<button class="btn btn-outline btn-small" onclick="openAgenda(' + a.id_agenda + ')">Editar</button><button class="btn btn-danger btn-small" onclick="deleteAgenda(' + a.id_agenda + ')">Eliminar</button>');
-      }).join('') || '<div class="empty">Tu agenda esta vacia. Carga clases, examenes, reuniones o entregas.</div>';
-      return head('Agenda', 'Clases, examenes, entregas y reuniones con sala, edificio, mapa y alertas.', '<button class="btn btn-primary" onclick="openAgenda()">Nueva entrada</button>') +
-        '<section class="card card-pad"><h3>Alertas</h3>' + renderPrefsForm() + '</section>' +
-        '<div style="height:14px"></div><div class="card card-pad"><div class="list">' + rows + '</div></div>';
+      var date = parseDateKey(State.calendarDate);
+      var body = renderCalendarBody(date);
+      var notify = notificationStatusHtml();
+      var actions = '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">' +
+        '<button class="btn btn-primary" onclick="openAgenda()">Nueva entrada</button>' +
+        '<button class="btn btn-outline" onclick="activateNotifications()">Activar avisos</button>' +
+        '</div>';
+      return head('Agenda', 'Calendario academico editable con clases, examenes, entregas, reuniones y alertas anticipadas.', actions) +
+        '<section class="card card-pad calendar-card">' +
+          '<div class="notify-strip"><div>' + notify + '<div class="sub">Las notificaciones locales funcionan mientras la app este instalada o abierta con permiso del navegador.</div></div><button class="btn btn-outline btn-small" onclick="activateNotifications()">Permitir avisos</button></div>' +
+          '<div class="calendar-top">' +
+            '<div class="calendar-title"><strong>' + esc(calendarTitle(date)) + '</strong><span class="sub">' + esc(calendarSubtitle(date)) + '</span></div>' +
+            '<div class="calendar-actions">' +
+              renderCalendarViewSwitch() +
+              '<button class="btn btn-outline btn-small" onclick="moveCalendar(-1)">Anterior</button>' +
+              '<button class="btn btn-outline btn-small" onclick="calendarToday()">Hoy</button>' +
+              '<button class="btn btn-outline btn-small" onclick="moveCalendar(1)">Siguiente</button>' +
+            '</div>' +
+          '</div>' +
+          body +
+        '</section>' +
+        '<div style="height:14px"></div><section class="card card-pad"><h3>Alertas</h3>' + renderPrefsForm() + '</section>';
+    }
+
+    function renderAvance() {
+      if (!State.data.mallaLoaded) return head('Avance', 'Malla, correlatividades y progreso academico.') + '<div class="empty">Cargando malla academica...</div>';
+      var m = State.data.malla || { items: [], resumen: {} };
+      var r = m.resumen || {};
+      if (m.warning || !(m.items || []).length) {
+        return head('Avance', 'Malla, correlatividades y progreso academico.', '<button class="btn btn-outline" onclick="loadVista(\'malla\', \'malla\', \'mallaLoaded\')">Reintentar</button>') +
+          '<div class="empty">' + esc(m.warning || 'No hay malla academica cargada para tu carrera.') + '</div>';
+      }
+      var grupos = {};
+      (m.items || []).forEach(function(x) {
+        var nivel = x.nivel_sugerido ? ('Nivel ' + x.nivel_sugerido) : 'Nivel por confirmar';
+        if (!grupos[nivel]) grupos[nivel] = [];
+        grupos[nivel].push(x);
+      });
+      var niveles = Object.keys(grupos).sort(function(a, b) {
+        return numberFromText(a, 99) - numberFromText(b, 99) || a.localeCompare(b);
+      });
+      var timeline = niveles.map(function(nivel) {
+        return '<section class="malla-level"><h3>' + esc(nivel) + '</h3>' + grupos[nivel].map(renderMallaSubject).join('') + '</section>';
+      }).join('');
+      var bloqueadas = (m.items || []).filter(function(x) { return x.estado === 'bloqueada'; }).slice(0, 8).map(function(x) {
+        return compact(x.nombre_asignatura, (x.requisitos || []).map(function(rq) { return rq.nombre || rq.codigo; }).join(' - ') || 'Sin requisito registrado', estadoBadge(x.estado));
+      }).join('') || '<div class="empty">No hay bloqueos detectados con las notas actuales.</div>';
+      return head('Avance', 'Malla completa 2025, correlatividades y avance segun tus materias/notas.', '<button class="btn btn-outline" onclick="loadVista(\'malla\', \'malla\', \'mallaLoaded\')">Actualizar</button>') +
+        '<div class="progress-shell">' +
+          '<section class="progress-band">' +
+            '<div class="card card-pad"><div class="status-row"><span class="badge badge-ok">Plan ' + esc(m.plan || '2025') + '</span><span class="badge">' + esc(m.fuente || 'Guia academica') + '</span></div><h3>' + esc(m.carrera || 'Carrera') + '</h3><div class="progress-bar"><span style="width:' + Math.max(0, Math.min(100, r.avance || 0)) + '%"></span></div><div class="sub">' + esc((r.avance || 0) + '% aprobado: ' + (r.aprobadas || 0) + ' de ' + (r.total || 0) + ' asignaturas.') + '</div></div>' +
+            '<div class="grid grid-2">' +
+              metric('Aprobadas', r.aprobadas || 0) +
+              metric('Cursando', r.cursando || 0) +
+              metric('Pendientes', r.pendientes || 0) +
+              metric('Bloqueadas', r.bloqueadas || 0) +
+            '</div>' +
+          '</section>' +
+          '<section class="malla-layout">' +
+            '<div class="card card-pad"><div class="malla-timeline">' + timeline + '</div></div>' +
+            '<aside class="card card-pad"><h3>Correlatividades pendientes</h3><div class="compact-list">' + bloqueadas + '</div></aside>' +
+          '</section>' +
+        '</div>';
+    }
+
+    function renderCalendarBody(date) {
+      if (State.calendarView === 'day') return renderCalendarDay(date);
+      if (State.calendarView === 'week') return renderCalendarWeek(date);
+      if (State.calendarView === 'year') return renderCalendarYear(date);
+      if (State.calendarView === 'list') return renderCalendarList(date);
+      return renderCalendarMonth(date);
+    }
+
+    function renderCalendarViewSwitch() {
+      var opts = [['day','Dia'], ['week','Semana'], ['month','Mes'], ['year','Ano'], ['list','Lista']];
+      return '<div class="segmented">' + opts.map(function(o) {
+        return '<button class="' + (State.calendarView === o[0] ? 'active' : '') + '" onclick="setCalendarView(\'' + o[0] + '\')">' + o[1] + '</button>';
+      }).join('') + '</div>';
+    }
+
+    function setCalendarView(view) {
+      State.calendarView = view;
+      localStorage.setItem('facen_calendar_view', view);
+      render();
+    }
+
+    function moveCalendar(delta) {
+      var date = parseDateKey(State.calendarDate);
+      if (State.calendarView === 'day' || State.calendarView === 'list') date = addDays(date, delta);
+      else if (State.calendarView === 'week') date = addDays(date, delta * 7);
+      else if (State.calendarView === 'year') date = new Date(date.getFullYear() + delta, date.getMonth(), date.getDate());
+      else date = new Date(date.getFullYear(), date.getMonth() + delta, Math.min(date.getDate(), 28));
+      State.calendarDate = dateKey(date);
+      localStorage.setItem('facen_calendar_date', State.calendarDate);
+      render();
+    }
+
+    function calendarToday() {
+      State.calendarDate = dateKey(new Date());
+      localStorage.setItem('facen_calendar_date', State.calendarDate);
+      render();
+    }
+
+    function calendarTitle(date) {
+      if (State.calendarView === 'day') return formatDateLong(date);
+      if (State.calendarView === 'week') {
+        var start = startOfWeek(date);
+        var end = addDays(start, 6);
+        return formatDateShort(start) + ' - ' + formatDateShort(end);
+      }
+      if (State.calendarView === 'year') return String(date.getFullYear());
+      if (State.calendarView === 'list') return 'Proximos eventos';
+      return monthNames()[date.getMonth()] + ' ' + date.getFullYear();
+    }
+
+    function calendarSubtitle(date) {
+      var total = State.data.agenda.length || 0;
+      return total + ' entradas guardadas - ' + notificationPermissionLabel();
+    }
+
+    function renderCalendarMonth(date) {
+      var start = startOfWeek(new Date(date.getFullYear(), date.getMonth(), 1));
+      var today = dateKey(new Date());
+      var days = [];
+      for (var i = 0; i < 42; i++) days.push(addDays(start, i));
+      return '<div class="calendar-weekdays">' + dayNamesShort().map(function(d) { return '<div>' + d + '</div>'; }).join('') + '</div>' +
+        '<div class="month-grid">' + days.map(function(day) {
+          var key = dateKey(day);
+          var events = agendaEventsForDate(day);
+          return '<div class="calendar-day ' + (day.getMonth() !== date.getMonth() ? 'outside ' : '') + (key === today ? 'today' : '') + '" onclick="openAgenda(null, \'clase\', \'' + key + '\')">' +
+            '<div class="day-number"><span>' + day.getDate() + '</span><span class="event-dot">' + (events.length ? events.length + ' evt.' : '') + '</span></div>' +
+            events.slice(0, 4).map(renderCalendarEvent).join('') +
+            (events.length > 4 ? '<span class="sub">+' + (events.length - 4) + ' mas</span>' : '') +
+          '</div>';
+        }).join('') + '</div>';
+    }
+
+    function renderCalendarWeek(date) {
+      var start = startOfWeek(date);
+      var days = [];
+      for (var i = 0; i < 7; i++) days.push(addDays(start, i));
+      return '<div class="week-grid">' + days.map(function(day) {
+        var key = dateKey(day);
+        var events = agendaEventsForDate(day);
+        return '<div class="week-col" onclick="openAgenda(null, \'clase\', \'' + key + '\')">' +
+          '<div class="day-number"><span>' + esc(dayNamesShort()[dayOrderFromDate(day)] + ' ' + day.getDate()) + '</span><span class="event-dot">' + events.length + '</span></div>' +
+          (events.map(renderCalendarEvent).join('') || '<div class="sub">Sin eventos.</div>') +
+        '</div>';
+      }).join('') + '</div>';
+    }
+
+    function renderCalendarDay(date) {
+      var events = agendaEventsForDate(date);
+      var hours = [];
+      for (var h = 6; h <= 22; h++) hours.push((h < 10 ? '0' : '') + h + ':00');
+      return '<div class="day-view">' + hours.map(function(hour) {
+        var list = events.filter(function(a) { return String(a.hora_ini || '').slice(0, 2) === hour.slice(0, 2); });
+        return '<div class="day-slot"><div class="day-time">' + hour + '</div><div>' + (list.map(renderCalendarEvent).join('') || '<span class="sub">Libre</span>') + '</div></div>';
+      }).join('') + (events.filter(function(a) { return !a.hora_ini; }).map(renderCalendarEvent).join('') || '') + '</div>';
+    }
+
+    function renderCalendarYear(date) {
+      var year = date.getFullYear();
+      return '<div class="year-grid">' + monthNames().map(function(name, idx) {
+        var monthDate = new Date(year, idx, 1);
+        var events = agendaEventsForMonth(monthDate);
+        return '<button class="year-month" onclick="State.calendarDate=\'' + dateKey(monthDate) + '\'; State.calendarView=\'month\'; localStorage.setItem(\'facen_calendar_date\', State.calendarDate); localStorage.setItem(\'facen_calendar_view\', State.calendarView); render();">' +
+          '<strong><span>' + esc(name) + '</span><span class="badge">' + events.length + '</span></strong>' +
+          '<span class="sub">' + esc(events.slice(0, 3).map(function(a) { return a.titulo; }).join(' - ') || 'Sin eventos') + '</span>' +
+        '</button>';
+      }).join('') + '</div>';
+    }
+
+    function renderCalendarList(date) {
+      var start = new Date(date); start.setHours(0,0,0,0);
+      var rows = [];
+      for (var i = 0; i < 90; i++) {
+        var day = addDays(start, i);
+        agendaEventsForDate(day).forEach(function(a) {
+          rows.push({ day: day, event: a });
+        });
+      }
+      rows = rows.slice(0, 60);
+      return '<div class="list">' + (rows.map(function(row) {
+        var a = row.event;
+        return '<div class="item agenda-list-row"><div><strong>' + esc(formatDateShort(row.day)) + '</strong><div class="sub">' + esc(dayNamesShort()[dayOrderFromDate(row.day)]) + '</div></div><div>' + renderCalendarEvent(a) + '</div><div><button class="btn btn-danger btn-small" onclick="deleteAgenda(' + a.id_agenda + ')">Eliminar</button></div></div>';
+      }).join('') || '<div class="empty">No hay eventos proximos.</div>') + '</div>';
+    }
+
+    function renderCalendarEvent(a) {
+      var tipo = String(a.tipo || '').toLowerCase();
+      return '<button class="calendar-event ' + escAttr(tipo) + '" onclick="event.stopPropagation(); openAgenda(' + a.id_agenda + ')">' +
+        '<strong>' + esc(a.titulo || 'Sin titulo') + '</strong>' +
+        '<span>' + esc([eventTime(a), a.nombre_asignatura, a.sala].filter(Boolean).join(' - ')) + '</span>' +
+      '</button>';
+    }
+
+    function agendaEventsForDate(date) {
+      var key = dateKey(date);
+      var day = dayNames()[dayOrderFromDate(date)];
+      return (State.data.agenda || []).filter(function(a) {
+        if (a.fecha_iso) return a.fecha_iso === key;
+        return a.dia && dayOrder(a.dia) === dayOrder(day);
+      }).sort(function(a, b) {
+        return String(a.hora_ini || '99:99').localeCompare(String(b.hora_ini || '99:99')) ||
+          String(a.titulo || '').localeCompare(String(b.titulo || ''));
+      });
+    }
+
+    function agendaEventsForMonth(date) {
+      var days = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+      var rows = [];
+      for (var i = 1; i <= days; i++) {
+        agendaEventsForDate(new Date(date.getFullYear(), date.getMonth(), i)).forEach(function(a) { rows.push(a); });
+      }
+      return rows;
+    }
+
+    function notificationStatusHtml() {
+      var cls = notificationPermissionClass();
+      return '<span class="badge ' + cls + '">' + esc(notificationPermissionLabel()) + '</span>';
+    }
+
+    function notificationPermissionClass() {
+      if (!('Notification' in window)) return 'badge-danger';
+      if (Notification.permission === 'granted') return 'badge-ok';
+      if (Notification.permission === 'denied') return 'badge-danger';
+      return 'badge-warn';
+    }
+
+    function notificationPermissionLabel() {
+      if (!('Notification' in window)) return 'Notificaciones no soportadas';
+      if (Notification.permission === 'granted') return 'Notificaciones activas';
+      if (Notification.permission === 'denied') return 'Notificaciones bloqueadas';
+      return 'Notificaciones pendientes';
+    }
+
+    function activateNotifications() {
+      if (!('Notification' in window)) {
+        toast('Este navegador no soporta notificaciones.', 'error');
+        return;
+      }
+      if (Notification.permission === 'granted') {
+        scheduleLocalAlerts();
+        toast('Avisos activados', 'ok');
+        render();
+        return;
+      }
+      Notification.requestPermission().then(function(permission) {
+        if (permission === 'granted') {
+          scheduleLocalAlerts();
+          toast('Avisos activados', 'ok');
+        } else {
+          toast('El navegador no concedio permiso de avisos.', 'error');
+        }
+        if (State.view === 'agenda') render();
+      });
+    }
+
+    function renderMallaSubject(x) {
+      var reqs = (x.requisitos || []).map(function(r) { return r.nombre || r.codigo; }).filter(Boolean);
+      return '<article class="malla-subject ' + escAttr(x.estado) + '">' +
+        '<div class="status-row">' + estadoBadge(x.estado) + (x.creditos ? '<span class="badge">' + esc(x.creditos) + ' creditos</span>' : '') + (x.area ? '<span class="badge">' + esc(x.area) + '</span>' : '') + '</div>' +
+        '<div><div class="title">' + esc(x.nombre_asignatura) + '</div><div class="sub">' + esc([x.codigo, x.plan ? 'Plan ' + x.plan : ''].filter(Boolean).join(' - ')) + '</div></div>' +
+        '<div class="req-list">' + esc(reqs.length ? ('Requisitos: ' + reqs.join(' - ')) : 'Sin prerrequisitos registrados.') + '</div>' +
+      '</article>';
+    }
+
+    function estadoBadge(estado) {
+      var e = String(estado || 'pendiente').toLowerCase();
+      if (e === 'aprobada') return '<span class="badge badge-ok">Aprobada</span>';
+      if (e === 'cursando') return '<span class="badge">Cursando</span>';
+      if (e === 'bloqueada') return '<span class="badge badge-danger">Bloqueada</span>';
+      return '<span class="badge badge-warn">Pendiente</span>';
+    }
+
+    function eventTime(a) {
+      return [a.hora_ini, a.hora_fin].filter(Boolean).join('-');
+    }
+
+    function parseDateKey(value) {
+      var m = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (!m) return new Date();
+      return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    }
+
+    function dateKey(date) {
+      return date.getFullYear() + '-' + pad2(date.getMonth() + 1) + '-' + pad2(date.getDate());
+    }
+
+    function addDays(date, days) {
+      var d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+
+    function startOfWeek(date) {
+      return addDays(date, -dayOrderFromDate(date));
+    }
+
+    function dayOrderFromDate(date) {
+      return (date.getDay() + 6) % 7;
+    }
+
+    function formatDateShort(date) {
+      return pad2(date.getDate()) + '/' + pad2(date.getMonth() + 1) + '/' + date.getFullYear();
+    }
+
+    function formatDateLong(date) {
+      return dayNames()[dayOrderFromDate(date)] + ' ' + formatDateShort(date);
+    }
+
+    function dayNames() { return ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo']; }
+    function dayNamesShort() { return ['Lun','Mar','Mie','Jue','Vie','Sab','Dom']; }
+    function monthNames() { return ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']; }
+    function pad2(n) { return String(n).padStart(2, '0'); }
+    function numberFromText(text, fallback) {
+      var match = String(text || '').match(/\d+/);
+      return match ? Number(match[0]) : fallback;
     }
 
     function renderNotas() {
@@ -1144,9 +1602,12 @@
       });
     }
 
-    function openAgenda(id, tipo) {
+    function openAgenda(id, tipo, fecha) {
       var a = id ? State.data.agenda.find(function(x) { return x.id_agenda == id; }) : {};
-      a = a || { tipo: tipo || 'clase', alerta_activa: 1, minutos_antes: 15 };
+      a = a || { tipo: tipo || 'clase', alerta_activa: 1, minutos_antes: 15, fecha_iso: fecha || '' };
+      if (!id && fecha) a.fecha_iso = fecha;
+      var foot = (id ? '<button class="btn btn-danger" onclick="deleteAgenda(' + id + ')">Eliminar</button>' : '') +
+        '<button class="btn btn-primary" onclick="saveAgenda(event)">Guardar</button>';
       openModal(id ? 'Editar agenda' : 'Nueva agenda', '<form id="agenda-form" class="form">' +
         '<input type="hidden" name="id_agenda" value="' + escAttr(a.id_agenda) + '">' +
         '<div class="grid grid-2"><div class="field"><label>Tipo</label><select class="select" name="tipo">' + options(['clase','examen','reunion','entrega'], a.tipo || 'clase') + '</select></div><div class="field"><label>Asignatura</label><select class="select" name="id_asignatura">' + subjectOptions(a.id_asignatura) + '</select></div></div>' +
@@ -1156,14 +1617,34 @@
         '<div class="grid grid-2"><div class="field"><label>Sala o aula</label><input class="input" name="sala" value="' + escAttr(a.sala) + '" placeholder="Aula 101, Lab Bio 2"></div><div class="field"><label>Edificio</label><input class="input" name="edificio" value="' + escAttr(a.edificio) + '" placeholder="Bloque A, Central"></div></div>' +
         '<div class="field"><label>Mapa o ubicacion</label><input class="input" name="mapa_url" value="' + escAttr(a.mapa_url) + '" placeholder="Link de Google Maps o plano FACEN"></div>' +
         '<div class="field"><label>Notas</label><textarea class="textarea" name="notas">' + esc(a.notas) + '</textarea></div></form>',
-        '<button class="btn btn-primary" onclick="saveAgenda()">Guardar</button>');
+        foot);
     }
-    function saveAgenda() {
+    function saveAgenda(evt) {
+      var btn = busyButton(evt, 'Guardando...');
       var data = formData(document.getElementById('agenda-form'));
       data.alerta_activa = data.alerta_activa !== '0';
-      server('guardarAgenda', [State.token, data], function() { closeModal(); toast('Agenda guardada', 'ok'); loadApp(); });
+      server('guardarAgenda', [State.token, data], function(res) {
+        if (res.agenda) State.data.agenda = res.agenda;
+        if (res.resumen) State.data.resumen = res.resumen;
+        closeModal();
+        toast('Agenda guardada', 'ok');
+        scheduleLocalAlerts();
+        if (!res.agenda) loadApp();
+        else render();
+      }, function() { releaseButton(btn); });
     }
-    function deleteAgenda(id) { if (confirm('Eliminar esta entrada?')) server('eliminarAgenda', [State.token, id], function() { toast('Entrada eliminada', 'ok'); loadApp(); }); }
+    function deleteAgenda(id) {
+      if (!confirm('Eliminar esta entrada?')) return;
+      server('eliminarAgenda', [State.token, id], function(res) {
+        if (res.agenda) State.data.agenda = res.agenda;
+        if (res.resumen) State.data.resumen = res.resumen;
+        closeModal();
+        toast('Entrada eliminada', 'ok');
+        scheduleLocalAlerts();
+        if (!res.agenda) loadApp();
+        else render();
+      });
+    }
 
     function savePerfil(e) {
       e.preventDefault();
@@ -1185,8 +1666,14 @@
 
     function savePreferencias(e) {
       e.preventDefault();
+      var data = formData(e.target);
       requestNotifications();
-      server('guardarPreferencias', [State.token, formData(e.target)], function() { toast('Alertas guardadas', 'ok'); loadApp(); });
+      server('guardarPreferencias', [State.token, data], function(res) {
+        State.data.preferencias = Object.assign({}, State.data.preferencias || {}, data, res.preferencias || {});
+        toast('Alertas guardadas', 'ok');
+        scheduleLocalAlerts();
+        render();
+      });
     }
 
     function requestNotifications() {

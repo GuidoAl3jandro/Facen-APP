@@ -23,6 +23,8 @@ var CONFIG = {
     LECTURAS: 'LECTURAS',
     GRUPOS: 'GRUPOS_ESTUDIO',
     AGENDA: 'AGENDA_ACADEMICA',
+    MALLA: 'MALLA_ACADEMICA',
+    CORRELATIVIDADES: 'CORRELATIVIDADES',
     PREFERENCIAS: 'PREFERENCIAS_ESTUDIANTE',
     LOGS: 'LOGS'
   },
@@ -61,6 +63,8 @@ var SCHEMA = {
   LECTURAS: ['id_lectura', 'id_estudiante', 'id_asignatura', 'titulo', 'fuente', 'url', 'estado', 'prioridad', 'fecha_objetivo', 'notas', 'fecha_creacion', 'fecha_modificacion'],
   GRUPOS_ESTUDIO: ['id_grupo', 'id_estudiante', 'id_asignatura', 'nombre', 'integrantes', 'canal', 'lugar', 'proxima_fecha', 'proxima_hora', 'objetivo', 'estado', 'fecha_creacion', 'fecha_modificacion'],
   AGENDA_ACADEMICA: ['id_agenda', 'id_estudiante', 'id_asignatura', 'tipo', 'titulo', 'dia', 'fecha', 'hora_ini', 'hora_fin', 'sala', 'edificio', 'mapa_url', 'notas', 'alerta_activa', 'minutos_antes', 'activo', 'fecha_creacion', 'fecha_modificacion'],
+  MALLA_ACADEMICA: ['id_malla', 'carrera', 'plan', 'codigo', 'nombre_asignatura', 'nivel_sugerido', 'creditos', 'area', 'fuente', 'activo'],
+  CORRELATIVIDADES: ['id_correlatividad', 'carrera', 'plan', 'codigo_asignatura', 'nombre_asignatura', 'codigo_requisito', 'nombre_requisito', 'tipo', 'fuente', 'activo'],
   PREFERENCIAS_ESTUDIANTE: ['id_preferencia', 'id_estudiante', 'alertas_clases', 'alertas_examenes', 'alertas_reuniones', 'alertas_entregas', 'minutos_clases', 'minutos_examenes', 'minutos_reuniones', 'minutos_entregas', 'instalacion_pwa', 'fecha_modificacion'],
   LOGS: ['id_log', 'fecha', 'id_usuario', 'accion', 'detalle']
 };
@@ -243,11 +247,13 @@ function obtenerBootstrap(token) {
     var lecturas = safeCall_(function() { return obtenerMisLecturas_(perfil.id_estudiante); }, []);
     var grupos = safeCall_(function() { return obtenerMisGrupos_(perfil.id_estudiante); }, []);
     var preferencias = safeCall_(function() { return obtenerPreferencias_(perfil.id_estudiante); }, obtenerPreferenciasDefault_());
+    var malla = safeCall_(function() { return obtenerMallaAcademica_(perfil, inscripciones, notas); }, mallaDefault_());
     return bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, '', {
       apuntes: apuntes,
       eventos: eventos,
       lecturas: lecturas,
-      grupos: grupos
+      grupos: grupos,
+      malla: malla
     });
   } catch (e) {
     return {
@@ -267,6 +273,11 @@ function obtenerDatosVista(token, vista) {
     if (vista === 'eventos') return { success: true, eventos: obtenerMisEventos_(perfil.id_estudiante) };
     if (vista === 'lecturas') return { success: true, lecturas: obtenerMisLecturas_(perfil.id_estudiante) };
     if (vista === 'grupos') return { success: true, grupos: obtenerMisGrupos_(perfil.id_estudiante) };
+    if (vista === 'malla') {
+      var inscripciones = obtenerMisInscripciones_(perfil.id_estudiante);
+      var notas = obtenerMisNotas_(perfil.id_estudiante, inscripciones);
+      return { success: true, malla: obtenerMallaAcademica_(perfil, inscripciones, notas), mallaLoaded: true };
+    }
     return { success: true };
   } catch (e) {
     return fail_('No se pudo cargar esta vista: ' + e.message);
@@ -1293,7 +1304,7 @@ function guardarAgenda(token, datos) {
     tipo: trim_(datos.tipo || 'clase'),
     titulo: trim_(datos.titulo),
     dia: trim_(datos.dia),
-    fecha: datos.fecha ? new Date(datos.fecha) : '',
+    fecha: dateOnlyString_(datos.fecha),
     hora_ini: trim_(datos.hora_ini),
     hora_fin: trim_(datos.hora_fin),
     sala: trim_(datos.sala),
@@ -1318,7 +1329,13 @@ function guardarAgenda(token, datos) {
     appendObject_(CONFIG.SHEETS.AGENDA, values);
   }
   log_(session.id_usuario, 'AGENDA', values.tipo + ': ' + values.titulo);
-  return { success: true, message: 'Agenda guardada.' };
+  var agenda = obtenerMiAgenda_(perfil.id_estudiante);
+  return {
+    success: true,
+    message: 'Agenda guardada.',
+    agenda: agenda,
+    resumen: resumen_(perfil.id_estudiante, null, null, null, null, null, null, agenda)
+  };
 }
 
 function eliminarAgenda(token, idAgenda) {
@@ -1330,7 +1347,12 @@ function eliminarAgenda(token, idAgenda) {
     return fail_('No se pudo eliminar la entrada.');
   }
   log_(session.id_usuario, 'AGENDA_DELETE', String(idAgenda));
-  return { success: true };
+  var agenda = obtenerMiAgenda_(perfil.id_estudiante);
+  return {
+    success: true,
+    agenda: agenda,
+    resumen: resumen_(perfil.id_estudiante, null, null, null, null, null, null, agenda)
+  };
 }
 
 function guardarPreferencias(token, datos) {
@@ -1360,7 +1382,7 @@ function guardarPreferencias(token, datos) {
     appendObject_(CONFIG.SHEETS.PREFERENCIAS, values);
   }
   log_(session.id_usuario, 'PREFERENCIAS', 'Alertas actualizadas');
-  return { success: true, message: 'Preferencias guardadas.' };
+  return { success: true, message: 'Preferencias guardadas.', preferencias: values };
 }
 
 function obtenerMisInscripciones_(idEstudiante) {
@@ -1474,6 +1496,171 @@ function obtenerPreferenciasDefault_() {
   };
 }
 
+function obtenerMallaAcademica_(perfil, inscripciones, notas) {
+  perfil = perfil || {};
+  inscripciones = inscripciones || [];
+  notas = notas || [];
+  var carrera = canonicalCareerName_(perfil.carrera || CONFIG.EMBEDDED_CATALOG.CAREER);
+  var plan = '2025';
+  var rows = getRows_(CONFIG.SHEETS.MALLA).filter(function(row) {
+    return isActive_(row.activo) &&
+      (!row.carrera || normalize_(row.carrera) === normalize_(carrera)) &&
+      (!row.plan || String(row.plan) === plan);
+  });
+  if (!rows.length) {
+    return mallaDefault_('Malla academica pendiente de carga para ' + carrera + '.');
+  }
+
+  var requisitos = {};
+  getRows_(CONFIG.SHEETS.CORRELATIVIDADES).filter(function(row) {
+    return isActive_(row.activo) &&
+      (!row.carrera || normalize_(row.carrera) === normalize_(carrera)) &&
+      (!row.plan || String(row.plan) === plan);
+  }).forEach(function(row) {
+    var key = courseLookupKey_(row.codigo_asignatura, row.nombre_asignatura);
+    if (!key) return;
+    if (!requisitos[key]) requisitos[key] = [];
+    requisitos[key].push({
+      codigo: trim_(row.codigo_requisito),
+      nombre: trim_(row.nombre_requisito),
+      tipo: trim_(row.tipo || 'obligatoria')
+    });
+  });
+
+  var status = academicStatusMaps_(inscripciones, notas);
+  var resumen = {
+    total: 0,
+    aprobadas: 0,
+    cursando: 0,
+    pendientes: 0,
+    bloqueadas: 0,
+    creditosTotal: 0,
+    creditosAprobados: 0,
+    creditosCursando: 0,
+    avance: 0
+  };
+
+  var items = rows.map(function(row) {
+    var key = courseLookupKey_(row.codigo, row.nombre_asignatura);
+    var reqs = requisitos[key] || [];
+    var aprobada = hasCourseKey_(status.aprobadas, row.codigo, row.nombre_asignatura);
+    var cursando = hasCourseKey_(status.cursando, row.codigo, row.nombre_asignatura);
+    var requisitosCumplidos = reqs.every(function(req) {
+      return hasCourseKey_(status.aprobadas, req.codigo, req.nombre);
+    });
+    var estado = aprobada ? 'aprobada' : (cursando ? 'cursando' : (requisitosCumplidos ? 'pendiente' : 'bloqueada'));
+    var creditos = numberOr_(row.creditos, 0);
+    resumen.total += 1;
+    resumen.creditosTotal += creditos;
+    if (estado === 'aprobada') {
+      resumen.aprobadas += 1;
+      resumen.creditosAprobados += creditos;
+    } else if (estado === 'cursando') {
+      resumen.cursando += 1;
+      resumen.creditosCursando += creditos;
+    } else if (estado === 'bloqueada') {
+      resumen.bloqueadas += 1;
+    } else {
+      resumen.pendientes += 1;
+    }
+    return {
+      id_malla: row.id_malla,
+      carrera: row.carrera || carrera,
+      plan: row.plan || plan,
+      codigo: row.codigo,
+      nombre_asignatura: row.nombre_asignatura,
+      nivel_sugerido: row.nivel_sugerido || '',
+      creditos: creditos,
+      area: row.area || '',
+      fuente: row.fuente || '',
+      requisitos: reqs,
+      requisitosCumplidos: requisitosCumplidos,
+      estado: estado
+    };
+  }).sort(function(a, b) {
+    return numberOr_(a.nivel_sugerido, 99) - numberOr_(b.nivel_sugerido, 99) ||
+      String(a.nombre_asignatura || '').localeCompare(String(b.nombre_asignatura || ''));
+  });
+
+  resumen.avance = resumen.total ? Math.round((resumen.aprobadas / resumen.total) * 100) : 0;
+  return {
+    carrera: carrera,
+    plan: plan,
+    fuente: 'Guia Academica FACEN 2026-2',
+    items: items,
+    resumen: resumen,
+    warning: ''
+  };
+}
+
+function mallaDefault_(warning) {
+  return {
+    carrera: '',
+    plan: '',
+    fuente: '',
+    items: [],
+    resumen: {
+      total: 0,
+      aprobadas: 0,
+      cursando: 0,
+      pendientes: 0,
+      bloqueadas: 0,
+      creditosTotal: 0,
+      creditosAprobados: 0,
+      creditosCursando: 0,
+      avance: 0
+    },
+    warning: warning || ''
+  };
+}
+
+function academicStatusMaps_(inscripciones, notas) {
+  var aprobadas = {};
+  var cursando = {};
+  var inscripcionesById = indexBy_(inscripciones || [], 'id_inscripcion');
+  (inscripciones || []).forEach(function(inscripcion) {
+    addCourseKeys_(cursando, inscripcion.codigo || inscripcion.codigo_asignatura_snapshot, inscripcion.nombre_asignatura || inscripcion.nombre_asignatura_snapshot);
+  });
+  (notas || []).forEach(function(nota) {
+    var inscripcion = inscripcionesById[nota.id_inscripcion] || nota;
+    if (normalize_(nota.estado) !== 'aprobada') return;
+    addCourseKeys_(aprobadas, inscripcion.codigo || inscripcion.codigo_asignatura_snapshot, inscripcion.nombre_asignatura || inscripcion.nombre_asignatura_snapshot);
+  });
+  return { aprobadas: aprobadas, cursando: cursando };
+}
+
+function courseLookupKey_(codigo, nombre) {
+  var code = normalize_(codigo);
+  if (code) return 'code:' + code;
+  var name = normalize_(nombre);
+  return name ? 'name:' + name : '';
+}
+
+function addCourseKeys_(map, codigo, nombre) {
+  var code = normalize_(codigo);
+  var name = normalize_(nombre);
+  if (code) map['code:' + code] = true;
+  if (name) map['name:' + name] = true;
+  courseAliasNames_(codigo, nombre).forEach(function(alias) {
+    map['name:' + normalize_(alias)] = true;
+  });
+}
+
+function hasCourseKey_(map, codigo, nombre) {
+  var code = normalize_(codigo);
+  var name = normalize_(nombre);
+  return !!((code && map['code:' + code]) || (name && map['name:' + name]));
+}
+
+function courseAliasNames_(codigo, nombre) {
+  var aliases = [];
+  var code = normalize_(codigo);
+  var name = normalize_(nombre);
+  if (code === 'mat101' || name === 'calculo i') aliases.push('Calculo Diferencial e Integral');
+  if (name.indexOf('softwares estadisticos') >= 0 || name.indexOf('analitica de big data') >= 0) aliases.push('Electiva I');
+  return aliases;
+}
+
 function bootstrapResponse_(session, perfil, inscripciones, notas, agenda, preferencias, warning, extra) {
   perfil = perfil || {};
   extra = extra || {};
@@ -1481,6 +1668,7 @@ function bootstrapResponse_(session, perfil, inscripciones, notas, agenda, prefe
   var eventos = extra.eventos || [];
   var lecturas = extra.lecturas || [];
   var grupos = extra.grupos || [];
+  var malla = extra.malla || mallaDefault_();
   return {
     success: true,
     warning: warning || '',
@@ -1499,6 +1687,8 @@ function bootstrapResponse_(session, perfil, inscripciones, notas, agenda, prefe
     lecturasLoaded: true,
     grupos: grupos,
     gruposLoaded: true,
+    malla: malla,
+    mallaLoaded: true,
     agenda: agenda || [],
     preferencias: preferencias || obtenerPreferenciasDefault_(),
     companeros: [],
