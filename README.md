@@ -32,7 +32,7 @@ El despliegue puede ser anonimo porque la aplicacion maneja sesiones por token p
 
 - Spreadsheet: `https://docs.google.com/spreadsheets/d/1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc/edit`
 - Apps Script: `https://script.google.com/d/1mXbo3LGQwW6S3wKtAcCyMHPBDHkm0KFRXaRpBbAcdNAM-8hr5z9FfLZT/edit`
-- Web app deployment actualmente usado por GitHub Pages: `AKfycbwi0em5pAGlaVMstzCPxOs7aopGNylBwspSlj9Sx4ZwK_cNMSHiCi5fmPpgP68FoqPHjA`
+- Web app deployment actualmente usado por GitHub Pages: `AKfycbxPW313JYFjjRodLkOEPl6xswoDCM1ZkbeUtAALdrhIGBg2rY85YiBnJyzwmZz8F-on9Q`
 - Web app moderno pendiente de redeploy propietario: `AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg`
 - GitHub Pages: `https://appfacen.github.io/Facen-APP/`
 
@@ -42,11 +42,13 @@ El catalogo operativo usa este orden: snapshot CSV generado desde Google Sheets,
 
 ## Estado operativo verificado 2026-06-30
 
-- `https://appfacen.github.io/Facen-APP/` publica `APP_BUILD = 2026.06.30.2` y apunta temporalmente al deployment publico `AKfycbwi0...@20`.
+- `https://appfacen.github.io/Facen-APP/` queda preparado con `APP_BUILD = 2026.06.30.3` y apunta al deployment publico de rescate `AKfycbxPW...@19`, verificado por Playwright con bootstrap OK, 7 inscripciones, 24 examenes en agenda y 3 grupos existentes.
+- Se cargaron fechas de examenes desde `Guia-Academica-2026-2.pdf`: 28 filas en `FECHAS_EXAMENES` y 24 eventos visibles para `diegomezapy` en `AGENDA_ACADEMICA`.
 - El libro operativo fue corregido para que las columnas de fecha/hora se lean como texto; esto evita que el `bootstrap` pierda Perfil e Inscripciones por objetos `Date` de Google Sheets.
-- Con prueba Playwright se verifico carga de `diegomezapy`: Perfil completo, `inscripcionesLen = 7` y `resumen.totalAsignaturas = 7`.
-- El codigo defensivo para convertir `Date` a texto fue subido a Apps Script HEAD y versionado como `42`, pero no quedo activo en backend publico.
+- El codigo defensivo para convertir `Date` a texto fue subido a Apps Script HEAD y versionado como `43`, pero no quedo activo en backend publico.
+- El guardado robusto de grupos esta corregido en `apps-script/Code.gs` e `apps-script/index.html`; requiere redeploy publico desde la cuenta propietaria/autorizada para quedar activo en produccion.
 - El deployment moderno `AKfycbyr...` quedo restringido despues de intentar redeployarlo desde la cuenta actual; no usarlo en Pages hasta redeploy publico desde la cuenta propietaria/autorizada.
+- El deployment historico `AKfycbwi0...@20` tambien quedo restringido despues de intentar actualizarlo desde la cuenta actual; por eso Pages debe usar temporalmente `AKfycbxPW...@19`.
 - No redeployar deployments historicos publicos desde una cuenta que no sea propietaria/autorizada, porque las pruebas de 2026-06-29 confirmaron que un deployment historico publico puede quedar restringido al redeployarse desde la cuenta actual.
 - Para volver a publicar una version futura, abrir Apps Script con la cuenta propietaria o una cuenta explicitamente autorizada para desplegar Web Apps publicos, publicar con acceso `Anyone`, verificar `/exec` anonimo y recien despues cambiar `APP_URL` en `index.html`.
 
@@ -63,7 +65,7 @@ La especificacion sin credenciales del libro reconstruido queda en `docs/FACEN_A
 
 ## Correccion de enlace publico 2026-06-30
 
-El 2026-06-30 se corrigio el libro productivo para evitar fechas nativas en el paquete de `bootstrap`. Durante el intento de activar la version moderna, `AKfycbyr...` quedo restringido por permisos; por continuidad operativa GitHub Pages se actualizo a `APP_BUILD = 2026.06.30.2` y volvio al backend publico probado `AKfycbwi0...@20`.
+El 2026-06-30 se corrigio el libro productivo para evitar fechas nativas en el paquete de `bootstrap`. Durante el intento de activar versiones nuevas desde la cuenta actual, `AKfycbyr...` y luego `AKfycbwi0...` quedaron restringidos por permisos; por continuidad operativa GitHub Pages se preparo con `APP_BUILD = 2026.06.30.3` apuntando al backend publico de rescate `AKfycbxPW...@19`.
 
 ## Comandos utiles
 

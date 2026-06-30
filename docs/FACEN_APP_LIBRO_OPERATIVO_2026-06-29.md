@@ -15,7 +15,7 @@ Fecha de reconstruccion: 2026-06-29 20:55 America/Asuncion
 - Spreadsheet productivo: `https://docs.google.com/spreadsheets/d/1bxqwZy6cW1gGdPGtRyWDn52WdmbMpiMKvLjA6X2lFmc/edit`
 - Respaldo previo: `https://docs.google.com/spreadsheets/d/1j3vn6kjy0tMZU2IdD6qzQUBrhX_7AkZNxe8IPtg78Hw`
 - GitHub Pages: `https://appfacen.github.io/Facen-APP/`
-- Backend publico usado por Pages desde 2026-06-30 05:43: `https://script.google.com/macros/s/AKfycbwi0em5pAGlaVMstzCPxOs7aopGNylBwspSlj9Sx4ZwK_cNMSHiCi5fmPpgP68FoqPHjA/exec`
+- Backend publico usado por Pages desde 2026-06-30 07:06: `https://script.google.com/macros/s/AKfycbxPW313JYFjjRodLkOEPl6xswoDCM1ZkbeUtAALdrhIGBg2rY85YiBnJyzwmZz8F-on9Q/exec`
 - Backend moderno pendiente de redeploy propietario: `https://script.google.com/macros/s/AKfycbyrQW5G1OIiW-WqV-DBB-jgPpOm8A8grwongJJprexnJ8sMWLkXo_H4ZEg-T5uRghcIeg/exec`
 
 ## Pestanas productivas
@@ -26,8 +26,8 @@ Fecha de reconstruccion: 2026-06-29 20:55 America/Asuncion
 | SESIONES | 0 | Tokens activos creados al iniciar sesion |
 | ESTUDIANTES | 8 | Perfil academico por usuario |
 | CARRERAS | 12 | Catalogo de carreras FACEN |
-| ASIGNATURAS | 17 | Catalogo de asignaturas activas |
-| SECCIONES | 17 | Secciones disponibles por asignatura |
+| ASIGNATURAS | 20 | Catalogo de asignaturas activas |
+| SECCIONES | 20 | Secciones disponibles por asignatura |
 | HORARIOS_ASIGNATURAS | 25 | Horarios y aulas por seccion |
 | AULAS | 8 | Catalogo de aulas y edificios |
 | INSCRIPCIONES | 10 | Asignaturas base y asignaciones reales por perfiles activos |
@@ -35,14 +35,14 @@ Fecha de reconstruccion: 2026-06-29 20:55 America/Asuncion
 | APUNTES | 0 | Apuntes del estudiante |
 | EVENTOS_PERSONALES | 0 | Eventos personales del estudiante |
 | LECTURAS | 0 | Lecturas academicas |
-| GRUPOS_ESTUDIO | 0 | Grupos de estudio |
-| AGENDA_ACADEMICA | 0 | Agenda academica editable |
+| GRUPOS_ESTUDIO | 3 | Grupos de estudio |
+| AGENDA_ACADEMICA | 24 | Agenda academica editable |
 | PREFERENCIAS_ESTUDIANTE | 8 | Preferencias de alertas |
 | LOGS | 1 | Auditoria tecnica de la reconstruccion |
 | DOCENTES | 3 | Catalogo legacy de docentes |
 | SECCIONES_DOCENTES | 4 | Relacion legacy docente-seccion |
 | PARAMETROS | 2 | Parametros operativos |
-| FECHAS_EXAMENES | 3 | Fechas base de examenes |
+| FECHAS_EXAMENES | 28 | Fechas base de examenes |
 | REGISTRAR_USUARIO | 0 | Hoja legacy de relacion usuario-asignatura |
 
 ## Catalogo base
@@ -55,13 +55,16 @@ Fecha de reconstruccion: 2026-06-29 20:55 America/Asuncion
 
 - Metadata final: 22 hojas productivas, sin hojas `REBUILD_*`.
 - Rangos verificados despues del intercambio: `USUARIOS`, `ESTUDIANTES`, `ASIGNATURAS`, `HORARIOS_ASIGNATURAS`, `INSCRIPCIONES`, `PREFERENCIAS_ESTUDIANTE`, `LOGS`.
-- GitHub Pages publico `APP_BUILD = 2026.06.30.2` apuntando al backend fallback `AKfycbwi0...@20`.
-- Backend Apps Script fallback `AKfycbwi0...@20` respondio `HTTP 200` y cargo Perfil completo + 7 inscripciones para `diegomezapy`.
+- GitHub Pages queda preparado con `APP_BUILD = 2026.06.30.3` apuntando al backend publico de rescate `AKfycbxPW...@19`.
+- Backend Apps Script `AKfycbxPW...@19` respondio `HTTP 200` y cargo bootstrap OK, 7 inscripciones, 24 examenes de agenda y 3 grupos existentes para `diegomezapy`.
 - Las columnas de fecha/hora criticas quedaron como texto (`TEXT` + `stringValue`) para evitar fallos de serializacion en `google.script.run`.
+- `FECHAS_EXAMENES` contiene 28 filas tomadas de `Guia-Academica-2026-2.pdf`, carrera Matematica Estadistica, Plan 2025, 2do periodo; todas con hora `17:00`.
+- `AGENDA_ACADEMICA` contiene 24 examenes visibles para `id_estudiante = 8`, asociados a sus asignaturas inscritas y con alerta activa 60 minutos antes.
 
 ## Limitaciones pendientes
 
 - No fue posible ejecutar funciones Apps Script con `clasp run` desde la cuenta actual.
 - No fue posible limpiar `CacheService` del deployment historico desde consola.
 - La publicacion definitiva de la version moderna del backend requiere redeploy anonimo desde la cuenta propietaria/autorizada.
-- El deployment moderno `AKfycbyr...` quedo restringido al intentar redeployarlo desde la cuenta actual; no debe usarse en Pages hasta ser republicado y verificado anonimamente.
+- El deployment moderno `AKfycbyr...` y el historico `AKfycbwi0...@20` quedaron restringidos al intentar redeployarlos desde la cuenta actual; no deben usarse en Pages hasta ser republicados y verificados anonimamente desde la cuenta propietaria/autorizada.
+- El guardado robusto de grupos esta corregido en Apps Script HEAD version 43, pero no queda activo en el backend publico de rescate hasta redeploy propietario.

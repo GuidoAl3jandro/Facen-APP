@@ -1239,7 +1239,7 @@ function guardarGrupo(token, datos) {
     integrantes: trim_(datos.integrantes),
     canal: trim_(datos.canal),
     lugar: trim_(datos.lugar),
-    proxima_fecha: datos.proxima_fecha ? new Date(datos.proxima_fecha) : '',
+    proxima_fecha: dateOnlyString_(datos.proxima_fecha),
     proxima_hora: trim_(datos.proxima_hora),
     objetivo: trim_(datos.objetivo),
     estado: trim_(datos.estado || 'Activo'),
@@ -1258,7 +1258,14 @@ function guardarGrupo(token, datos) {
     appendObject_(CONFIG.SHEETS.GRUPOS, values);
   }
   log_(session.id_usuario, 'GRUPO', values.nombre);
-  return { success: true, message: 'Grupo guardado.' };
+  var grupos = obtenerMisGrupos_(perfil.id_estudiante);
+  return {
+    success: true,
+    message: 'Grupo guardado.',
+    grupos: grupos,
+    gruposLoaded: true,
+    resumen: resumen_(perfil.id_estudiante, null, null, null, null, null, grupos, null)
+  };
 }
 
 function eliminarGrupo(token, idGrupo) {
@@ -2043,6 +2050,16 @@ function now_() {
 function isoDate_(date) {
   if (!date) return '';
   return Utilities.formatDate(new Date(date), 'America/Asuncion', 'yyyy-MM-dd');
+}
+
+function dateOnlyString_(value) {
+  value = trim_(value);
+  if (!value) return '';
+  var match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) return match[1] + '-' + match[2] + '-' + match[3];
+  var date = new Date(value);
+  if (isNaN(date.getTime())) return value;
+  return Utilities.formatDate(date, 'America/Asuncion', 'yyyy-MM-dd');
 }
 
 function periodoActual_() {

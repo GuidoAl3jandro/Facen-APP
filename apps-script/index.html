@@ -1110,9 +1110,27 @@
         '<div class="grid grid-2"><div class="field"><label>Canal</label><input class="input" name="canal" value="' + escAttr(g.canal) + '" placeholder="WhatsApp, Meet, Classroom"></div><div class="field"><label>Lugar</label><input class="input" name="lugar" value="' + escAttr(g.lugar) + '"></div></div>' +
         '<div class="grid grid-2"><div class="field"><label>Proxima fecha</label><input class="input" name="proxima_fecha" type="date" value="' + escAttr(g.proxima_fecha_iso) + '"></div><div class="field"><label>Hora</label><input class="input" name="proxima_hora" type="time" value="' + escAttr(g.proxima_hora) + '"></div></div>' +
         '<div class="field"><label>Objetivo de la proxima reunion</label><textarea class="textarea" name="objetivo">' + esc(g.objetivo) + '</textarea></div></form>',
-        '<button class="btn btn-primary" onclick="saveGrupo()">Guardar</button>');
+        '<button type="button" class="btn btn-primary" onclick="saveGrupo(event)">Guardar</button>');
     }
-    function saveGrupo() { server('guardarGrupo', [State.token, formData(document.getElementById('grupo-form'))], function() { closeModal(); toast('Grupo guardado', 'ok'); loadApp(); }); }
+    function saveGrupo(evt) {
+      var btn = busyButton(evt, 'Guardando...');
+      server('guardarGrupo', [State.token, formData(document.getElementById('grupo-form'))], function(res) {
+        if (res.grupos) {
+          State.data.grupos = res.grupos;
+          State.data.gruposLoaded = true;
+        }
+        if (res.resumen) State.data.resumen = res.resumen;
+        closeModal();
+        toast('Grupo guardado', 'ok');
+        if (!res.grupos) {
+          State.data.gruposLoaded = false;
+          loadVista('grupos', 'grupos', 'gruposLoaded');
+        }
+        render();
+      }, function() {
+        releaseButton(btn);
+      });
+    }
     function deleteGrupo(id) { if (confirm('Eliminar grupo?')) server('eliminarGrupo', [State.token, id], function() { toast('Grupo eliminado', 'ok'); loadApp(); }); }
     function openGrupoCon(idEstudiante) {
       var c = (State.data.companeros || []).find(function(x) { return x.id_estudiante == idEstudiante; });

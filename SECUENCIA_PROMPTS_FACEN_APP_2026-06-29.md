@@ -238,3 +238,30 @@ Resultado resumido:
 * El intento de activar `AKfycbyr...@42` dejo el deployment restringido con `Necesitas acceso`; por seguridad se retiro de Pages.
 * Se comprobo que `AKfycbwi0...@20` sigue publico y carga Perfil + 7 asignaturas con el libro corregido.
 * Se publico y verifico `APP_BUILD = 2026.06.30.2` y `facen-app-v11-shell-20260630`, apuntando Pages temporalmente al backend fallback publico.
+
+### 2026-06-30 - Examenes desde guia academica y grupos
+
+Texto del usuario:
+
+```text
+YA FUNCIONA BUENA PARTE, AHORA FALTA AGREGAR LOS DATOS DE LOS DIAS Y HORARIOS DE EXAMENES DESDE LAS GUIAS ACADEMICAS G:\Mi unidad\FACENapp\Guia-Academica-2026-2.pdf
+
+CUANDO CREO UN GRUPO, NO GUARDA EL DATO NI LO RECONOCE LUEGO
+```
+
+Interpretacion operativa:
+
+* La app ya habia recuperado una parte importante de Perfil/Materias.
+* Faltaba poblar el libro real con examenes desde la guia academica 2026-2.
+* El flujo de grupos debia probarse contra el backend publico, no solo contra la hoja.
+
+Resultado resumido:
+
+* Se extrajo el PDF a texto y se cargaron 28 fechas en `FECHAS_EXAMENES`.
+* Se cargaron 24 examenes visibles en `AGENDA_ACADEMICA` para `id_estudiante = 8`.
+* Se completaron asignaturas/secciones snapshot faltantes (`1004`, `1006`, `1013`; `2004`, `2006`, `2013`).
+* Se implemento en Apps Script HEAD version `43` el fix de grupos: fecha como texto `yyyy-MM-dd`, respuesta con `grupos` + `resumen` y refresco frontend sin recarga total.
+* Al intentar activar `AKfycbwi0...@43`, el deployment quedo `HTTP 403`; el rollback a `@20` no recupero acceso anonimo.
+* Se eligio como rescate publico `AKfycbxPW...@19`, verificado con `bootSuccess = true`, 7 inscripciones, 24 examenes y 3 grupos existentes.
+* Se preparo `APP_BUILD = 2026.06.30.3` y `facen-app-v12-shell-20260630`.
+* Pendiente critico: redeploy propietario de la version `43` para que el guardado robusto de grupos quede activo en produccion.

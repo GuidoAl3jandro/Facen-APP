@@ -1663,3 +1663,108 @@
 * No volver a tocar `AKfycbyr...` desde la cuenta actual para produccion publica.
 * Mantener las columnas de fecha/hora como texto en el libro operativo.
 * Cuando se haga redeploy valido, probar primero `/exec` anonimo y luego Perfil + Materias con usuario real antes de actualizar `APP_URL`.
+
+## 2026-06-30 07:06
+
+### Proyecto
+
+* Nombre: FACEN App
+* Cliente o institucion: FACEN
+* Ruta local: `G:\Mi unidad\FACENapp\Facen-APP`
+* Repositorio: `https://github.com/appfacen/Facen-APP`
+* URL publica: `https://appfacen.github.io/Facen-APP/`
+* Responsable: Codex
+* Version: `APP_BUILD = 2026.06.30.3`, Apps Script HEAD version `43`
+
+### Objetivo de la intervencion
+
+* Agregar dias y horarios de examenes desde `G:\Mi unidad\FACENapp\Guia-Academica-2026-2.pdf`.
+* Corregir el guardado/carga de grupos de estudio para que un grupo creado se asocie y vuelva a reconocerse.
+* Mantener la app publica fuera de `HTTP 403` y registrar el estado real.
+
+### Diagnostico inicial
+
+* La guia academica PDF estaba disponible localmente y se pudo extraer a texto con `pdftotext`.
+* La tabla `FECHAS_EXAMENES` tenia solo 3 filas base y `AGENDA_ACADEMICA` no tenia examenes visibles.
+* `GRUPOS_ESTUDIO` tenia 3 grupos reales para `id_estudiante = 8`, pero el backend historico fallaba cuando una fila nueva generaba objetos `Date`.
+* La funcion `guardarGrupo` escribia `proxima_fecha` como `new Date(...)` y luego el frontend recargaba toda la app, lo que exponia nuevamente el problema de serializacion de fechas.
+
+### Acciones realizadas
+
+* Se extrajo `Guia-Academica-2026-2.pdf` a `G:\Mi unidad\FACENapp\Guia-Academica-2026-2.txt`.
+* Se cargaron 28 filas en `FECHAS_EXAMENES` para asignaturas del Plan 2025, 2do periodo, todas a las `17:00`.
+* Se agregaron 24 examenes a `AGENDA_ACADEMICA` para `id_estudiante = 8`, asociados a las asignaturas inscritas y con alerta 60 minutos antes.
+* Se completaron en `ASIGNATURAS` y `SECCIONES` los IDs de snapshot que ya estaban usados por `INSCRIPCIONES`: `1004`, `1006`, `1013` y secciones `2004`, `2006`, `2013`.
+* Se corrigio `apps-script/Code.gs`: `guardarGrupo` ahora guarda `proxima_fecha` como texto `yyyy-MM-dd` mediante `dateOnlyString_` y devuelve `grupos` + `resumen`.
+* Se corrigio `apps-script/index.html`: `saveGrupo(event)` actualiza `State.data.grupos` con la respuesta del servidor sin recargar toda la app.
+* Se subio el codigo a Apps Script HEAD y se creo version `43`.
+* Se intento actualizar el deployment publico `AKfycbwi0...` a `@43`; quedo `HTTP 403 / Acceso denegado`.
+* Se intento restaurar `AKfycbwi0...` a `@20`, pero siguio `HTTP 403`.
+* Se probaron deployments historicos publicos; `AKfycbxPW...@19` respondio anonimamente y cargo datos reales.
+* Se actualizo el shell de GitHub Pages a `APP_BUILD = 2026.06.30.3`, cache `facen-app-v12-shell-20260630` y backend `AKfycbxPW...@19`.
+
+### Archivos modificados
+
+* `apps-script/Code.gs`
+* `apps-script/index.html`
+* `index.html`
+* `sw.js`
+* `README.md`
+* `docs/FACEN_APP_LIBRO_OPERATIVO_2026-06-29.md`
+* `SECUENCIA_PROMPTS_FACEN_APP_2026-06-29.md`
+* `BITACORA_FACEN_DAPP_APPWEB_FACEN_APP.md`
+
+### Comandos o scripts ejecutados
+
+* `pdftotext -layout -enc UTF-8 'G:\Mi unidad\FACENapp\Guia-Academica-2026-2.pdf' 'G:\Mi unidad\FACENapp\Guia-Academica-2026-2.txt'`
+* `npx clasp push --force`
+* `npx clasp version "FACEN App grupos y examenes guia 2026-2 2026-06-30"`
+* `npx clasp deploy -i AKfycbwi0... -V 43`
+* `npx clasp deploy -i AKfycbwi0... -V 20`
+* Pruebas Playwright headless contra Apps Script directo y GitHub Pages.
+* Actualizaciones controladas con Google Sheets API.
+
+### Resultados verificados
+
+* `FECHAS_EXAMENES` quedo con 28 filas y columnas `fecha`/`hora` como texto.
+* `AGENDA_ACADEMICA` quedo con 24 examenes visibles para `id_estudiante = 8`.
+* `GRUPOS_ESTUDIO` quedo limpio con 3 grupos reales y sin grupos temporales QA.
+* `AKfycbxPW...@19` respondio `HTTP 200` y por Playwright cargo `bootSuccess = true`, `inscripciones = 7`, `agendaLen = 24`, `gruposLoaded = true`, `gruposLen = 3`.
+* La sintaxis de `apps-script/Code.gs` y del script de `apps-script/index.html` fue validada con `new Function(...)`.
+
+### Pruebas realizadas
+
+* Lectura de rangos `FECHAS_EXAMENES!A1:H35`, `AGENDA_ACADEMICA!A1:R30`, `GRUPOS_ESTUDIO!A1:M20`.
+* Lectura de `CellData` para verificar `TEXT` y `stringValue` en columnas de fecha/hora.
+* Prueba Playwright de carga de bootstrap y grupos en el backend de rescate.
+* Prueba de guardado de grupo en deployment historico: confirmo que el fix de HEAD es necesario porque el backend historico devuelve `null` despues de guardar.
+
+### Errores o incidentes
+
+* Al redeployar `AKfycbwi0...` desde la cuenta actual, el deployment historico que antes era publico quedo restringido con `HTTP 403`.
+* Se escribio temporalmente una sesion QA en `EVENTOS_PERSONALES` por usar un `sheetId` incorrecto; se limpio la fila antes del cierre.
+* Las pruebas de guardado generaron grupos temporales QA; fueron eliminados de `GRUPOS_ESTUDIO`.
+
+### Soluciones aplicadas
+
+* Datos de examenes cargados en el libro productivo que consume el backend publico.
+* Fix de codigo implementado en HEAD para persistencia robusta de grupos.
+* Recuperacion operativa del shell publico apuntando a `AKfycbxPW...@19`, que carga perfil, inscripciones, examenes y grupos existentes.
+
+### Pendientes
+
+* Redeployar Apps Script version `43` desde la cuenta propietaria/autorizada con acceso `Anyone`.
+* Verificar anonimamente el nuevo `/exec` y recien despues cambiar Pages al deployment corregido.
+* Repetir prueba completa de guardar grupo con fecha y confirmar que se crea, se reconoce y se puede eliminar.
+
+### Riesgos
+
+* Mientras Pages use `AKfycbxPW...@19`, los grupos existentes cargan pero el guardado robusto de grupos no queda corregido en produccion.
+* Cualquier redeploy desde una cuenta no propietaria puede inutilizar otro deployment publico historico.
+* El PDF contiene mojibake parcial en el texto extraido; las fechas cargadas fueron tomadas de las paginas verificadas de Matematica Estadistica Plan 2025, 2do periodo.
+
+### Recomendaciones
+
+* No redeployar deployments historicos publicos desde esta cuenta.
+* Mantener `FECHAS_EXAMENES`, `AGENDA_ACADEMICA` y `GRUPOS_ESTUDIO` con fechas/horas como texto cuando el backend publico sea historico.
+* Documentar en la carpeta maestra el patron: si un deployment GAS anonimo queda `403` al redeployar, buscar un deployment historico publico sin tocarlo y exigir redeploy propietario para activar codigo nuevo.
